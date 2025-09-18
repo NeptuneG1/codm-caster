@@ -299,8 +299,6 @@
     }
   });
 
-  /* ---------- Top pagination (tabs in header) ---------- */
-<script>
 /* ---------- Page order: MAPS first ---------- */
 const PAGE_ORDER = ['Maps', 'Classes', 'BR Systems', 'Other Details'];
 
@@ -364,7 +362,6 @@ document.addEventListener('keydown', (e) => {
     if (box) { box.focus(); box.select(); }
   }
 });
-</script>
 
 
   /* ---------- Class data ---------- */
@@ -557,22 +554,6 @@ const BUY_PRICES = [
     pricesPanel.style.display = (which==='buy') ? 'block' : 'none';
     if(which==='buy') renderBuyPrices();
   }
-
-  // init default panel on load of this page
-  (function(){
-    const saved = sessionStorage.getItem('codm_br_panel') || 'buy';
-    if (document.querySelector('[data-title="BR Systems"]') && !document.querySelector('[data-title="BR Systems"]').classList.contains('hidden')) {
-      setBRPanel(saved);
-    }
-    // Hook into tab navigation so BR Systems renders when opened
-    const origGo = window.go;
-    window.go = function(n){
-      origGo(n);
-      const pages = Array.from(document.querySelectorAll('.page'));
-      const idx = Math.max(0, Math.min(pages.length-1, n));
-      if (pages[idx].dataset.title === 'BR Systems') setBRPanel(sessionStorage.getItem('codm_br_panel') || 'buy');
-    };
-  })();
 
   /* ---------- Classes page rendering ---------- */
   const grid = document.getElementById('classGrid');
