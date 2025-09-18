@@ -10,15 +10,15 @@
   /* CODM palette */
   :root{
     --bg:#0d1014;
-    --panel:#292d42;
-    --panel2:#1e2432;
+    --panel:#292d42;   /* secondary dark navy */
+    --panel2:#1e2432;  /* deeper panel */
     --ink:#f3f6fa;
     --muted:#b8c0cc;
-    --brand:#ffe93b;
+    --brand:#ffe93b;   /* primary yellow */
     --brandText:#0b0d0e;
-    --brand2:#ffffff;
-    --line:#4c525d;
-    --chip:#213830;
+    --brand2:#ffffff;  /* white */
+    --line:#4c525d;    /* secondary gray-blue */
+    --chip:#213830;    /* deep green accent */
     --good:#62e887; --bad:#ff6b6b; --warn:#ffe93b;
   }
 
@@ -28,95 +28,110 @@
   a:hover{text-decoration:underline}
 
   header{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,#141a23 0%,#0d1014 100%);border-bottom:2px solid var(--brand)}
-  .head{display:flex;align-items:center;gap:12px;max-width:1200px;margin:0 auto;padding:10px 14px;flex-wrap:wrap}
-  .logo{width:36px;height:36px;border-radius:8px;object-fit:contain;flex:0 0 auto}
-  h1{margin:0;font-size:1.05rem;letter-spacing:.3px;color:var(--brand)}
-  .head .bar{margin-left:auto;display:flex;gap:8px;align-items:center;min-width:260px}
-  /* Tabs inside header */
-  .head .tabs{margin:0;gap:6px;flex-wrap:nowrap;overflow:auto;padding-bottom:2px}
+  .head{display:flex;align-items:center;gap:14px;max-width:1200px;margin:0 auto;padding:12px 14px}
+  .logo{width:40px;height:40px;border-radius:8px;object-fit:contain;flex:0 0 auto}
+  h1{margin:0;font-size:1.1rem;letter-spacing:.4px;color:var(--brand)}
+  .bar{margin-left:auto;display:flex;gap:8px;align-items:center}
+
+  /* header tabs */
   .tabs{display:flex;gap:8px;flex-wrap:wrap}
-  .tab{background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:6px 10px;border-radius:10px;cursor:pointer;white-space:nowrap}
+  .tab{background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:8px 12px;border-radius:10px;cursor:pointer}
   .tab[aria-current="page"]{background:var(--brand);color:var(--brandText);border-color:var(--brand);font-weight:900}
 
-  .shell{max-width:1200px;margin:14px auto;padding:0 12px}
+  .shell{max-width:1200px;margin:18px auto;padding:0 12px}
+
+  .muted{color:var(--muted)}
+  .hidden{display:none}
+
+  .block{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px;box-shadow:0 0 0 1px rgba(0,0,0,.2) inset}
+  .block h2{margin:0 0 8px 0;color:var(--brand2)}
+  .group-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
 
   /* filter bar */
   .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
   .chip{background:var(--chip);border:1px solid var(--line);color:#d2efe1;border-radius:999px;padding:6px 10px}
   .controls input,.controls select{background:#151b26;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
-  .muted{color:var(--muted)}
-  .hidden{display:none}
 
-  .block{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px;box-shadow:0 0 0 1px rgba(0,0,0,.2) inset}
-  .block h2{margin:0 0 6px 0;color:var(--brand2);font-size:1rem}
-  .group-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+  /* sticky controls for minimal scroll */
+  .sticky{ position:sticky; top:64px; z-index:5; background:var(--panel2); border-bottom:1px solid var(--line); padding-top:6px; }
 
   /* ===== Classes page cards ===== */
-  .grid{display:grid;grid-template-columns:1fr;gap:12px}
+  .grid{display:grid;grid-template-columns:1fr;gap:14px}
   @media(min-width:800px){ .grid{grid-template-columns:1fr 1fr} }
   @media(min-width:1080px){ .grid{grid-template-columns:1fr 1fr 1fr} }
   .class-card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
   .class-card img{width:100%;aspect-ratio:16/9;object-fit:cover;background:#000}
-  .class-info{padding:10px;display:flex;flex-direction:column;gap:6px}
+  .class-info{padding:12px;display:flex;flex-direction:column;gap:6px}
   .title-row{display:flex;align-items:center;gap:8px}
-  .title-row h3{margin:0;font-size:1rem}
-  .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#101621;border:1px solid var(--line);color:#e7ecf3;font-size:.72rem}
+  .title-row h3{margin:0;font-size:1.05rem}
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#101621;border:1px solid var(--line);color:#e7ecf3;font-size:.75rem}
   .kv b{color:#ffffff}
 
-  /* ===== Two-column layout pages ===== */
-  .layout{display:grid;grid-template-columns:1fr;gap:12px}
-  @media(min-width:900px){ .layout{grid-template-columns:minmax(260px,340px) 1fr} }
+  /* ===== Map-first layout (left mini-cards, right big map) ===== */
+  .layout{display:grid;grid-template-columns:1fr;gap:14px}
+  @media(min-width:900px){
+    .layout{grid-template-columns:minmax(260px,340px) 1fr}
+  }
 
   /* left column mini list */
-  .side{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:10px}
-  .side .controls{margin-bottom:4px}
+  .side{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
   .mini-meta{font-size:.85rem;color:var(--muted)}
-  .mini-list{display:grid;grid-template-columns:1fr;gap:8px;overflow:auto;max-height:calc(100dvh - 220px)}
-  @media(min-width:900px){
-    .mini-list{position:sticky;top:88px;max-height:calc(100dvh - 110px)}
+
+  /* Mini cards: 1 column, compact hover */
+  .mini-list{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:10px;
+    overflow:auto;
+    max-height:calc(100dvh - 220px);
   }
-  .mini-card{display:flex;align-items:flex-start;gap:10px;padding:8px;border-radius:12px;background:#141b27;border:1px solid var(--line)}
-  .mini-thumb{width:84px;height:52px;border-radius:8px;object-fit:cover;background:#000;flex:0 0 auto}
+  @media(min-width:900px){
+    .mini-list{
+      position:sticky;
+      top:88px;
+      max-height:calc(100dvh - 110px);
+    }
+  }
+
+  .mini-card{
+    display:flex; align-items:flex-start; gap:10px;
+    padding:10px; border-radius:12px;
+    background:#141b27; border:1px solid var(--line);
+  }
+  .mini-thumb{ width:84px; height:52px; border-radius:8px; object-fit:cover; background:#000; flex:0 0 auto }
   .mini-txt{display:flex;flex-direction:column;gap:2px;min-width:0}
-  .mini-name{font-size:.9rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .mini-pill{font-size:.66rem;opacity:.9;border:1px solid var(--line);border-radius:999px;padding:1px 6px;display:inline-block;width:max-content}
-  .mini-desc{display:none;font-size:.78rem;color:var(--muted);line-height:1.35;margin-top:6px}
-  .mini-card:hover .mini-desc{display:block}
+  .mini-name{ font-size:.90rem; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+  .mini-pill{ font-size:.68rem; opacity:.9; border:1px solid var(--line); border-radius:999px; padding:1px 6px; display:inline-block; width:max-content }
+  .mini-desc{ display:none; font-size:.78rem; color:var(--muted); line-height:1.35; margin-top:6px; }
+  .mini-card:hover .mini-desc{ display:block; }
 
   /* right column map */
-  .map-col{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px}
-  .map-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+  .map-col{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px}
+  .map-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
   .map-tabs .tab{padding:6px 10px;border-radius:999px}
   .map-wrap{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#000;display:flex;align-items:center;justify-content:center;min-height:55vh}
-  @media(min-width:900px){ .map-wrap{min-height:70vh} }
+  @media(min-width:900px){ .map-wrap{min-height:72vh} }
   .map-wrap img{width:100%;height:100%;object-fit:cover}
-  .map-notes{margin-top:8px;display:grid;gap:8px}
+  .map-notes{margin-top:10px;display:grid;gap:10px}
   .panel-list{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px}
   .panel-list h3{margin:0 0 6px 0;color:var(--brand2);font-size:1rem}
   .panel-list ul{margin:0;padding-left:18px;line-height:1.45}
 
-  footer{border-top:1px solid var(--line);margin-top:14px;padding:10px 0 24px}
-  footer small{color:var(--muted)}
-
-  /* Sticky filters */
-  .sticky{position:sticky;top:64px;z-index:5;background:var(--panel2);border-bottom:1px solid var(--line);padding-top:6px}
-
-  /* Collapsibles */
-  details.panel-list > summary{cursor:pointer;list-style:none;font-weight:800;color:var(--brand2)}
-  details.panel-list[open] > summary{margin-bottom:6px}
+  /* BR Systems: keep layout tight; make prices scroll */
+  #brWrap{ display:grid; gap:10px; grid-template-rows:auto minmax(0,40vh) auto; }
+  #buyPrices{ overflow:auto; max-height:40vh; }
+  #brPanel ul{margin:0;padding-left:18px;line-height:1.5}
+  #brPanel h3{margin:0 0 8px 0;color:var(--brand2)}
 
   /* Buy Station price table */
   .price-table{width:100%;border-collapse:collapse;font-size:.92rem}
   .price-table th,.price-table td{border:1px solid var(--line);padding:8px 10px}
-  .price-table th{background:#141b27;text-align:left;position:sticky;top:0;z-index:1}
+  .price-table th{background:#141b27;text-align:left}
   .price-table td:nth-child(2),.price-table td:nth-child(3){text-align:right;white-space:nowrap}
   .price-note{margin-top:6px;color:var(--muted);font-size:.85rem}
 
-  /* BR Systems fixed layout + scroll area for prices */
-  .br-col{display:grid;grid-template-rows:auto minmax(120px,22vh) minmax(180px,46vh) minmax(100px,1fr);gap:8px}
-  #brPanel{max-height:22vh;overflow:auto}
-  #buyPrices{max-height:46vh;overflow:auto}
-  .br-notes{max-height:18vh;overflow:auto}
+  footer{border-top:1px solid var(--line);margin-top:18px;padding:14px 0 28px}
+  footer small{color:var(--muted)}
 </style>
 </head>
 <body>
@@ -125,7 +140,6 @@
     <img src="https://i.imgur.com/K0TTjUC.png" alt="Logo" class="logo">
     <h1>CODM — Battle Royale Caster Reference</h1>
     <div class="bar">
-      <!-- Page buttons go here -->
       <nav id="tabs" class="tabs"></nav>
     </div>
   </div>
@@ -133,31 +147,12 @@
 
 <div class="shell">
 
-  <!-- ===================== PAGE 1: CLASSES ===================== -->
-  <section class="block page" data-title="Classes">
-    <div class="controls sticky">
-      <label class="chip">Category
-        <select id="fCat">
-          <option value="ALL">All</option>
-          <option>Disrupt</option>
-          <option>Stealth</option>
-          <option>Support</option>
-          <option>Defense</option>
-          <option>Tracker</option>
-        </select>
-      </label>
-      <label class="chip">Search
-        <input id="fSearch" type="text" placeholder="Filter name/keyword…">
-      </label>
-      <span class="muted" id="metaCount">—</span>
-    </div>
-    <div id="classGrid" class="grid"></div>
-  </section>
+  <!-- ===================== PAGE: MAPS (first) ===================== -->
+  <section class="block page" data-title="Maps">
+    <h2>Maps & Areas</h2>
 
-  <!-- ===================== PAGE 2: MAPS ===================== -->
-  <section class="block page hidden" data-title="Maps">
     <div class="layout">
-      <!-- Left: mini cards -->
+      <!-- Left: Compact cards -->
       <aside class="side">
         <div class="controls sticky">
           <label class="chip">Category
@@ -171,17 +166,18 @@
             </select>
           </label>
           <label class="chip">Search
-            <input id="mSearch" type="text" placeholder="Filter…">
+            <input id="mSearch" type="text" placeholder="Type to filter…">
           </label>
         </div>
         <div class="mini-meta" id="miniMeta">—</div>
         <div id="miniList" class="mini-list"></div>
       </aside>
 
-      <!-- Right: map -->
+      <!-- Right: Big map -->
       <section class="map-col">
         <div class="map-head">
           <div class="map-tabs tabs" id="mapTabs"></div>
+          <span class="muted">Tip: keep the mini cards on the left for quick callouts.</span>
         </div>
 
         <div class="map-wrap">
@@ -193,40 +189,34 @@
     </div>
   </section>
 
-  <!-- ===================== PAGE 3: OTHER DETAILS ===================== -->
-  <section class="block page hidden" data-title="Other Details">
-    <div class="layout">
-      <div class="panel-list">
-        <h3>Ammo & Weapons</h3>
-        <ul>
-          <li><b>Ammo:</b> Light • Heavy • Sniper • Shotgun • Rockets</li>
-          <li>Loot rarity: common → rare → epic → legendary</li>
-          <li>Airdrops: stronger variants + mod slots</li>
-        </ul>
-        <h3 style="margin-top:8px">Throwables</h3>
-        <ul>
-          <li>Frag • Sticky • Molotov • Cluster • Concussion • Flash • Smoke</li>
-          <li>Trip Mines & Trophy Systems also appear via loot/classes</li>
-        </ul>
-      </div>
+  <!-- ===================== PAGE: CLASSES ===================== -->
+  <section class="block page hidden" data-title="Classes">
+    <h2>All Operator Classes</h2>
 
-      <div class="panel-list">
-        <h3>Vehicles</h3>
-        <ul>
-          <li>ATV • Motorcycle • SUV • Cargo Truck • Helicopter • Boat*</li>
-          <li>Track heli control; call armor/HP & fuel on rotates</li>
-        </ul>
-        <h3 style="margin-top:8px">Caster Reminders</h3>
-        <ul>
-          <li>Watch <b>class synergies</b> (Refitter+Defender; Ninja entries)</li>
-          <li>Note <b>revive coin & chip</b> timings / chip stations</li>
-        </ul>
-      </div>
+    <div class="controls sticky">
+      <label class="chip">Category
+        <select id="fCat">
+          <option value="ALL">All</option>
+          <option>Disrupt</option>
+          <option>Stealth</option>
+          <option>Support</option>
+          <option>Defense</option>
+          <option>Tracker</option>
+        </select>
+      </label>
+      <label class="chip">Search
+        <input id="fSearch" type="text" placeholder="Type to filter…">
+      </label>
+      <span class="muted" id="metaCount">—</span>
     </div>
+
+    <div id="classGrid" class="grid"></div>
   </section>
 
-  <!-- ===================== PAGE 4: BR SYSTEMS ===================== -->
+  <!-- ===================== PAGE: BR SYSTEMS ===================== -->
   <section class="block page hidden" data-title="BR Systems">
+    <h2>BR Systems — Buy Station & Gulag</h2>
+
     <div class="layout">
       <!-- Left: compact reference -->
       <aside class="side">
@@ -234,49 +224,87 @@
           <span class="chip">Quick Reference</span>
         </div>
 
+        <!-- Buy Station mini card -->
         <div class="mini-card">
-          <img class="mini-thumb" src="https://i.imgur.com/w3xxuAT.jpeg" alt="Buy">
+          <img class="mini-thumb" src="https://i.imgur.com/w3xxuAT.jpeg" alt="Isolated">
           <div class="mini-txt">
             <div class="mini-name">Buy Stations</div>
-            <span class="mini-pill">Isolated (LT)</span>
+            <span class="mini-pill">Event LT — Isolated</span>
           </div>
         </div>
-        <ul class="mini-meta" style="line-height:1.5;margin:0 0 6px 0;padding-left:16px">
-          <li>Loot <b>Cash</b>; spend for perks, streaks, weapons, armor/ammo</li>
+        <ul class="mini-meta" style="line-height:1.5;margin:0 0 8px 0;padding-left:16px">
+          <li>Loot <b>Cash</b> on ground & from eliminations.</li>
+          <li>Spend at Buy Stations for <b>Perks</b>, <b>Scorestreaks</b>, <b>weapons</b>, <b>armor/ammo refills</b>, and special items.</li>
+          <li>Eliminated players <b>drop Cash</b> — third-party & scoop.</li>
         </ul>
 
+        <!-- Gulag mini card -->
         <div class="mini-card">
-          <img class="mini-thumb" src="https://i.imgur.com/8S1A7ml.jpeg" alt="Gulag">
+          <img class="mini-thumb" src="https://i.imgur.com/8S1A7ml.jpeg" alt="Isolated">
           <div class="mini-txt">
             <div class="mini-name">Gulag</div>
-            <span class="mini-pill">1v1 • Ticket for extra</span>
+            <span class="mini-pill">Event LT — Isolated</span>
           </div>
         </div>
-        <ul class="mini-meta" style="line-height:1.5;margin:0 0 6px 0;padding-left:16px">
-          <li>First death → Gulag; win redeploys • Teammates can buy tag</li>
+        <ul class="mini-meta" style="line-height:1.5;margin:0 0 8px 0;padding-left:16px">
+          <li>First death → <b>1v1 Gulag</b>.</li>
+          <li><b>Win</b> redeploys; <b>lose</b> needs <b>buy tag</b> at a Buy Station.</li>
+          <li>1 free attempt; extras via <b>Gulag Ticket</b>.</li>
         </ul>
       </aside>
 
-      <!-- Right: fixed-height column -->
-      <section class="map-col br-col">
+      <!-- Right: structured panel: info (auto), prices (scroll), callouts (auto) -->
+      <section class="map-col" id="brWrap">
         <div class="map-head">
           <div class="tabs">
             <button class="tab" aria-current="page" onclick="setBRPanel('buy')">Buy Station</button>
             <button class="tab" onclick="setBRPanel('gulag')">Gulag</button>
           </div>
+          <span class="muted">On-desk cheat-sheet for casting.</span>
         </div>
 
-        <div id="brPanel" class="panel-list"><!-- JS inserts --></div>
-        <div id="buyPrices" class="panel-list"><!-- scrollable table --></div>
+        <div id="brPanel" class="panel-list"><!-- Filled by JS --></div>
 
-        <div class="panel-list br-notes">
+        <!-- Price table (scrolls independently) -->
+        <div id="buyPrices" class="panel-list"></div>
+
+        <div class="panel-list">
           <h3>Caster Callouts</h3>
           <ul>
-            <li><b>Economy:</b> mention thresholds before late pushes</li>
-            <li><b>Shop risk:</b> exposed while buying — watch 3rd parties</li>
+            <li><b>Economy swing:</b> Mention Cash thresholds before late-zone pushes.</li>
+            <li><b>Shop risk:</b> “They’re shopping exposed”—build tension on 3rd-party angles.</li>
+            <li><b>Gulag state:</b> Track who still has <i>free attempt</i> / <i>Ticket</i> and who requires buyback.</li>
           </ul>
         </div>
       </section>
+    </div>
+  </section>
+
+  <!-- ===================== PAGE: OTHER DETAILS ===================== -->
+  <section class="block page hidden" data-title="Other Details">
+    <h2>Other Details</h2>
+    <div class="layout">
+      <div class="panel-list">
+        <h3>Ammo & Weapons (quick)</h3>
+        <ul>
+          <li><b>Ammo types:</b> Light • Heavy • Sniper • Shotgun • Rockets.</li>
+          <li><b>Ground loot:</b> common → rare → epic → legendary. Airdrops grant stronger variants & mod slots.</li>
+          <li><b>Attachment mods:</b> Extended, Long Barrel, Stabilizer, OWC Laser, Tactical Scope, etc.</li>
+        </ul>
+      </div>
+
+      <div class="panel-list">
+        <h3>Vehicles</h3>
+        <ul>
+          <li>ATV • Motorcycle • SUV • Cargo Truck • Helicopter • Boat (map dependent).</li>
+          <li>Heli control = priority info. Call armor/HP and fuel when teams rotate.</li>
+        </ul>
+        <h3 style="margin-top:10px">Caster Reminders</h3>
+        <ul>
+          <li>Track <b>class synergies</b> (e.g., Refitter + Defender; Ninja entry on 3rd party).</li>
+          <li>Note <b>revive coin & chip</b> timings; highlight squads hitting class chip stations.</li>
+        </ul>
+      </div>
     </div>
   </section>
 
@@ -290,79 +318,55 @@
   document.addEventListener('keydown', (e) => {
     const tag = (e.target.tagName || '').toLowerCase();
     if (tag === 'input' || tag === 'textarea') return;
-    if (['1','2','3','4'].includes(e.key)) { go(parseInt(e.key,10)-1); }
+    if (['1','2','3','4'].includes(e.key)) { go(parseInt(e.key,10)-1); } // 1=Maps, 2=Classes, 3=BR Systems, 4=Other Details
     else if (e.key === '/') {
       e.preventDefault();
-      const active = [...document.querySelectorAll('.page')].find(p => !p.classList.contains('hidden'));
+      const active = pagesOrdered.find(p => !p.classList.contains('hidden'));
       const box = active?.querySelector('input[type="text"]');
       if (box) { box.focus(); box.select(); }
     }
   });
 
-/* ---------- Page order: MAPS first ---------- */
-const PAGE_ORDER = ['Maps', 'Classes', 'BR Systems', 'Other Details'];
+  /* ---------- Page order: MAPS first (tabs in header) ---------- */
+  const PAGE_ORDER = ['Maps', 'Classes', 'BR Systems', 'Other Details'];
 
-// Collect pages by title
-const pagesByTitle = {};
-document.querySelectorAll('.page').forEach(p => pagesByTitle[p.dataset.title] = p);
+  const pagesByTitle = {};
+  document.querySelectorAll('.page').forEach(p => pagesByTitle[p.dataset.title] = p);
+  const pagesOrdered = PAGE_ORDER.map(t => pagesByTitle[t]).filter(Boolean);
 
-// Ordered list that actually exists on the page
-const pagesOrdered = PAGE_ORDER.map(t => pagesByTitle[t]).filter(Boolean);
+  const tabs = document.getElementById('tabs');
+  tabs.innerHTML = '';
+  pagesOrdered.forEach((sec,i)=>{
+    const b = document.createElement('button');
+    b.className='tab';
+    b.textContent = sec.dataset.title;
+    b.addEventListener('click', ()=> go(i));
+    tabs.appendChild(b);
+  });
 
-// Build header tabs (next to the title)
-const tabs = document.getElementById('tabs');
-tabs.innerHTML = '';
-pagesOrdered.forEach((sec,i)=>{
-  const b = document.createElement('button');
-  b.className='tab';
-  b.textContent = sec.dataset.title;
-  b.addEventListener('click', ()=> go(i));
-  tabs.appendChild(b);
-});
-
-function showByIndex(idx){
-  const clamped = Math.max(0, Math.min(pagesOrdered.length-1, idx));
-  pagesOrdered.forEach((p,i)=> p.classList.toggle('hidden', i!==clamped));
-  Array.from(tabs.children).forEach((t,i)=> t.setAttribute('aria-current', i===clamped ? 'page' : 'false'));
-
-  const active = pagesOrdered[clamped];
-  const title = active.dataset.title;
-  sessionStorage.setItem('codm_ref_title', title);
-
-  // When BR Systems is active, ensure panel is hydrated (and prices visible)
-  if (title === 'BR Systems') {
-    setBRPanel(sessionStorage.getItem('codm_br_panel') || 'buy');
+  function showByIndex(idx){
+    const clamped = Math.max(0, Math.min(pagesOrdered.length-1, idx));
+    pagesOrdered.forEach((p,i)=> p.classList.toggle('hidden', i!==clamped));
+    Array.from(tabs.children).forEach((t,i)=> t.setAttribute('aria-current', i===clamped ? 'page' : 'false'));
+    const active = pagesOrdered[clamped];
+    const title = active.dataset.title;
+    sessionStorage.setItem('codm_ref_title', title);
+    if (title === 'BR Systems') {
+      setBRPanel(sessionStorage.getItem('codm_br_panel') || 'buy');
+    }
+    window.scrollTo({top:0, behavior:'smooth'});
   }
 
-  window.scrollTo({top:0, behavior:'smooth'});
-}
-
-// Public go(): accepts index or title
-function go(target){
-  if (typeof target === 'string') {
-    const i = pagesOrdered.findIndex(p => p.dataset.title === target);
-    return showByIndex(i >= 0 ? i : 0);
+  function go(target){
+    if (typeof target === 'string') {
+      const i = pagesOrdered.findIndex(p => p.dataset.title === target);
+      return showByIndex(i >= 0 ? i : 0);
+    }
+    showByIndex(target|0);
   }
-  showByIndex(target|0);
-}
 
-// Initial page = saved title or MAPS
-const savedTitle = sessionStorage.getItem('codm_ref_title');
-go(savedTitle && pagesByTitle[savedTitle] ? savedTitle : 'Maps');
-
-/* ---------- Shortcuts (keep your existing block if you already have it) ---------- */
-document.addEventListener('keydown', (e) => {
-  const tag = (e.target.tagName || '').toLowerCase();
-  if (tag === 'input' || tag === 'textarea') return;
-  if (['1','2','3','4'].includes(e.key)) { go(parseInt(e.key,10)-1); } // 1=Maps, 2=Classes, ...
-  else if (e.key === '/') {
-    e.preventDefault();
-    const active = pagesOrdered.find(p => !p.classList.contains('hidden'));
-    const box = active?.querySelector('input[type="text"]');
-    if (box) { box.focus(); box.select(); }
-  }
-});
-
+  const savedTitle = sessionStorage.getItem('codm_ref_title');
+  go(savedTitle && pagesByTitle[savedTitle] ? savedTitle : 'Maps');
 
   /* ---------- Class data ---------- */
   const CLASSES = [
@@ -458,104 +462,7 @@ document.addEventListener('keydown', (e) => {
       passive:'Enemy footsteps can be heard from a distance.'}
   ];
 
-  // --- Buy Station prices (Normal & Fire Sale = 30% off) ---
-  // --- Buy Station prices (explicit normal + fire sale) ---
-const BUY_PRICES = [
-  { item: "Ammunition (per type)", normal: 1000, sale: 700 }, // Heavy, Sniper, Light, Shotgun, Rockets
-  { item: "Ballistic Expert",      normal: 4000, sale: 2800 },
-  { item: "Backpack Lv. 2",        normal: 5000, sale: 3500 },
-  { item: "Backpack Lv. 3",        normal: 12000, sale: 8400 },
-  { item: "C4",                    normal: 3000, sale: 2100 },
-  { item: "Class Chip Upgrade",    normal: 5000, sale: 3500 },
-  { item: "Kinetic Armor",         normal: 5000, sale: 3500 },
-  { item: "Legendary Mods",        normal: 7000, sale: 4900 },
-  { item: "Loadout Drop",          normal: 50000, sale: 35000 },
-  { item: "Mini Loadout Drop",     normal: 20000, sale: 14000 },
-  { item: "Mythic Weapon",         normal: 12000, sale: 8400 },
-  { item: "RC-XD",                 normal: 8000, sale: 5600 },
-  { item: "Revival Coin",          normal: 15000, sale: 10500 },
-  { item: "Self-Revive Kit",       normal: 6000, sale: 4200 },
-  { item: "Stealth Chopper",       normal: 15000, sale: 10500 },
-  { item: "Strafe Run",            normal: 8000, sale: 5600 },
-  { item: "Trophy System",         normal: 3000, sale: 2100 },
-];
-
-  const fmt = n => n>=1000 ? ((n%1000===0? (n/1000): (n/1000).toFixed(1)) + "K") : String(n);
-
-  function renderBuyPrices(){
-    const host = document.getElementById('buyPrices');
-    if(!host) return;
-    const rows = BUY_PRICES.map(r=>`
-      <tr>
-        <td>${r.item}</td>
-        <td>C ${fmt(r.normal)}</td>
-        <td>C ${fmt(r.sale ?? Math.round(r.normal * 0.7))}</td>
-      </tr>`).join('');
-    host.innerHTML = `
-      <details class="panel-list" open>
-        <summary>Buy Station Prices</summary>
-        <table class="price-table">
-          <thead>
-            <tr><th>Item</th><th>Normal</th><th>Fire&nbsp;Sale</th></tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-        <div class="price-note">
-          Fire Sale reduces all prices by 30%.
-          <br/><i>Note:</i> “Ammunition (per type)” covers Heavy, Sniper, Light, Shotgun, and Rockets.
-        </div>
-      </details>
-    `;
-  }
-
-
-  // BR Systems content
-  const BR_INFO = {
-    buy: {
-      title: "Buy Station — Flow",
-      points: [
-        "<b>Cash:</b> loot & eliminations; drops on death",
-        "<b>Spend:</b> perks, streaks, weapons, armor/ammo, specials",
-        "<b>Timing:</b> buy fast — exposed to third parties"
-      ],
-      tips: [
-        "Call team cash before pushes",
-        "Flag high-value buys (Loadout, Revive, Chopper)"
-      ]
-    },
-    gulag: {
-      title: "Gulag — Flow",
-      points: [
-        "First death → <b>1v1</b> Gulag",
-        "<b>Win:</b> redeploy • <b>Lose:</b> teammates can buy your tag",
-        "Extra tries via <b>Gulag Ticket</b> (Buy Station)"
-      ],
-      tips: [
-        "Track who has free attempt vs. ticket",
-        "Note staggered redeploys if multiple queued"
-      ]
-    }
-  };
-
-  function setBRPanel(which){
-    const data = BR_INFO[which] || BR_INFO.buy;
-    const box = document.getElementById('brPanel');
-    box.innerHTML = `
-      <h3>${data.title}</h3>
-      <ul>${data.points.map(p=>`<li>${p}</li>`).join('')}</ul>
-      <h3 style="margin-top:8px">Desk Tips</h3>
-      <ul>${data.tips.map(p=>`<li>${p}</li>`).join('')}</ul>
-    `;
-    const btns = box.parentElement.querySelectorAll('.tabs .tab');
-    btns.forEach(b=>b.setAttribute('aria-current', b.textContent.toLowerCase().includes(which) ? 'page':'false'));
-    sessionStorage.setItem('codm_br_panel', which);
-
-    const pricesPanel = document.getElementById('buyPrices');
-    pricesPanel.style.display = (which==='buy') ? 'block' : 'none';
-    if(which==='buy') renderBuyPrices();
-  }
-
-  /* ---------- Classes page rendering ---------- */
+  /* ---------- Classes render ---------- */
   const grid = document.getElementById('classGrid');
   const fCat = document.getElementById('fCat');
   const fSearch = document.getElementById('fSearch');
@@ -585,10 +492,10 @@ const BUY_PRICES = [
         </div>`;
       grid.appendChild(card);
     });
-    meta.textContent = `${rows.length} / ${CLASSES.length}`;
+    meta.textContent = `${rows.length} shown • ${CLASSES.length} total`;
   }
-  fCat.addEventListener('change', renderClasses);
-  fSearch.addEventListener('input', renderClasses);
+  fCat?.addEventListener('change', renderClasses);
+  fSearch?.addEventListener('input', renderClasses);
 
   /* ---------- Maps page: mini list + big map ---------- */
   const miniList = document.getElementById('miniList');
@@ -606,7 +513,6 @@ const BUY_PRICES = [
              c.skill.toLowerCase().includes(q) ||
             (c.passive||'').toLowerCase().includes(q))
     );
-
     miniList.innerHTML = '';
     rows.forEach(c=>{
       const li = document.createElement('div');
@@ -623,12 +529,10 @@ const BUY_PRICES = [
         </div>`;
       miniList.appendChild(li);
     });
-
-    miniMeta.textContent = `${rows.length} classes`;
+    miniMeta.textContent = `${rows.length} classes • hover for details`;
   }
-
-  mCat.addEventListener('change', renderMini);
-  mSearch.addEventListener('input', renderMini);
+  mCat?.addEventListener('change', renderMini);
+  mSearch?.addEventListener('input', renderMini);
 
   /* ---------- Map viewer ---------- */
   const MAPS = {
@@ -686,12 +590,11 @@ const BUY_PRICES = [
     Array.from(mapTabs.children).forEach(btn=>{
       btn.setAttribute('aria-current', btn.textContent===name ? 'page' : 'false');
     });
-    // notes (collapsible)
     mapNotes.innerHTML = '';
     data.notes.forEach(n=>{
       const wrap = document.createElement('details');
       wrap.className = 'panel-list';
-      if (!/Caster Notes/i.test(n.title)) wrap.open = true;
+      if (!/Caster Notes/i.test(n.title)) wrap.open = true; // reduce scroll
       wrap.innerHTML = `<summary>${n.title}</summary>`;
       const ul = document.createElement('ul');
       n.items.forEach(item=>{
@@ -705,11 +608,113 @@ const BUY_PRICES = [
     sessionStorage.setItem('codm_map', name);
   }
 
-  // init tab + views
-  renderClasses();
-  renderMini();
-  const lastMap = sessionStorage.getItem('codm_map') || 'Isolated';
-  setMap(lastMap);
+  /* ---------- BR Systems content + Buy Station prices ---------- */
+  const BUY_PRICES = [
+    { item: "Ammunition (per type)", normal: 1000,  sale: 700 },   // Heavy, Sniper, Light, Shotgun, Rockets
+    { item: "Ballistic Expert",      normal: 4000,  sale: 2800 },
+    { item: "Backpack Lv. 2",        normal: 5000,  sale: 3500 },
+    { item: "Backpack Lv. 3",        normal: 12000, sale: 8400 },
+    { item: "C4",                    normal: 3000,  sale: 2100 },
+    { item: "Class Chip Upgrade",    normal: 5000,  sale: 3500 },
+    { item: "Kinetic Armor",         normal: 5000,  sale: 3500 },
+    { item: "Legendary Mods",        normal: 7000,  sale: 4900 },
+    { item: "Loadout Drop",          normal: 50000, sale: 35000 },
+    { item: "Mini Loadout Drop",     normal: 20000, sale: 14000 },
+    { item: "Mythic Weapon",         normal: 12000, sale: 8400 },
+    { item: "RC-XD",                 normal: 8000,  sale: 5600 },
+    { item: "Revival Coin",          normal: 15000, sale: 10500 },
+    { item: "Self-Revive Kit",       normal: 6000,  sale: 4200 },
+    { item: "Stealth Chopper",       normal: 15000, sale: 10500 },
+    { item: "Strafe Run",            normal: 8000,  sale: 5600 },
+    { item: "Trophy System",         normal: 3000,  sale: 2100 },
+  ];
+  const fmt = n => n>=1000 ? ((n%1000===0? (n/1000): (n/1000).toFixed(1)) + "K") : String(n);
+
+  function renderBuyPrices(){
+    const host = document.getElementById('buyPrices');
+    if(!host) return;
+    const rows = BUY_PRICES.map(r=>`
+      <tr>
+        <td>${r.item}</td>
+        <td>C ${fmt(r.normal)}</td>
+        <td>C ${fmt(r.sale ?? Math.round(r.normal * 0.7))}</td>
+      </tr>`).join('');
+    host.innerHTML = `
+      <details class="panel-list" open>
+        <summary>Buy Station Prices</summary>
+        <div class="price-wrap">
+          <table class="price-table">
+            <thead>
+              <tr><th>Item</th><th>Normal</th><th>Fire&nbsp;Sale</th></tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+        <div class="price-note">
+          Fire Sale reduces all prices by 30%. “Ammunition (per type)” covers Heavy, Sniper, Light, Shotgun, and Rockets.
+        </div>
+      </details>
+    `;
+  }
+
+  const BR_INFO = {
+    buy: {
+      title: "Buy Station — How It Works",
+      points: [
+        "<b>Where:</b> Spawns on <i>Isolated</i> during event LT.",
+        "<b>Cash:</b> Looted on ground and from eliminations; dropped on death.",
+        "<b>What to buy:</b> Weapons, <i>Perks</i>, <i>Scorestreaks</i>, armor/ammo refills, special items.",
+        "<b>Timing:</b> Shop fast—exposure invites third parties."
+      ],
+      tips: [
+        "Ping Cash and share before committing to a push.",
+        "Announce team economy (\"two streaks online, refills secured\").",
+        "If a teammate is down, prioritize Cash for potential buyback flow."
+      ]
+    },
+    gulag: {
+      title: "Gulag — Flow",
+      points: [
+        "<b>Trigger:</b> First elimination sends you to a <b>1v1</b> Gulag.",
+        "<b>Win:</b> Immediate redeploy.",
+        "<b>Lose:</b> Teammates can <b>buy your tag</b> at a Buy Station.",
+        "<b>Attempts:</b> 1 free; extras via <b>Gulag Ticket</b>."
+      ],
+      tips: [
+        "Track who still has a free attempt vs. who needs a Ticket.",
+        "If two teammates queue for Gulag, call potential staggered redeploys.",
+        "Flag when a squad spends for buyback—economy pressure affects late zones."
+      ]
+    }
+  };
+
+  function setBRPanel(which){
+    const data = BR_INFO[which] || BR_INFO.buy;
+    const box = document.getElementById('brPanel');
+    box.innerHTML = `
+      <h3>${data.title}</h3>
+      <ul>${data.points.map(p=>`<li>${p}</li>`).join('')}</ul>
+      <h3 style="margin-top:10px">Desk Tips</h3>
+      <ul>${data.tips.map(p=>`<li>${p}</li>`).join('')}</ul>
+    `;
+    const btns = box.parentElement.querySelectorAll('.tabs .tab');
+    btns.forEach(b=>b.setAttribute('aria-current', b.textContent.toLowerCase().includes(which) ? 'page':'false'));
+    sessionStorage.setItem('codm_br_panel', which);
+
+    // show/hide price table
+    const pricesPanel = document.getElementById('buyPrices');
+    pricesPanel.style.display = (which==='buy') ? 'block' : 'none';
+    if(which==='buy') renderBuyPrices();
+  }
+
+  // init views
+  function initAfterLoad(){
+    renderClasses();
+    renderMini();
+    const lastMap = sessionStorage.getItem('codm_map') || 'Isolated';
+    setMap(lastMap);
+  }
+  initAfterLoad();
 </script>
 </body>
 </html>
