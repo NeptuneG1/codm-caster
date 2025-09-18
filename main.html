@@ -80,6 +80,39 @@
   .mini-name{font-size:.95rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .mini-pill{font-size:.7rem;opacity:.9;border:1px solid #233038;border-radius:999px;padding:1px 6px;display:inline-block;width:max-content}
 
+  /* === Mini cards: 2 columns + sizing + hover description === */
+  .mini-list{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:10px;
+    overflow:auto;
+    max-height:calc(100dvh - 220px);
+  }
+  @media(min-width:900px){
+    .mini-list{ grid-template-columns:1fr 1fr; position:sticky; top:88px; max-height:calc(100dvh - 110px); }
+  }
+  
+  .mini-card{
+    display:flex; align-items:flex-start; gap:10px;
+    padding:10px; border-radius:12px;
+    background:#0d1114; border:1px solid var(--line);
+    position:relative;
+  }
+  
+  /* Bigger thumbnail */
+  .mini-thumb{ width:84px; height:52px; border-radius:8px; object-fit:cover; background:#000; flex:0 0 auto }
+  
+  /* Slightly smaller title and type */
+  .mini-name{ font-size:.90rem; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+  .mini-pill{ font-size:.68rem; opacity:.9; border:1px solid #233038; border-radius:999px; padding:1px 6px; display:inline-block; width:max-content }
+  
+  /* Hover reveal description */
+  .mini-desc{
+    display:none; font-size:.78rem; color:var(--muted); line-height:1.35; margin-top:6px;
+  }
+  .mini-card:hover .mini-desc{ display:block; }
+
+  
   /* right column map */
   .map-col{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px}
   .map-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
@@ -238,7 +271,7 @@
   
         <!-- Buy Station mini card -->
         <div class="mini-card">
-          <img class="mini-thumb" src="https://i.imgur.com/m3pYtQn.jpeg" alt="Isolated">
+          <img class="mini-thumb" src="https://i.imgur.com/w3xxuAT.jpeg" alt="Isolated">
           <div class="mini-txt">
             <div class="mini-name">Buy Stations</div>
             <span class="mini-pill">Season 5 (LT) — Isolated</span>
@@ -252,7 +285,7 @@
   
         <!-- Gulag mini card -->
         <div class="mini-card">
-          <img class="mini-thumb" src="https://i.imgur.com/6c6pXn8.jpeg" alt="Isolated">
+          <img class="mini-thumb" src="https://i.imgur.com/8S1A7ml.jpeg" alt="Isolated">
           <div class="mini-txt">
             <div class="mini-name">Gulag</div>
             <span class="mini-pill">Season 7 (LT) — Isolated</span>
@@ -516,28 +549,39 @@
   const mSearch = document.getElementById('mSearch');
   const miniMeta = document.getElementById('miniMeta');
 
+  
   function renderMini(){
     const cat = mCat.value || 'ALL';
     const q = (mSearch?.value||'').trim().toLowerCase();
+
     const rows = CLASSES.filter(c =>
       (cat==='ALL' || c.cat===cat) &&
-      (!q || (c.name.toLowerCase().includes(q) || c.cat.toLowerCase().includes(q) ||
-              c.skill.toLowerCase().includes(q) || (c.passive||'').toLowerCase().includes(q)))
+      (!q || c.name.toLowerCase().includes(q) ||
+             c.cat.toLowerCase().includes(q) ||
+             c.skill.toLowerCase().includes(q) ||
+            (c.passive||'').toLowerCase().includes(q))
     );
+
     miniList.innerHTML = '';
     rows.forEach(c=>{
       const li = document.createElement('div');
       li.className = 'mini-card';
       li.innerHTML = `
         <img class="mini-thumb" src="${c.img}" alt="${c.name}">
-        <div class="mini-txt">
+        <div class="mini-txt" style="min-width:0">
           <div class="mini-name">${c.name}</div>
           <span class="mini-pill">${c.cat}</span>
+          <div class="mini-desc">
+            <b>Skill:</b> ${c.skill}
+            ${c.passive ? `<br><b>Passive:</b> ${c.passive}` : ''}
+          </div>
         </div>`;
       miniList.appendChild(li);
     });
-    miniMeta.textContent = `${rows.length} classes • compact view`;
+
+    miniMeta.textContent = `${rows.length} classes • hover for details`;
   }
+
   mCat.addEventListener('change', renderMini);
   mSearch.addEventListener('input', renderMini);
 
