@@ -94,6 +94,11 @@
 
   footer{border-top:1px solid var(--line);margin-top:18px;padding:14px 0 28px}
   footer small{color:var(--muted)}
+
+  /* BR Systems tweaks */
+  #brPanel ul{margin:0;padding-left:18px;line-height:1.5}
+  #brPanel h3{margin:0 0 8px 0;color:var(--brand2)}
+
 </style>
 </head>
 <body>
@@ -220,6 +225,74 @@
     </div>
   </section>
 
+  <!-- ===================== PAGE 4: BR SYSTEMS (BUY STATION + GULAG) ===================== -->
+  <section class="block page hidden" data-title="BR Systems">
+    <h2>BR Systems — Buy Station & Gulag</h2>
+  
+    <div class="layout">
+      <!-- Left: compact reference -->
+      <aside class="side">
+        <div class="controls">
+          <span class="chip">Quick Reference</span>
+        </div>
+  
+        <!-- Buy Station mini card -->
+        <div class="mini-card">
+          <img class="mini-thumb" src="https://i.imgur.com/m3pYtQn.jpeg" alt="Isolated">
+          <div class="mini-txt">
+            <div class="mini-name">Buy Stations</div>
+            <span class="mini-pill">Season 5 (LT) — Isolated</span>
+          </div>
+        </div>
+        <ul class="mini-meta" style="line-height:1.5;margin:0 0 8px 0;padding-left:16px">
+          <li>Loot <b>Cash</b> on ground & from eliminations.</li>
+          <li>Spend at Buy Stations for <b>Perks</b>, <b>Scorestreaks</b>, <b>weapons</b>, <b>armor/ammo refills</b>, and special items.</li>
+          <li>Eliminated players <b>drop Cash</b> — third-party & scoop.</li>
+        </ul>
+  
+        <!-- Gulag mini card -->
+        <div class="mini-card">
+          <img class="mini-thumb" src="https://i.imgur.com/6c6pXn8.jpeg" alt="Isolated">
+          <div class="mini-txt">
+            <div class="mini-name">Gulag</div>
+            <span class="mini-pill">Season 7 (LT) — Isolated</span>
+          </div>
+        </div>
+        <ul class="mini-meta" style="line-height:1.5;margin:0 0 8px 0;padding-left:16px">
+          <li>Upon first death: go to <b>1v1 Gulag</b>.</li>
+          <li><b>Win</b> to redeploy. <b>Lose</b> and teammates can <b>buy your tag</b> at a Buy Station.</li>
+          <li>Everyone gets <b>1 free attempt</b>; extra attempts need <b>Gulag Ticket</b> from a Buy Station.</li>
+        </ul>
+      </aside>
+  
+      <!-- Right: big panel with details -->
+      <section class="map-col">
+        <div class="map-head">
+          <div class="tabs">
+            <button class="tab" aria-current="page" onclick="setBRPanel('buy')">Buy Station</button>
+            <button class="tab" onclick="setBRPanel('gulag')">Gulag</button>
+          </div>
+          <span class="muted">Use this as on-desk cheat-sheet while casting.</span>
+        </div>
+  
+        <div id="brPanel" class="panel-list">
+          <!-- Filled by JS -->
+        </div>
+  
+        <div class="map-notes">
+          <div class="panel-list">
+            <h3>Caster Callouts</h3>
+            <ul>
+              <li><b>Economy swing:</b> Mention Cash thresholds before late-zone pushes.</li>
+              <li><b>Shop risk:</b> “They’re shopping exposed”—build tension on 3rd-party angles.</li>
+              <li><b>Gulag state:</b> Track who still has <i>free attempt</i> / <i>Ticket</i> and who requires buyback.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </div>
+  </section>
+
   <footer class="shell">
     <small>Built for desk & tablet casting • Images © respective owners • This is a static reference using your provided art.</small>
   </footer>
@@ -336,6 +409,71 @@
       skill:'Ravager Launcher — locks onto enemy soldiers & vehicles automatically.',
       passive:'Enemy footsteps can be heard from a distance.'}
   ];
+
+  
+  // Simple content model for BR Systems
+  const BR_INFO = {
+    buy: {
+      title: "Buy Station — How It Works",
+      points: [
+        "<b>Where:</b> Spawns on <i>Isolated</i> (LT event in S5).",
+        "<b>Cash:</b> Looted on ground and from eliminations; dropped on death.",
+        "<b>What to buy:</b> Weapons, <i>Perks</i>, <i>Scorestreaks</i>, armor/ammo refills, special items (e.g., Purifier).",
+        "<b>Rotation timing:</b> Shop fast—exposure invites third parties."
+      ],
+      tips: [
+        "Ping Cash and share before committing to a push.",
+        "Announce team economy (\"two streaks online, refills secured\").",
+        "If a teammate is down, prioritize Cash for a potential buyback flow in S7."
+      ]
+    },
+    gulag: {
+      title: "Gulag — Flow",
+      points: [
+        "<b>Trigger:</b> First elimination sends you to a <b>1v1</b> Gulag.",
+        "<b>Win:</b> Immediate redeploy.",
+        "<b>Lose:</b> Spectate until a teammate <b>buys your dog tag</b> at a Buy Station.",
+        "<b>Attempts:</b> Everyone has <b>1 free</b>; extra via <b>Gulag Ticket</b> (purchased at Buy Station)."
+      ],
+      tips: [
+        "Track who still has a free attempt vs. who needs a Ticket.",
+        "If two teammates are queued for Gulag, call potential staggered redeploys.",
+        "Remind viewers when a squad spends for buyback—economy pressure affects late zones."
+      ]
+    }
+  };
+
+  function setBRPanel(which){
+    const data = BR_INFO[which] || BR_INFO.buy;
+    const box = document.getElementById('brPanel');
+    box.innerHTML = `
+      <h3>${data.title}</h3>
+      <ul>${data.points.map(p=>`<li>${p}</li>`).join('')}</ul>
+      <h3 style="margin-top:10px">Desk Tips</h3>
+      <ul>${data.tips.map(p=>`<li>${p}</li>`).join('')}</ul>
+    `;
+    // toggle active tab style
+    const btns = box.parentElement.querySelectorAll('.tabs .tab');
+    btns.forEach(b=>b.setAttribute('aria-current', b.textContent.toLowerCase().includes(which) ? 'page':'false'));
+    sessionStorage.setItem('codm_br_panel', which);
+  }
+
+  // init default panel on load of this page
+  (function(){
+    const saved = sessionStorage.getItem('codm_br_panel') || 'buy';
+    // If the BR Systems tab is open on load, render now; otherwise it will render when user clicks tab.
+    if (document.querySelector('[data-title="BR Systems"]') && !document.querySelector('[data-title="BR Systems"]').classList.contains('hidden')) {
+      setBRPanel(saved);
+    }
+    // Also hook into your tab navigation to render when BR Systems becomes active
+    const origGo = window.go;
+    window.go = function(n){
+      origGo(n);
+      const pages = Array.from(document.querySelectorAll('.page'));
+      const idx = Math.max(0, Math.min(pages.length-1, n));
+      if (pages[idx].dataset.title === 'BR Systems') setBRPanel(sessionStorage.getItem('codm_br_panel') || 'buy');
+    };
+  })();
 
   /* ---------- Classes page rendering ---------- */
   const grid = document.getElementById('classGrid');
