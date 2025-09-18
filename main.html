@@ -133,6 +133,26 @@
   .price-table th{background:#141b27;text-align:left}
   .price-table td:nth-child(2),.price-table td:nth-child(3){text-align:right;white-space:nowrap}
   .price-note{margin-top:6px;color:var(--muted);font-size:.85rem}
+
+  /* --- Minimal-scroll helpers --- */
+  .sticky{ position:sticky; top:64px; z-index:5; background:var(--panel2); border-bottom:1px solid var(--line); padding-top:6px; }
+  
+  .utilbar{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:6px; }
+  .utilbar .chip{ cursor:pointer; }
+  
+  details.panel-list > summary{
+    cursor:pointer; list-style:none; font-weight:800; color:var(--brand2);
+  }
+  details.panel-list[open] > summary{ margin-bottom:6px; }
+  
+  /* Compact/Dense mode */
+  body.dense .block{ padding:10px; }
+  body.dense .class-card .class-info{ padding:8px; }
+  body.dense .mini-card{ padding:8px; }
+  body.dense .map-wrap{ min-height:60vh; } /* slightly shorter map so notes fit */
+  body.dense .tab{ padding:6px 10px; }
+  body.dense h1{ font-size:1rem; }
+
 </style>
 </head>
 <body>
@@ -147,9 +167,16 @@
 <div class="shell">
 
   <!-- Pagination Tabs -->
-  <div class="block">
-    <div id="tabs" class="tabs"></div>
+<div class="block">
+  <div id="tabs" class="tabs"></div>
+  <div class="utilbar">
+    <label class="chip">
+      <input type="checkbox" id="densityToggle"> Compact mode
+    </label>
+    <span class="muted">Shortcuts: 1–4 to switch tabs, / to focus search</span>
   </div>
+</div>
+
 
   <!-- ===================== PAGE 1: CLASSES ===================== -->
   <section class="block page" data-title="Classes">
@@ -327,6 +354,37 @@
 </div>
 
 <script>
+
+  // Compact mode persistence + toggle
+  const applyDense = (on) => {
+    document.body.classList.toggle('dense', on);
+    localStorage.setItem('codm_dense', on ? '1' : '0');
+    const t = document.getElementById('densityToggle');
+    if (t) t.checked = on;
+  };
+  // Initialize from storage
+  applyDense(localStorage.getItem('codm_dense') === '1');
+  // Wire the checkbox when it exists (after DOM paints)
+  window.addEventListener('DOMContentLoaded', () => {
+    const t = document.getElementById('densityToggle');
+    if (t) t.addEventListener('change', () => applyDense(t.checked));
+  });
+
+  // Keyboard shortcuts: 1–4 tabs, '/' focus search, 'd' toggle density
+  document.addEventListener('keydown', (e) => {
+    const tag = (e.target.tagName || '').toLowerCase();
+    if (tag === 'input' || tag === 'textarea') return;
+    if (['1','2','3','4'].includes(e.key)) { go(parseInt(e.key,10)-1); }
+    else if (e.key === '/') {
+      e.preventDefault();
+      const active = [...document.querySelectorAll('.page')].find(p => !p.classList.contains('hidden'));
+      const box = active?.querySelector('input[type="text"]');
+      if (box) { box.focus(); box.select(); }
+    } else if (e.key.toLowerCase() === 'd') {
+      applyDense(!document.body.classList.contains('dense'));
+    }
+  });
+  
   /* ---------- Top pagination ---------- */
   const pages = Array.from(document.querySelectorAll('.page'));
   const tabs  = document.getElementById('tabs');
@@ -490,14 +548,16 @@
         <td>C ${fmt(sale(r.normal))}</td>
       </tr>`).join('');
     host.innerHTML = `
-      <h3>Buy Station Prices</h3>
-      <table class="price-table">
-        <thead>
-          <tr><th>Item</th><th>Normal</th><th>Fire&nbsp;Sale</th></tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
-      <div class="price-note">Fire Sale applies a 30% discount to all Buy Station items. Prices can vary by mode/region and may be tuned in future updates.</div>
+      <details class="panel-list" open>
+        <summary>Buy Station Prices</summary>
+        <table class="price-table">
+          <thead>
+            <tr><th>Item</th><th>Normal</th><th>Fire&nbsp;Sale</th></tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <div class="price-note">Fire Sale applies a 30% discount to all Buy Station items. Prices may vary by mode/region.</div>
+      </details>
     `;
   }
 
@@ -703,9 +763,11 @@
     // notes
     mapNotes.innerHTML = '';
     data.notes.forEach(n=>{
-      const wrap = document.createElement('div');
+      const wrap = document.createElement('details');
       wrap.className = 'panel-list';
-      wrap.innerHTML = `<h3>${n.title}</h3>`;
+      // Open POIs by default, keep "Caster Notes" collapsed to reduce scroll
+      if (!/Caster Notes/i.test(n.title)) wrap.open = true;
+      wrap.innerHTML = `<summary>${n.title}</summary>`;
       const ul = document.createElement('ul');
       n.items.forEach(item=>{
         const li = document.createElement('li');
@@ -715,6 +777,7 @@
       wrap.appendChild(ul);
       mapNotes.appendChild(wrap);
     });
+
     sessionStorage.setItem('codm_map', name);
   }
 
