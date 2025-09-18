@@ -706,8 +706,6 @@ const BUY_PRICES = [
   }
 
   // init tab + views
-  const last = parseInt(sessionStorage.getItem('codm_ref_tab')||'0',10);
-  go(isFinite(last)? last : 0);
   renderClasses();
   renderMini();
   const lastMap = sessionStorage.getItem('codm_map') || 'Isolated';
