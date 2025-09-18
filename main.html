@@ -300,21 +300,72 @@
   });
 
   /* ---------- Top pagination (tabs in header) ---------- */
-  const pages = Array.from(document.querySelectorAll('.page'));
-  const tabs  = document.getElementById('tabs');
-  pages.forEach((sec,i)=>{
-    const b = document.createElement('button');
-    b.className='tab'; b.textContent = sec.dataset.title || `Page ${i+1}`;
-    b.addEventListener('click', ()=> go(i));
-    tabs.appendChild(b);
-  });
-  function go(n){
-    const idx = Math.max(0, Math.min(pages.length-1, n));
-    pages.forEach((p,i)=> p.classList.toggle('hidden', i!==idx));
-    Array.from(tabs.children).forEach((t,i)=> t.setAttribute('aria-current', i===idx ? 'page' : 'false'));
-    window.scrollTo({top:0, behavior:'smooth'});
-    sessionStorage.setItem('codm_ref_tab', String(idx));
+<script>
+/* ---------- Page order: MAPS first ---------- */
+const PAGE_ORDER = ['Maps', 'Classes', 'BR Systems', 'Other Details'];
+
+// Collect pages by title
+const pagesByTitle = {};
+document.querySelectorAll('.page').forEach(p => pagesByTitle[p.dataset.title] = p);
+
+// Ordered list that actually exists on the page
+const pagesOrdered = PAGE_ORDER.map(t => pagesByTitle[t]).filter(Boolean);
+
+// Build header tabs (next to the title)
+const tabs = document.getElementById('tabs');
+tabs.innerHTML = '';
+pagesOrdered.forEach((sec,i)=>{
+  const b = document.createElement('button');
+  b.className='tab';
+  b.textContent = sec.dataset.title;
+  b.addEventListener('click', ()=> go(i));
+  tabs.appendChild(b);
+});
+
+function showByIndex(idx){
+  const clamped = Math.max(0, Math.min(pagesOrdered.length-1, idx));
+  pagesOrdered.forEach((p,i)=> p.classList.toggle('hidden', i!==clamped));
+  Array.from(tabs.children).forEach((t,i)=> t.setAttribute('aria-current', i===clamped ? 'page' : 'false'));
+
+  const active = pagesOrdered[clamped];
+  const title = active.dataset.title;
+  sessionStorage.setItem('codm_ref_title', title);
+
+  // When BR Systems is active, ensure panel is hydrated (and prices visible)
+  if (title === 'BR Systems') {
+    setBRPanel(sessionStorage.getItem('codm_br_panel') || 'buy');
   }
+
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+// Public go(): accepts index or title
+function go(target){
+  if (typeof target === 'string') {
+    const i = pagesOrdered.findIndex(p => p.dataset.title === target);
+    return showByIndex(i >= 0 ? i : 0);
+  }
+  showByIndex(target|0);
+}
+
+// Initial page = saved title or MAPS
+const savedTitle = sessionStorage.getItem('codm_ref_title');
+go(savedTitle && pagesByTitle[savedTitle] ? savedTitle : 'Maps');
+
+/* ---------- Shortcuts (keep your existing block if you already have it) ---------- */
+document.addEventListener('keydown', (e) => {
+  const tag = (e.target.tagName || '').toLowerCase();
+  if (tag === 'input' || tag === 'textarea') return;
+  if (['1','2','3','4'].includes(e.key)) { go(parseInt(e.key,10)-1); } // 1=Maps, 2=Classes, ...
+  else if (e.key === '/') {
+    e.preventDefault();
+    const active = pagesOrdered.find(p => !p.classList.contains('hidden'));
+    const box = active?.querySelector('input[type="text"]');
+    if (box) { box.focus(); box.select(); }
+  }
+});
+</script>
+
 
   /* ---------- Class data ---------- */
   const CLASSES = [
