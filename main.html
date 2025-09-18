@@ -1,58 +1,60 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CODM — BR Caster Reference</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>CODM — Battle Royale Caster Reference</title>
 <meta name="theme-color" content="#0b0d0e"/>
 
 <style>
   :root{
-    --bg:#0b0d0e; --panel:#121417; --panel2:#0f1113;
+    --bg:#0b0d0e; --panel:#111416; --panel2:#0e1012;
     --ink:#e8ecef; --muted:#aab3bb;
-    --brand:#19ff9a; --brand2:#29b375; --accent:#00bcd4;
-    --line:#20262b; --chip:#1a1f24; --good:#62e887; --bad:#ff6b6b; --warn:#ffd166;
+    --brand:#19ff9a; --brand2:#0de3ff; --accent:#00bcd4;
+    --line:#20262b; --chip:#151a1f; --good:#62e887; --bad:#ff6b6b; --warn:#ffd166;
   }
   *{box-sizing:border-box}
   html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif}
-  a{color:var(--accent);text-decoration:none}
+  a{color:var(--brand2);text-decoration:none}
   a:hover{text-decoration:underline}
-  header{position:sticky;top:0;z-index:10;background:linear-gradient(180deg,#0d1012 0%,#0b0d0e 100%);border-bottom:2px solid var(--brand);}
-  .head{display:flex;align-items:center;gap:14px;padding:14px 16px;max-width:1200px;margin:0 auto}
-  .logo{width:36px;height:36px;border-radius:6px;object-fit:contain}
+
+  header{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,#0d1012 0%,#0b0d0e 100%);border-bottom:2px solid var(--brand)}
+  .head{display:flex;align-items:center;gap:14px;max-width:1200px;margin:0 auto;padding:12px 14px}
+  .logo{width:40px;height:40px;border-radius:8px;object-fit:contain;flex:0 0 auto}
   h1{margin:0;font-size:1.1rem;letter-spacing:.4px;color:var(--brand)}
-  .shell{max-width:1200px;margin:18px auto;padding:0 12px}
-  .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-  .btn{background:var(--brand);color:#052016;border:0;border-radius:10px;padding:8px 12px;font-weight:800;cursor:pointer}
+  .head .bar{margin-left:auto;display:flex;gap:8px;align-items:center}
+  .btn{background:var(--brand);color:#06231a;border:0;border-radius:10px;padding:8px 12px;font-weight:800;cursor:pointer}
   .btn.ghost{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
   .btn:disabled{opacity:.5;cursor:not-allowed}
-  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 16px}
+
+  .shell{max-width:1200px;margin:18px auto;padding:0 12px}
+
+  /* Tabs / pager */
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 14px}
   .tab{background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:8px 12px;border-radius:10px;cursor:pointer}
-  .tab[aria-current="page"]{background:var(--brand);color:#052016;border-color:var(--brand);font-weight:900}
-  .grid{display:grid;gap:12px}
+  .tab[aria-current="page"]{background:var(--brand);color:#06231a;border-color:var(--brand);font-weight:900}
+
+  /* Cards grid */
+  .grid{display:grid;grid-template-columns:1fr;gap:14px}
+  @media(min-width:900px){ .grid{grid-template-columns:1fr 1fr} }
+
   .block{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}
   .block h2{margin:0 0 8px 0;color:var(--brand)}
-  .block h3{margin:10px 0 6px 0;color:var(--accent)}
   .muted{color:var(--muted)}
-  .chip{display:inline-flex;align-items:center;gap:6px;background:var(--chip);border:1px solid var(--line);padding:4px 8px;border-radius:999px;font-size:.85rem;color:#cfe7d9}
-  .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#0c0f11;border:1px solid #20262b;margin:2px;font-size:.85rem;color:#d8e6df}
-  .kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:6px 0 2px}
-  .kpi > div{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px}
-  .kpi strong{display:block;font-size:1.1rem}
-  .two{display:grid;grid-template-columns:1fr;gap:12px}
-  @media(min-width:980px){ .two{grid-template-columns:1fr 1fr} }
-  table{width:100%;border-collapse:collapse}
-  th,td{border-bottom:1px solid var(--line);padding:8px;vertical-align:top}
-  thead th{background:#0f1215;text-align:left}
-  tbody tr:hover td{background:#0e1215}
-  .kbd{background:#0e1418;border:1px solid #20313a;color:#d1ffe9;padding:1px 6px;border-radius:6px;font-family:ui-monospace,Menlo,monospace}
-  .note{border-left:3px solid var(--accent);padding:8px 10px;background:rgba(0,188,212,.06);border-radius:8px}
-  .warn{border-left:3px solid var(--warn);background:rgba(255,209,102,.06)}
-  .ok{border-left:3px solid var(--good);background:rgba(98,232,135,.06)}
-  .navrow{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:12px 0}
   .hidden{display:none}
-  .tag{opacity:.85}
-  footer{border-top:1px solid var(--line);margin-top:18px;padding:12px 0 30px}
+
+  .class-card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .class-card img{width:100%;display:block;background:#000}
+  .class-info{padding:12px}
+  .class-title{display:flex;align-items:center;gap:8px;margin:0 0 6px 0}
+  .class-title h3{margin:0;font-size:1.05rem}
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#0c0f11;border:1px solid #20262b;color:#d8e6df;font-size:.8rem}
+  .kv{margin:4px 0}
+  .kv b{color:#cfe7d9}
+  .note{border-left:3px solid var(--accent);padding:8px 10px;background:rgba(0,188,212,.06);border-radius:8px;margin-top:8px}
+  .group-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+
+  footer{border-top:1px solid var(--line);margin-top:18px;padding:14px 0 28px}
   footer small{color:var(--muted)}
 </style>
 </head>
@@ -61,275 +63,364 @@
   <div class="head">
     <img src="https://i.imgur.com/K0TTjUC.png" alt="CODM Logo" class="logo">
     <h1>CODM — Battle Royale Caster Reference</h1>
-    <div style="margin-left:auto" class="bar">
+    <div class="bar">
       <a href="dashboard.html" class="btn ghost">← Back to Dashboard</a>
     </div>
   </div>
 </header>
 
 <div class="shell">
+
   <!-- TOP NAV -->
-  <nav class="tabs" id="topTabs" aria-label="Main Sections">
-    <button class="tab" data-target="view-overview" aria-current="page">Overview</button>
-    <button class="tab" data-target="view-classes">Classes</button>
-    <button class="tab" data-target="view-maps">Maps</button>
-    <button class="tab" data-target="view-weapons">Weapons</button>
-    <button class="tab" data-target="view-utils">Utilities</button>
-  </nav>
+  <div class="block">
+    <div class="group-head">
+      <h2>Operator Classes</h2>
+      <span class="muted">Click a tab to jump to a category. Each card shows your screenshot with a quick brief below.</span>
+    </div>
+    <div id="tabs" class="tabs"></div>
+  </div>
 
-  <!-- OVERVIEW -->
-  <section id="view-overview" class="grid">
-    <div class="block">
-      <h2>Caster Quick Brief</h2>
-      <div class="kpi">
-        <div><strong>Maps</strong><span class="muted">Isolated, Blackout</span></div>
-        <div><strong>Mode</strong><span class="muted">Battle Royale (Quads/Squads)</span></div>
-        <div><strong>Classes</strong><span class="muted">Legacy + New: e.g., Ninja, Medic, Defender… Rewind, Igniter, Pumped, Misdirection, Smoke Bomber, etc.</span></div>
-        <div><strong>Respawn</strong><span class="muted">Dog-tag scan → quick respawn (no scheduled flight)</span></div>
-      </div>
-      <p class="note ok" style="margin-top:8px">
-        <strong>Update context:</strong> POIs and class set reflect current BR rotation; revive flow reflects recent seasons where scanning tags revives teammates without waiting for a flight.
-      </p>
-      <div class="muted" style="margin-top:6px">Tips: Use <span class="kbd">1</span>/<span class="kbd">2</span>/<span class="kbd">3</span>/<span class="kbd">4</span>/<span class="kbd">5</span> to jump sections.</div>
+  <!-- ===== DISRUPT ===== -->
+  <section class="block page" data-title="Disrupt">
+    <h2>Disrupt</h2>
+    <div class="grid">
+
+      <!-- Shock Wave -->
+      <article class="class-card">
+        <img src="IMG_1964.PNG" alt="Shock Wave screenshot">
+        <div class="class-info">
+          <div class="class-title"><h3>Shock Wave</h3><span class="pill">Disrupt</span></div>
+          <div class="kv"><b>Skill:</b> Releases a shock wave that pushes away and damages nearby hostiles while briefly blocking projectiles.</div>
+          <div class="kv"><b>Passive:</b> After activating skill, movement speed is increased.</div>
+        </div>
+      </article>
+
+      <!-- Rewind -->
+      <article class="class-card">
+        <img src="IMG_1963.PNG" alt="Rewind screenshot">
+        <div class="class-info">
+          <div class="class-title"><h3>Rewind</h3><span class="pill">Disrupt</span></div>
+          <div class="kv"><b>Glitch:</b> Teleport to the location from 6 seconds prior. Movement speed will be reset.</div>
+          <div class="kv"><b>Passive:</b> After activating skill, movement speed is increased.</div>
+        </div>
+      </article>
+
+      <!-- Hacker -->
+      <article class="class-card">
+        <img src="IMG_1962.PNG" alt="Hacker screenshot">
+        <div class="class-info">
+          <div class="class-title"><h3>Hacker</h3><span class="pill">Disrupt</span></div>
+          <div class="kv"><b>Ice Pick:</b> Disrupts nearby enemy minimaps and prevents them from using gadgets.</div>
+          <div class="kv"><b>Passive:</b> Immune to Hacker class. Movement speed increases after activation.</div>
+        </div>
+      </article>
+
+      <!-- Trickster -->
+      <article class="class-card">
+        <img src="IMG_1950.PNG" alt="Trickster screenshot">
+        <div class="class-info">
+          <div class="class-title"><h3>Trickster</h3><span class="pill">Disrupt</span></div>
+          <div class="kv"><b>Psychosis:</b> Deploy two holographic decoys and get a major speed boost to confuse enemies.</div>
+          <div class="kv"><b>Passive:</b> After activating skill, movement speed is increased.</div>
+        </div>
+      </article>
+
+      <!-- Misdirection -->
+      <article class="class-card">
+        <img src="IMG_1949.PNG" alt="Misdirection screenshot">
+        <div class="class-info">
+          <div class="class-title"><h3>Misdirection</h3><span class="pill">Disrupt</span></div>
+          <div class="kv"><b>Misdirection Device:</b> Emits special sound waves that hide the user’s sound and generate fake noise sources for enemies in range.</div>
+          <div class="kv"><b>Passive:</b> After activating skill, movement speed is increased.</div>
+        </div>
+      </article>
+
+      <!-- Trap Master -->
+      <article class="class-card">
+        <img src="IMG_1948.PNG" alt="Trap Master screenshot">
+        <div class="class-info">
+          <div class="class-title"><h3>Trap Master</h3><span class="pill">Disrupt</span></div>
+          <div class="kv"><b>Electric Trip Wire:</b> Places a high-voltage line that slows enemies and damages anyone standing in the trap.</div>
+          <div class="kv"><b>Passive:</b> After activating skill, movement speed is increased.</div>
+        </div>
+      </article>
+
+      <!-- Smoke Bomber -->
+      <article class="class-card">
+        <img src="IMG_1947.PNG" alt="Smoke Bomber screenshot">
+        <div class="class-info">
+          <div class="class-title"><h3>Smoke Bomber</h3><span class="pill">Disrupt</span></div>
+          <div class="kv"><b>Cluster Smoke Grenade:</b> Creates a smoke field in a target area that can mark enemies.</div>
+          <div class="kv"><b>Passive:</b> After activating skill, movement speed is increased.</div>
+        </div>
+      </article>
+
     </div>
   </section>
 
-  <!-- CLASSES -->
-  <section id="view-classes" class="grid hidden">
-    <div class="block">
-      <h2>BR Classes / Operator Skills</h2>
-      <p class="muted">Tap a class to expand details. Summaries focus on their in-match use so you can cast fights quickly.</p>
-      <div class="two" id="classGrid">
-        <!-- Cards injected by JS -->
-      </div>
+  <!-- ===== STEALTH ===== -->
+  <section class="block page hidden" data-title="Stealth">
+    <h2>Stealth</h2>
+    <div class="grid">
+
+      <!-- Ninja -->
+      <article class="class-card">
+        <img src="IMG_1951.PNG" alt="Ninja screenshot">
+        <div class="class-info">
+          <div class="class-title"><h3>Ninja</h3><span class="pill">Stealth</span></div>
+          <div class="kv"><b>Grapple Hook:</b> Shoot a grapple that pulls you to the target.</div>
+          <div class="kv"><b>Passive:</b> Reduces movement noises.</div>
+        </div>
+      </article>
+
+      <!-- Poltergeist -->
+      <article class="class-card">
+        <img src="IMG_1952.PNG" alt="Poltergeist screenshot">
+        <div class="class-info">
+          <div class="class-title"><h3>Poltergeist</h3><span class="pill">Stealth</span></div>
+          <div class="kv"><b>Active Camo:</b> Become near-invisible for a short duration.</div>
+          <div class="kv"><b>Passive:</b> Reduces movement noises.</div>
+        </div>
+      </article>
+
+      <!-- Pumped -->
+      <article class="class-card">
+        <img src="IMG_1953.PNG" alt="Pumped screenshot">
+        <div class="class-info">
+          <div class="class-title"><h3>Pumped</h3><span class="pill">Stealth</span></div>
+          <div class="kv"><b>Power Jump:</b> Gain power-jumping ability and more nitrogen after activation.</div>
+          <div class="kv"><b>Passive:</b> Reduces movement noises.</div>
+        </div>
+      </article>
+
+      <!-- Quick Strike -->
+      <article class="class-card">
+        <img src="IMG_1954.PNG" alt="Quick Strike screenshot">
+        <div class="class-info">
+          <div class="class-title"><h3>Quick Strike</h3><span class="pill">Stealth</span></div>
+          <div class="kv"><b>Quick Strike:</b> Blocks incoming bullets from the front, then slashes to damage enemies.</div>
+          <div class="kv"><b>Passive:</b> Reduces movement noises.</div>
+        </div>
+      </article>
+
+      <!-- Jet Boost -->
+      <article class="class-card">
+        <img src="IMG_1955.PNG" alt="Jet Boost screenshot">
+        <div class="class-info">
+          <div class="class-title"><h3>Jet Boost</h3><span class="pill">Stealth</span></div>
+          <div class="kv"><b>Jet Boost:</b> Wall run, jet-jump and jet-slide while active.</div>
+          <div class="kv"><b>Passive:</b> Reduces movement noises.</div>
+        </div>
+      </article>
+
+      <!-- Teleporter -->
+      <article class="class-card">
+        <img src="IMG_1959.PNG" alt="Teleporter screenshot">
+        <div class="class-info">
+          <div class="class-title"><h3>Teleporter</h3><span class="pill">Stealth</span></div>
+          <div class="kv"><b>Teleporter:</b> Deploy a beacon for multiple teleports; entering combat interrupts the teleportation.</div>
+          <div class="kv"><b>Passive:</b> Reduces movement noises.</div>
+        </div>
+      </article>
+
+      <!-- Tactical Bouncer -->
+      <article class="class-card">
+        <img src="IMG_1960.PNG" alt="Tactical Bouncer screenshot">
+        <div class="class-info">
+          <div class="class-title"><h3>Tactical Bouncer</h3><span class="pill">Stealth</span></div>
+          <div class="kv"><b>Tactical Bouncer:</b> Deploy a platform that catapults players, vehicles and throwables upward via a force field.</div>
+          <div class="kv"><b>Passive:</b> Reduces movement noises.</div>
+        </div>
+      </article>
+
     </div>
   </section>
 
-  <!-- MAPS -->
-  <section id="view-maps" class="grid hidden">
-    <div class="block">
-      <h2>Maps</h2>
-      <div class="bar" role="tablist" aria-label="Map Tabs" style="margin:0 0 8px">
-        <button class="tab" data-subtab="iso" aria-current="page">Isolated</button>
-        <button class="tab" data-subtab="bo">Blackout</button>
-      </div>
+  <!-- ===== SUPPORT ===== -->
+  <section class="block page hidden" data-title="Support">
+    <h2>Support</h2>
+    <div class="grid">
 
-      <!-- Isolated -->
-      <div id="map-iso">
-        <h3>Isolated — Points of Interest</h3>
-        <div class="muted" style="margin-bottom:6px">Classic CODM BR island; mixed elevation and biomes; frequent chip terminals and vehicle spawns.</div>
-        <div class="two">
-          <div class="block" style="background:var(--panel2)">
-            <h3 class="muted" style="margin:0 0 6px">Major POIs</h3>
-            <div id="isoList" class="muted"></div>
-          </div>
-          <div class="block" style="background:var(--panel2)">
-            <h3 class="muted" style="margin:0 0 6px">Caster Beats</h3>
-            <ul class="muted" style="margin:0 0 0 18px;line-height:1.4">
-              <li><strong>Hot drops:</strong> Launch Base, Nuclear Plant, Sanitarium</li>
-              <li><strong>Rotate lanes:</strong> Pipeline → Docks; Sakura ridge; Countdown plateau</li>
-              <li><strong>Chip timing:</strong> watch for mid-zone upgrades leading to power spikes</li>
-            </ul>
-          </div>
+      <!-- Medic -->
+      <article class="class-card">
+        <img src="IMG_1956.PNG" alt="Medic screenshot">
+        <div class="class-info">
+          <div class="class-title"><h3>Medic</h3><span class="pill">Support</span></div>
+          <div class="kv"><b>Medical Station:</b> Place a station that heals you and allies continuously.</div>
+          <div class="kv"><b>Passive:</b> Reduces recovery time.</div>
         </div>
-      </div>
+      </article>
 
-      <!-- Blackout -->
-      <div id="map-bo" class="hidden">
-        <h3>Blackout — Points of Interest</h3>
-        <div class="muted" style="margin-bottom:6px">BO4’s stitched sandbox adapted for mobile; long sightlines and vertical anchors (Construction, Estates).</div>
-        <div class="two">
-          <div class="block" style="background:var(--panel2)">
-            <h3 class="muted" style="margin:0 0 6px">Major POIs</h3>
-            <div id="boList" class="muted"></div>
-          </div>
-          <div class="block" style="background:var(--panel2)">
-            <h3 class="muted" style="margin:0 0 6px">Caster Beats</h3>
-            <ul class="muted" style="margin:0 0 0 18px;line-height:1.4">
-              <li><strong>Power positions:</strong> Construction Site, Fracking Tower, Array ridges</li>
-              <li><strong>Island split:</strong> Nuketown Island crosses are risky mid-game; watch bridge camps</li>
-              <li><strong>Vehicle value:</strong> High—rotate between east/west river splits</li>
-            </ul>
-          </div>
+      <!-- Refitter -->
+      <article class="class-card">
+        <img src="IMG_1957.PNG" alt="Refitter screenshot">
+        <div class="class-info">
+          <div class="class-title"><h3>Refitter</h3><span class="pill">Support</span></div>
+          <div class="kv"><b>Armor Pack:</b> Drop armor packs teammates can pick up. <em>Passive:</em> Automatically repairs the vehicle being ridden in.</div>
+          <div class="kv"><b>Passive:</b> Reduces recovery time.</div>
         </div>
-      </div>
+      </article>
+
+      <!-- Kinetic Station -->
+      <article class="class-card">
+        <img src="IMG_1958.PNG" alt="Kinetic Station screenshot">
+        <div class="class-info">
+          <div class="class-title"><h3>Kinetic Station</h3><span class="pill">Support</span></div>
+          <div class="kv"><b>Kinetic Station:</b> Deploy a station that grants limited-time armor to partially reduce bullet damage.</div>
+          <div class="kv"><b>Passive:</b> Reduces recovery time.</div>
+        </div>
+      </article>
+
+      <!-- Revive -->
+      <article class="class-card">
+        <img src="IMG_1961.PNG" alt="Revive screenshot">
+        <div class="class-info">
+          <div class="class-title"><h3>Revive</h3><span class="pill">Support</span></div>
+          <div class="kv"><b>Revive Drone:</b> Deploy a drone that automatically searches and revives teammates.</div>
+          <div class="kv"><b>Passive:</b> Reduces recovery time.</div>
+        </div>
+      </article>
 
     </div>
   </section>
 
-  <!-- WEAPONS -->
-  <section id="view-weapons" class="grid hidden">
-    <div class="block">
-      <h2>Weapons — Current Snapshot (2025)</h2>
-      <p class="muted">Quick caster crib of popular/meta picks this year. Adjust for custom loadouts and ground-loot variance.</p>
+  <!-- ===== DEFENSE ===== -->
+  <section class="block page hidden" data-title="Defense">
+    <h2>Defense</h2>
+    <div class="grid">
 
-      <div class="two">
-        <div class="block" style="background:var(--panel2)">
-          <h3>AR</h3>
-          <span class="pill">Vargo-S</span>
-          <span class="pill">DR-H</span>
-          <span class="pill">HVK-30</span>
-          <h3>SMG</h3>
-          <span class="pill">USS-9</span>
-          <span class="pill">CX-9</span>
-          <span class="pill">Fennec</span>
-          <h3>Sniper</h3>
-          <span class="pill">Tundra</span>
-          <span class="pill">DL Q33</span>
+      <!-- Defender -->
+      <article class="class-card">
+        <img src="IMG_1966.PNG" alt="Defender screenshot">
+        <div class="class-info">
+          <div class="class-title"><h3>Defender</h3><span class="pill">Defense</span></div>
+          <div class="kv"><b>Transform Shield:</b> Place a transforming shield that causes a flashbang effect to surrounding hostiles.</div>
+          <div class="kv"><b>Passive:</b> Reduces explosive damage and the impact of negative statuses.</div>
         </div>
-        <div class="block" style="background:var(--panel2)">
-          <h3>LMG & Marksman</h3>
-          <span class="pill">MG42</span>
-          <span class="pill">RAAL MG</span>
-          <span class="pill">Type 63</span>
-          <span class="pill">SKS</span>
-          <h3>Shotguns</h3>
-          <span class="pill">R9-0</span>
-          <p class="muted" style="margin-top:8px">Meta evolves each season—check airdrop pool & custom gunsmiths on broadcast day.</p>
+      </article>
+
+      <!-- Desperado -->
+      <article class="class-card">
+        <img src="IMG_1965.PNG" alt="Desperado screenshot">
+        <div class="class-info">
+          <div class="class-title"><h3>Desperado</h3><span class="pill">Defense</span></div>
+          <div class="kv"><b>Shield Turret:</b> Place a shielded turret. <em>Passive:</em> Fight with a pistol when downed; killing an enemy in this state revives you.</div>
+          <div class="kv"><b>Passive:</b> Reduces explosive damage and the impact of negative statuses.</div>
         </div>
-      </div>
+      </article>
+
+      <!-- Spotter -->
+      <article class="class-card">
+        <img src="IMG_1967.PNG" alt="Spotter screenshot">
+        <div class="class-info">
+          <div class="class-title"><h3>Spotter</h3><span class="pill">Defense</span></div>
+          <div class="kv"><b>Cluster Strike:</b> Launch a cluster air strike to a designated area.</div>
+          <div class="kv"><b>Passive:</b> Reduces explosive damage and the impact of negative statuses.</div>
+        </div>
+      </article>
+
+      <!-- Igniter -->
+      <article class="class-card">
+        <img src="IMG_1968.PNG" alt="Igniter screenshot">
+        <div class="class-info">
+          <div class="class-title"><h3>Igniter</h3><span class="pill">Defense</span></div>
+          <div class="kv"><b>Tinder Bag:</b> A bag that continuously spews tar.</div>
+          <div class="kv"><b>Passive:</b> Reduces explosive damage and the impact of negative statuses.</div>
+        </div>
+      </article>
+
     </div>
   </section>
 
-  <!-- UTILITIES -->
-  <section id="view-utils" class="grid hidden">
-    <div class="block">
-      <h2>Utilities & Systems</h2>
-      <div class="two">
-        <div class="block" style="background:var(--panel2)">
-          <h3>Revive / Respawn</h3>
-          <ul class="muted" style="margin-left:18px;line-height:1.45">
-            <li><strong>Dog-tag Scan → Fast Respawn:</strong> recent seasons replace fixed “revival flights.” Casters can call out <em>scan races</em> in late circles.</li>
-            <li><strong>Chip Upgrade:</strong> mid-game power spike—track which teams hit terminals first.</li>
-          </ul>
+  <!-- ===== TRACKER ===== -->
+  <section class="block page hidden" data-title="Tracker">
+    <h2>Tracker</h2>
+    <div class="grid">
+
+      <!-- Scout -->
+      <article class="class-card">
+        <img src="IMG_1969.PNG" alt="Scout screenshot">
+        <div class="class-info">
+          <div class="class-title"><h3>Scout</h3><span class="pill">Tracker</span></div>
+          <div class="kv"><b>Sensor Dart:</b> Pinpoints hostile positions on the radar.</div>
+          <div class="kv"><b>Passive:</b> Enemy footprints are visible. Enemy footsteps can be heard from a distance.</div>
         </div>
-        <div class="block" style="background:var(--panel2)">
-          <h3>Vehicles (common)</h3>
-          <p class="muted">ATV, Off-road/Antelope (turreted), Motorcycle, SUV/Van, Helicopter, Boat. Impact: rotation tempo, third-party setups, and late-game cover.</p>
+      </article>
+
+      <!-- Clown -->
+      <article class="class-card">
+        <img src="IMG_1970.PNG" alt="Clown screenshot">
+        <div class="class-info">
+          <div class="class-title"><h3>Clown</h3><span class="pill">Tracker</span></div>
+          <div class="kv"><b>Toy Bomb:</b> Summon dogs that attack nearby enemy units.</div>
+          <div class="kv"><b>Passive:</b> Enemy footsteps can be heard from a distance.</div>
         </div>
-      </div>
-      <p class="note" style="margin-top:8px"><strong>Caster tip:</strong> Tag class counters in real-time (e.g., <em>Hacker</em> vs <em>Trickster</em>, <em>Defender</em> vs pushes, <em>Igniter</em> choke denial).</p>
+      </article>
+
+      <!-- Mechanic -->
+      <article class="class-card">
+        <img src="IMG_1971.PNG" alt="Mechanic screenshot">
+        <div class="class-info">
+          <div class="class-title"><h3>Mechanic</h3><span class="pill">Tracker</span></div>
+          <div class="kv"><b>EMP Drone:</b> Calls an EMP drone to interfere with hostiles.</div>
+          <div class="kv"><b>Passive:</b> Detect vehicles through walls. Enemy footsteps can be heard from a distance.</div>
+        </div>
+      </article>
+
+      <!-- Airborne -->
+      <article class="class-card">
+        <img src="IMG_1972.PNG" alt="Airborne screenshot">
+        <div class="class-info">
+          <div class="class-title"><h3>Airborne</h3><span class="pill">Tracker</span></div>
+          <div class="kv"><b>Ejection Device:</b> Catapult that flings your team into the air and triggers wingsuit gliding.</div>
+          <div class="kv"><b>Passive:</b> Gliding lasts longer. Enemy footsteps can be heard from a distance.</div>
+        </div>
+      </article>
+
+      <!-- Ravager Launcher -->
+      <article class="class-card">
+        <img src="IMG_1973.PNG" alt="Ravager Launcher screenshot">
+        <div class="class-info">
+          <div class="class-title"><h3>Ravager Launcher</h3><span class="pill">Tracker</span></div>
+          <div class="kv"><b>Ravager Launcher:</b> Deploys a launcher that automatically locks onto enemy soldiers and vehicles within range.</div>
+          <div class="kv"><b>Passive:</b> Enemy footsteps can be heard from a distance.</div>
+        </div>
+      </article>
+
     </div>
   </section>
 
-  <footer>
-    <small>
-      Sources embedded: Isolated POIs (COD Wiki), Blackout POIs (Zilliongamer); BR class index (COD Wiki) + 2025 class meta roundup; 2025 weapons snapshot (Zilliongamer); revive flow confirmations via community/creator notes. See documentation/comments in source.
-    </small>
+  <footer class="shell">
+    <small>Built for desk & tablet casting • Use local screenshots (PNG) in same folder as this file • © CODM assets belong to their respective owners.</small>
   </footer>
 </div>
 
 <script>
-  // ===== Keyboard quick-jump =====
-  const keyMap = ['view-overview','view-classes','view-maps','view-weapons','view-utils'];
-  document.addEventListener('keydown', (e)=>{
-    if(!/^[1-5]$/.test(e.key)) return;
-    showView(keyMap[Number(e.key)-1]);
+  // Build tabs from sections
+  const pages = Array.from(document.querySelectorAll('.page'));
+  const tabs = document.getElementById('tabs');
+
+  pages.forEach((sec, i) => {
+    const title = sec.dataset.title || `Section ${i+1}`;
+    const b = document.createElement('button');
+    b.className = 'tab';
+    b.textContent = title;
+    b.addEventListener('click', () => go(i));
+    tabs.appendChild(b);
   });
 
-  // ===== Top-level views =====
-  const tabs = Array.from(document.querySelectorAll('#topTabs .tab'));
-  tabs.forEach(t => t.addEventListener('click', () => showView(t.dataset.target)));
-  function showView(id){
-    document.querySelectorAll('section[id^="view-"]').forEach(s => s.classList.add('hidden'));
-    document.getElementById(id).classList.remove('hidden');
-    tabs.forEach(t => t.setAttribute('aria-current', t.dataset.target===id ? 'page' : 'false'));
-    window.scrollTo({top:0,behavior:'smooth'});
+  function go(n){
+    const idx = Math.max(0, Math.min(pages.length-1, n));
+    pages.forEach((p,i)=> p.classList.toggle('hidden', i!==idx));
+    Array.from(tabs.children).forEach((t,i)=> t.setAttribute('aria-current', i===idx ? 'page' : 'false'));
+    window.scrollTo({top:0, behavior:'smooth'});
+    // remember last tab in session
+    sessionStorage.setItem('codm_br_tab', String(idx));
   }
 
-  // ===== Subtabs (Maps) =====
-  const mapTabs = document.querySelectorAll('[data-subtab]');
-  mapTabs.forEach(btn => btn.addEventListener('click', ()=>{
-    const which = btn.dataset.subtab;
-    document.getElementById('map-iso').classList.toggle('hidden', which!=='iso');
-    document.getElementById('map-bo').classList.toggle('hidden', which!=='bo');
-    mapTabs.forEach(x=> x.setAttribute('aria-current', x===btn ? 'page' : 'false'));
-  }));
-
-  // ===== Data (kept lightweight & caster-focused) =====
-
-  // Class summaries (names reflect current roster incl. newer classes)
-  const CLASSES = [
-    {name:'Ninja', tags:['Grapple','Silent step'], summary:'Grapple Hook for instant vertical/forward reposition; reduced footstep audio enables flanks.'},
-    {name:'Medic', tags:['Heal station','Faster revive'], summary:'Deploys a medical station; accelerates healing and revives—ideal for bunker holds.'},
-    {name:'Defender', tags:['Transform shield','DR'], summary:'Drop a portable shield and gain damage reduction—break pushes or anchor power spots.'},
-    {name:'Mechanic', tags:['EMP drone','Spot gear'], summary:'EMP Drone disrupts enemy devices; passively highlights vehicles/equipment.'},
-    {name:'Hacker', tags:['Disable','Intel'], summary:'Blocks enemy minimaps & deployables—counters Trickster/Smokes; forces fair fights.'},
-    {name:'Trickster', tags:['Decoys','Confuse'], summary:'Spawns clones and scrambles audio—use to cross open or re-peek safely.'},
-    {name:'Smoke Bomber', tags:['Vision','Smokes'], summary:'Creates thick smokes while highlighting enemies inside—push or reset safely.'},
-    {name:'Igniter', tags:['Area denial','Burn'], summary:'Deploy sticky fire traps to block doors/stairs and cut rotations.'},
-    {name:'Poltergeist', tags:['Stealth','Mobility'], summary:'Temporary invisibility with movement boost for disengage or surprise entry.'},
-    {name:'Pumped', tags:['Air dash','Mobility'], summary:'Charged jump/dash to cross gaps & stack rooftops quickly.'},
-    {name:'Rewind', tags:['Teleport back'], summary:'Snap back to a safe position you were in seconds earlier—great for over-peeks.'},
-    {name:'Misdirection', tags:['Audio bait'], summary:'Projects fake gunfire/footsteps to mislead; set traps around corners.'},
-    {name:'Refitter', tags:['Armor plates','Team buff'], summary:'Supplies plates & improves durability—sustain for long fights.'},
-    {name:'Kinetic Station', tags:['Temp HP'], summary:'Deploy station to grant kinetic armor—entry tool for breaches.'},
-    {name:'Spotter', tags:['Airstrike'], summary:'Call precision strike to flush compounds and deny revives.'},
-    {name:'Ravager Launcher', tags:['Explosives'], summary:'Portable launcher for vehicles/fortified angles—limited but decisive.'},
-    {name:'Quick Strike', tags:['Shockwave dash'], summary:'Short burst dash that knocks back and disrupts tight holds.'},
-    {name:'Shock Wave', tags:['Crowd control'], summary:'Emit a kinetic pulse to scatter enemies and open space.'},
-    {name:'Scout', tags:['Sensor dart'], summary:'Reveal footprints & nearby enemies—track third parties.'},
-    {name:'Clown', tags:['Zombie lure'], summary:'Distract/zone with toy that summons zombies—niche area control.'}
-  ];
-
-  // Isolated POIs (COD Wiki list condensed to major broadcast anchors)
-  const ISO_POIS = [
-    'Launch Base','Nuclear Plant','Sanitarium','Sakura','Countdown','Docks',
-    'Pier','Pipeline','Crash','Killhouse','Standoff','Estate','Farm',
-    'Downtown','Harbor','Ski Town','Frigid Wetland','Radar Base','Outpost'
-  ];
-
-  // Blackout POIs (Zilliongamer)
-  const BO_POIS = [
-    'Estates','Construction Site','Hydro Dam','Train Station','Asylum','Firing Range',
-    'Array','Rivertown','Nuketown Island','Fracking Tower','Turbine','Factory',
-    'Cargo Docks','Lighthouse','Ghost Town','Hijacked'
-  ];
-
-  // Weapons snapshot (Zilliongamer S4 2025). Keep short for on-air callouts.
-  const META = {
-    AR:['Vargo-S','DR-H','HVK-30'],
-    SMG:['USS-9','CX-9','Fennec'],
-    SNI:['Tundra','DL Q33'],
-    LMG:['MG42','RAAL MG'],
-    MRK:['Type 63','SKS'],
-    SG:['R9-0']
-  };
-
-  // ===== Render: classes =====
-  const cg = document.getElementById('classGrid');
-  CLASSES.forEach(c=>{
-    const card = document.createElement('div');
-    card.className = 'block';
-    card.style.cursor = 'pointer';
-    card.innerHTML = `
-      <div class="bar" style="justify-content:space-between">
-        <div><strong>${c.name}</strong></div>
-        <div>${(c.tags||[]).map(t=>`<span class="pill">${t}</span>`).join('')}</div>
-      </div>
-      <div class="muted" style="margin-top:6px">${c.summary}</div>
-    `;
-    card.addEventListener('click', ()=> card.classList.toggle('open'));
-    cg.appendChild(card);
-  });
-
-  // ===== Render: map POIs =====
-  function pillList(el, arr){ el.innerHTML = arr.map(n=>`<span class="pill">${n}</span>`).join(''); }
-  pillList(document.getElementById('isoList'), ISO_POIS);
-  pillList(document.getElementById('boList'), BO_POIS);
-
-  // Init default views
-  showView('view-overview');
+  // Init on last visited or first
+  const last = parseInt(sessionStorage.getItem('codm_br_tab')||'0',10);
+  go(isFinite(last)? last : 0);
 </script>
-
-<!--
-SOURCE NOTES for maintainers / TOs (linked on page footer):
-- Isolated POIs list: COD Wiki Isolated page (kept updated with S2023–2025 adds). https://callofduty.fandom.com/wiki/Isolated
-- Blackout POIs list: Zilliongamer Blackout guide. https://zilliongamer.com/call-of-duty-mobile/c/guide/call-of-duty-mobile-blackout-map-guide
-- BR classes index/name set: COD Wiki class category (includes newer classes). https://callofduty.fandom.com/wiki/Category:Call_of_Duty:_Mobile_Classes
-- 2025 class meta roundup (context): https://item4gamer.com/blog/https-item4gamer-com-blog-best-classes-cod-mobile-battle-royale/
-- 2025 weapons snapshot (Season 4): https://zilliongamer.com/call-of-duty-mobile/c/weapon-guide/best-guns-cod-mobile-season-4-2025
-- Revive flow (dog-tag scan → quick respawn vs flight): community/creator confirmations in recent seasons.
--->
 </body>
 </html>
