@@ -10,15 +10,15 @@
   /* CODM palette */
   :root{
     --bg:#0d1014;
-    --panel:#292d42;   /* secondary dark navy */
-    --panel2:#1e2432;  /* deeper panel */
+    --panel:#292d42;
+    --panel2:#1e2432;
     --ink:#f3f6fa;
     --muted:#b8c0cc;
-    --brand:#ffe93b;   /* primary yellow */
+    --brand:#ffe93b;
     --brandText:#0b0d0e;
-    --brand2:#ffffff;  /* white */
-    --line:#4c525d;    /* secondary gray-blue */
-    --chip:#213830;    /* deep green accent */
+    --brand2:#ffffff;
+    --line:#4c525d;
+    --chip:#213830;
     --good:#62e887; --bad:#ff6b6b; --warn:#ffe93b;
   }
 
@@ -28,20 +28,17 @@
   a:hover{text-decoration:underline}
 
   header{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,#141a23 0%,#0d1014 100%);border-bottom:2px solid var(--brand)}
-  .head{display:flex;align-items:center;gap:14px;max-width:1200px;margin:0 auto;padding:12px 14px}
-  .logo{width:40px;height:40px;border-radius:8px;object-fit:contain;flex:0 0 auto}
-  h1{margin:0;font-size:1.1rem;letter-spacing:.4px;color:var(--brand)}
-  .head .bar{margin-left:auto;display:flex;gap:8px;align-items:center} /* (empty now — back button removed) */
-  .btn{background:var(--brand);color:var(--brandText);border:0;border-radius:10px;padding:8px 12px;font-weight:800;cursor:pointer}
-  .btn.ghost{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
-  .btn:disabled{opacity:.5;cursor:not-allowed}
-
-  .shell{max-width:1200px;margin:18px auto;padding:0 12px}
-
-  /* top tabs (pagination) */
-  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 14px}
-  .tab{background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:8px 12px;border-radius:10px;cursor:pointer}
+  .head{display:flex;align-items:center;gap:12px;max-width:1200px;margin:0 auto;padding:10px 14px;flex-wrap:wrap}
+  .logo{width:36px;height:36px;border-radius:8px;object-fit:contain;flex:0 0 auto}
+  h1{margin:0;font-size:1.05rem;letter-spacing:.3px;color:var(--brand)}
+  .head .bar{margin-left:auto;display:flex;gap:8px;align-items:center;min-width:260px}
+  /* Tabs inside header */
+  .head .tabs{margin:0;gap:6px;flex-wrap:nowrap;overflow:auto;padding-bottom:2px}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap}
+  .tab{background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:6px 10px;border-radius:10px;cursor:pointer;white-space:nowrap}
   .tab[aria-current="page"]{background:var(--brand);color:var(--brandText);border-color:var(--brand);font-weight:900}
+
+  .shell{max-width:1200px;margin:14px auto;padding:0 12px}
 
   /* filter bar */
   .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
@@ -50,109 +47,76 @@
   .muted{color:var(--muted)}
   .hidden{display:none}
 
-  .block{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px;box-shadow:0 0 0 1px rgba(0,0,0,.2) inset}
-  .block h2{margin:0 0 8px 0;color:var(--brand2)}
+  .block{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px;box-shadow:0 0 0 1px rgba(0,0,0,.2) inset}
+  .block h2{margin:0 0 6px 0;color:var(--brand2);font-size:1rem}
   .group-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
 
   /* ===== Classes page cards ===== */
-  .grid{display:grid;grid-template-columns:1fr;gap:14px}
+  .grid{display:grid;grid-template-columns:1fr;gap:12px}
   @media(min-width:800px){ .grid{grid-template-columns:1fr 1fr} }
   @media(min-width:1080px){ .grid{grid-template-columns:1fr 1fr 1fr} }
   .class-card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
   .class-card img{width:100%;aspect-ratio:16/9;object-fit:cover;background:#000}
-  .class-info{padding:12px;display:flex;flex-direction:column;gap:6px}
+  .class-info{padding:10px;display:flex;flex-direction:column;gap:6px}
   .title-row{display:flex;align-items:center;gap:8px}
-  .title-row h3{margin:0;font-size:1.05rem}
-  .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#101621;border:1px solid var(--line);color:#e7ecf3;font-size:.75rem}
+  .title-row h3{margin:0;font-size:1rem}
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#101621;border:1px solid var(--line);color:#e7ecf3;font-size:.72rem}
   .kv b{color:#ffffff}
-  .tag{font-size:.8rem;opacity:.9;margin-left:6px}
 
-  /* ===== Map-first layout (left mini-cards, right big map) ===== */
-  .layout{display:grid;grid-template-columns:1fr;gap:14px}
-  @media(min-width:900px){
-    .layout{grid-template-columns:minmax(260px,340px) 1fr}
-  }
+  /* ===== Two-column layout pages ===== */
+  .layout{display:grid;grid-template-columns:1fr;gap:12px}
+  @media(min-width:900px){ .layout{grid-template-columns:minmax(260px,340px) 1fr} }
 
   /* left column mini list */
-  .side{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
-  .side .controls{margin-bottom:6px}
+  .side{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:10px}
+  .side .controls{margin-bottom:4px}
   .mini-meta{font-size:.85rem;color:var(--muted)}
-
-  /* Mini cards: 1 column on all sizes */
-  .mini-list{
-    display:grid;
-    grid-template-columns:1fr;  /* single column */
-    gap:10px;
-    overflow:auto;
-    max-height:calc(100dvh - 220px);
-  }
+  .mini-list{display:grid;grid-template-columns:1fr;gap:8px;overflow:auto;max-height:calc(100dvh - 220px)}
   @media(min-width:900px){
-    .mini-list{
-      grid-template-columns:1fr; /* keep single column on desktop too */
-      position:sticky;
-      top:88px;
-      max-height:calc(100dvh - 110px);
-    }
+    .mini-list{position:sticky;top:88px;max-height:calc(100dvh - 110px)}
   }
-
-  .mini-card{
-    display:flex; align-items:flex-start; gap:10px;
-    padding:10px; border-radius:12px;
-    background:#141b27; border:1px solid var(--line);
-    position:relative;
-  }
-  .mini-thumb{ width:84px; height:52px; border-radius:8px; object-fit:cover; background:#000; flex:0 0 auto }
+  .mini-card{display:flex;align-items:flex-start;gap:10px;padding:8px;border-radius:12px;background:#141b27;border:1px solid var(--line)}
+  .mini-thumb{width:84px;height:52px;border-radius:8px;object-fit:cover;background:#000;flex:0 0 auto}
   .mini-txt{display:flex;flex-direction:column;gap:2px;min-width:0}
-  .mini-name{ font-size:.90rem; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
-  .mini-pill{ font-size:.68rem; opacity:.9; border:1px solid var(--line); border-radius:999px; padding:1px 6px; display:inline-block; width:max-content }
-  .mini-desc{ display:none; font-size:.78rem; color:var(--muted); line-height:1.35; margin-top:6px; }
-  .mini-card:hover .mini-desc{ display:block; }
+  .mini-name{font-size:.9rem;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mini-pill{font-size:.66rem;opacity:.9;border:1px solid var(--line);border-radius:999px;padding:1px 6px;display:inline-block;width:max-content}
+  .mini-desc{display:none;font-size:.78rem;color:var(--muted);line-height:1.35;margin-top:6px}
+  .mini-card:hover .mini-desc{display:block}
 
   /* right column map */
-  .map-col{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px}
-  .map-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+  .map-col{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px}
+  .map-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
   .map-tabs .tab{padding:6px 10px;border-radius:999px}
   .map-wrap{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#000;display:flex;align-items:center;justify-content:center;min-height:55vh}
-  @media(min-width:900px){ .map-wrap{min-height:72vh} }
+  @media(min-width:900px){ .map-wrap{min-height:70vh} }
   .map-wrap img{width:100%;height:100%;object-fit:cover}
-  .map-notes{margin-top:10px;display:grid;gap:10px}
+  .map-notes{margin-top:8px;display:grid;gap:8px}
   .panel-list{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px}
   .panel-list h3{margin:0 0 6px 0;color:var(--brand2);font-size:1rem}
   .panel-list ul{margin:0;padding-left:18px;line-height:1.45}
 
-  footer{border-top:1px solid var(--line);margin-top:18px;padding:14px 0 28px}
+  footer{border-top:1px solid var(--line);margin-top:14px;padding:10px 0 24px}
   footer small{color:var(--muted)}
 
-  /* BR Systems tweaks */
-  #brPanel ul{margin:0;padding-left:18px;line-height:1.5}
-  #brPanel h3{margin:0 0 8px 0;color:var(--brand2)}
+  /* Sticky filters */
+  .sticky{position:sticky;top:64px;z-index:5;background:var(--panel2);border-bottom:1px solid var(--line);padding-top:6px}
+
+  /* Collapsibles */
+  details.panel-list > summary{cursor:pointer;list-style:none;font-weight:800;color:var(--brand2)}
+  details.panel-list[open] > summary{margin-bottom:6px}
 
   /* Buy Station price table */
   .price-table{width:100%;border-collapse:collapse;font-size:.92rem}
   .price-table th,.price-table td{border:1px solid var(--line);padding:8px 10px}
-  .price-table th{background:#141b27;text-align:left}
+  .price-table th{background:#141b27;text-align:left;position:sticky;top:0;z-index:1}
   .price-table td:nth-child(2),.price-table td:nth-child(3){text-align:right;white-space:nowrap}
   .price-note{margin-top:6px;color:var(--muted);font-size:.85rem}
 
-  /* --- Minimal-scroll helpers --- */
-  .sticky{ position:sticky; top:64px; z-index:5; background:var(--panel2); border-bottom:1px solid var(--line); padding-top:6px; }
-  
-  .utilbar{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:6px; }
-  .utilbar .chip{ cursor:pointer; }
-  
-  details.panel-list > summary{
-    cursor:pointer; list-style:none; font-weight:800; color:var(--brand2);
-  }
-  details.panel-list[open] > summary{ margin-bottom:6px; }
-  
-  /* Compact/Dense mode */
-  body.dense .block{ padding:10px; }
-  body.dense .class-card .class-info{ padding:8px; }
-  body.dense .mini-card{ padding:8px; }
-  body.dense .map-wrap{ min-height:60vh; } /* slightly shorter map so notes fit */
-  body.dense .tab{ padding:6px 10px; }
-  body.dense h1{ font-size:1rem; }
-
+  /* BR Systems fixed layout + scroll area for prices */
+  .br-col{display:grid;grid-template-rows:auto minmax(120px,22vh) minmax(180px,46vh) minmax(100px,1fr);gap:8px}
+  #brPanel{max-height:22vh;overflow:auto}
+  #buyPrices{max-height:46vh;overflow:auto}
+  .br-notes{max-height:18vh;overflow:auto}
 </style>
 </head>
 <body>
@@ -160,31 +124,17 @@
   <div class="head">
     <img src="https://i.imgur.com/K0TTjUC.png" alt="Logo" class="logo">
     <h1>CODM — Battle Royale Caster Reference</h1>
-    <div class="bar"><!-- back button removed --></div>
+    <div class="bar">
+      <!-- Page buttons go here -->
+      <nav id="tabs" class="tabs"></nav>
+    </div>
   </div>
 </header>
 
 <div class="shell">
 
-  <!-- Pagination Tabs -->
-<div class="block">
-  <div id="tabs" class="tabs"></div>
-  <div class="utilbar">
-    <label class="chip">
-      <input type="checkbox" id="densityToggle"> Compact mode
-    </label>
-    <span class="muted">Shortcuts: 1–4 to switch tabs, / to focus search</span>
-  </div>
-</div>
-
-
   <!-- ===================== PAGE 1: CLASSES ===================== -->
   <section class="block page" data-title="Classes">
-    <div class="group-head">
-      <h2>All Operator Classes</h2>
-      <span class="muted">Original grid view kept here. Use “Maps” for map-first layout.</span>
-    </div>
-
     <div class="controls sticky">
       <label class="chip">Category
         <select id="fCat">
@@ -197,20 +147,17 @@
         </select>
       </label>
       <label class="chip">Search
-        <input id="fSearch" type="text" placeholder="Type to filter…">
+        <input id="fSearch" type="text" placeholder="Filter name/keyword…">
       </label>
       <span class="muted" id="metaCount">—</span>
     </div>
-
     <div id="classGrid" class="grid"></div>
   </section>
 
   <!-- ===================== PAGE 2: MAPS ===================== -->
   <section class="block page hidden" data-title="Maps">
-    <h2>Maps & Areas</h2>
-
     <div class="layout">
-      <!-- Left: Compact cards -->
+      <!-- Left: mini cards -->
       <aside class="side">
         <div class="controls sticky">
           <label class="chip">Category
@@ -224,18 +171,17 @@
             </select>
           </label>
           <label class="chip">Search
-            <input id="mSearch" type="text" placeholder="Type to filter…">
+            <input id="mSearch" type="text" placeholder="Filter…">
           </label>
         </div>
         <div class="mini-meta" id="miniMeta">—</div>
         <div id="miniList" class="mini-list"></div>
       </aside>
 
-      <!-- Right: Big map -->
+      <!-- Right: map -->
       <section class="map-col">
         <div class="map-head">
           <div class="map-tabs tabs" id="mapTabs"></div>
-          <span class="muted">Tip: keep the mini cards on the left for quick callouts.</span>
         </div>
 
         <div class="map-wrap">
@@ -249,41 +195,38 @@
 
   <!-- ===================== PAGE 3: OTHER DETAILS ===================== -->
   <section class="block page hidden" data-title="Other Details">
-    <h2>Other Details</h2>
     <div class="layout">
       <div class="panel-list">
-        <h3>Ammo & Weapons (quick)</h3>
+        <h3>Ammo & Weapons</h3>
         <ul>
-          <li><b>Ammo types:</b> Light • Heavy • Sniper • Shotgun • Rockets.</li>
-          <li><b>Ground loot:</b> common → rare → epic → legendary. Airdrops grant stronger variants & mod slots.</li>
-          <li><b>Attachment mods:</b> Extended, Long Barrel, Stabilizer, OWC Laser, Tactical Scope, etc. Legendary mods stack power spikes — note when a team loots an airdrop.</li>
+          <li><b>Ammo:</b> Light • Heavy • Sniper • Shotgun • Rockets</li>
+          <li>Loot rarity: common → rare → epic → legendary</li>
+          <li>Airdrops: stronger variants + mod slots</li>
         </ul>
-        <h3 style="margin-top:10px">Throwables</h3>
+        <h3 style="margin-top:8px">Throwables</h3>
         <ul>
-          <li>Frag, Sticky, Molotov, Cluster, Concussion, Flash, Smoke.</li>
-          <li>Trip Mines & Trophy Systems appear as ground loot or class skills.</li>
+          <li>Frag • Sticky • Molotov • Cluster • Concussion • Flash • Smoke</li>
+          <li>Trip Mines & Trophy Systems also appear via loot/classes</li>
         </ul>
       </div>
 
       <div class="panel-list">
         <h3>Vehicles</h3>
         <ul>
-          <li>ATV • Motorcycle • SUV • Cargo Truck • Helicopter • Boat (map dependent).</li>
-          <li>Heli control = priority info. Call armor/HP and fuel when teams rotate.</li>
+          <li>ATV • Motorcycle • SUV • Cargo Truck • Helicopter • Boat*</li>
+          <li>Track heli control; call armor/HP & fuel on rotates</li>
         </ul>
-        <h3 style="margin-top:10px">Caster Reminders</h3>
+        <h3 style="margin-top:8px">Caster Reminders</h3>
         <ul>
-          <li>Track <b>class synergies</b> (e.g., Refitter + Defender; Ninja entry on 3rd party).</li>
-          <li>Note <b>revive coin & chip</b> timings; highlight squads hitting class chip stations.</li>
+          <li>Watch <b>class synergies</b> (Refitter+Defender; Ninja entries)</li>
+          <li>Note <b>revive coin & chip</b> timings / chip stations</li>
         </ul>
       </div>
     </div>
   </section>
 
-  <!-- ===================== PAGE 4: BR SYSTEMS (BUY STATION + GULAG) ===================== -->
+  <!-- ===================== PAGE 4: BR SYSTEMS ===================== -->
   <section class="block page hidden" data-title="BR Systems">
-    <h2>BR Systems — Buy Station & Gulag</h2>
-
     <div class="layout">
       <!-- Left: compact reference -->
       <aside class="side">
@@ -291,58 +234,47 @@
           <span class="chip">Quick Reference</span>
         </div>
 
-        <!-- Buy Station mini card -->
         <div class="mini-card">
-          <img class="mini-thumb" src="https://i.imgur.com/w3xxuAT.jpeg" alt="Isolated">
+          <img class="mini-thumb" src="https://i.imgur.com/w3xxuAT.jpeg" alt="Buy">
           <div class="mini-txt">
             <div class="mini-name">Buy Stations</div>
-            <span class="mini-pill">Season 5 (LT) — Isolated</span>
+            <span class="mini-pill">Isolated (LT)</span>
           </div>
         </div>
-        <ul class="mini-meta" style="line-height:1.5;margin:0 0 8px 0;padding-left:16px">
-          <li>Loot <b>Cash</b> on ground & from eliminations.</li>
-          <li>Spend at Buy Stations for <b>Perks</b>, <b>Scorestreaks</b>, <b>weapons</b>, <b>armor/ammo refills</b>, and special items.</li>
-          <li>Eliminated players <b>drop Cash</b> — third-party & scoop.</li>
+        <ul class="mini-meta" style="line-height:1.5;margin:0 0 6px 0;padding-left:16px">
+          <li>Loot <b>Cash</b>; spend for perks, streaks, weapons, armor/ammo</li>
         </ul>
 
-        <!-- Gulag mini card -->
         <div class="mini-card">
-          <img class="mini-thumb" src="https://i.imgur.com/8S1A7ml.jpeg" alt="Isolated">
+          <img class="mini-thumb" src="https://i.imgur.com/8S1A7ml.jpeg" alt="Gulag">
           <div class="mini-txt">
             <div class="mini-name">Gulag</div>
-            <span class="mini-pill">Season 7 (LT) — Isolated</span>
+            <span class="mini-pill">1v1 • Ticket for extra</span>
           </div>
         </div>
-        <ul class="mini-meta" style="line-height:1.5;margin:0 0 8px 0;padding-left:16px">
-          <li>Upon first death: go to <b>1v1 Gulag</b>.</li>
-          <li><b>Win</b> to redeploy. <b>Lose</b> and teammates can <b>buy your tag</b> at a Buy Station.</li>
-          <li>Everyone gets <b>1 free attempt</b>; extra attempts need <b>Gulag Ticket</b> from a Buy Station.</li>
+        <ul class="mini-meta" style="line-height:1.5;margin:0 0 6px 0;padding-left:16px">
+          <li>First death → Gulag; win redeploys • Teammates can buy tag</li>
         </ul>
       </aside>
 
-      <!-- Right: big panel with details -->
-      <section class="map-col">
+      <!-- Right: fixed-height column -->
+      <section class="map-col br-col">
         <div class="map-head">
           <div class="tabs">
             <button class="tab" aria-current="page" onclick="setBRPanel('buy')">Buy Station</button>
             <button class="tab" onclick="setBRPanel('gulag')">Gulag</button>
           </div>
-          <span class="muted">Use this as on-desk cheat-sheet while casting.</span>
         </div>
 
-        <div id="brPanel" class="panel-list"><!-- Filled by JS --></div>
-        <!-- Price table container -->
-        <div id="buyPrices" class="panel-list"></div>
+        <div id="brPanel" class="panel-list"><!-- JS inserts --></div>
+        <div id="buyPrices" class="panel-list"><!-- scrollable table --></div>
 
-        <div class="map-notes">
-          <div class="panel-list">
-            <h3>Caster Callouts</h3>
-            <ul>
-              <li><b>Economy swing:</b> Mention Cash thresholds before late-zone pushes.</li>
-              <li><b>Shop risk:</b> “They’re shopping exposed”—build tension on 3rd-party angles.</li>
-              <li><b>Gulag state:</b> Track who still has <i>free attempt</i> / <i>Ticket</i> and who requires buyback.</li>
-            </ul>
-          </div>
+        <div class="panel-list br-notes">
+          <h3>Caster Callouts</h3>
+          <ul>
+            <li><b>Economy:</b> mention thresholds before late pushes</li>
+            <li><b>Shop risk:</b> exposed while buying — watch 3rd parties</li>
+          </ul>
         </div>
       </section>
     </div>
@@ -354,23 +286,7 @@
 </div>
 
 <script>
-
-  // Compact mode persistence + toggle
-  const applyDense = (on) => {
-    document.body.classList.toggle('dense', on);
-    localStorage.setItem('codm_dense', on ? '1' : '0');
-    const t = document.getElementById('densityToggle');
-    if (t) t.checked = on;
-  };
-  // Initialize from storage
-  applyDense(localStorage.getItem('codm_dense') === '1');
-  // Wire the checkbox when it exists (after DOM paints)
-  window.addEventListener('DOMContentLoaded', () => {
-    const t = document.getElementById('densityToggle');
-    if (t) t.addEventListener('change', () => applyDense(t.checked));
-  });
-
-  // Keyboard shortcuts: 1–4 tabs, '/' focus search, 'd' toggle density
+  /* ---------- Keyboard shortcuts ---------- */
   document.addEventListener('keydown', (e) => {
     const tag = (e.target.tagName || '').toLowerCase();
     if (tag === 'input' || tag === 'textarea') return;
@@ -380,12 +296,10 @@
       const active = [...document.querySelectorAll('.page')].find(p => !p.classList.contains('hidden'));
       const box = active?.querySelector('input[type="text"]');
       if (box) { box.focus(); box.select(); }
-    } else if (e.key.toLowerCase() === 'd') {
-      applyDense(!document.body.classList.contains('dense'));
     }
   });
-  
-  /* ---------- Top pagination ---------- */
+
+  /* ---------- Top pagination (tabs in header) ---------- */
   const pages = Array.from(document.querySelectorAll('.page'));
   const tabs  = document.getElementById('tabs');
   pages.forEach((sec,i)=>{
@@ -497,46 +411,28 @@
   ];
 
   // --- Buy Station prices (Normal & Fire Sale = 30% off) ---
-  const BUY_PRICES = [
-    {item:"Heavy Ammo",     normal:1000},
-    {item:"Sniper Ammo",    normal:1000},
-    {item:"Light Ammo",     normal:1000},
-    {item:"Shotgun Ammo",   normal:1000},
-    {item:"Rockets",        normal:1000},
+  // --- Buy Station prices (explicit normal + fire sale) ---
+const BUY_PRICES = [
+  { item: "Ammunition (per type)", normal: 1000, sale: 700 }, // Heavy, Sniper, Light, Shotgun, Rockets
+  { item: "Ballistic Expert",      normal: 4000, sale: 2800 },
+  { item: "Backpack Lv. 2",        normal: 5000, sale: 3500 },
+  { item: "Backpack Lv. 3",        normal: 12000, sale: 8400 },
+  { item: "C4",                    normal: 3000, sale: 2100 },
+  { item: "Class Chip Upgrade",    normal: 5000, sale: 3500 },
+  { item: "Kinetic Armor",         normal: 5000, sale: 3500 },
+  { item: "Legendary Mods",        normal: 7000, sale: 4900 },
+  { item: "Loadout Drop",          normal: 50000, sale: 35000 },
+  { item: "Mini Loadout Drop",     normal: 20000, sale: 14000 },
+  { item: "Mythic Weapon",         normal: 12000, sale: 8400 },
+  { item: "RC-XD",                 normal: 8000, sale: 5600 },
+  { item: "Revival Coin",          normal: 15000, sale: 10500 },
+  { item: "Self-Revive Kit",       normal: 6000, sale: 4200 },
+  { item: "Stealth Chopper",       normal: 15000, sale: 10500 },
+  { item: "Strafe Run",            normal: 8000, sale: 5600 },
+  { item: "Trophy System",         normal: 3000, sale: 2100 },
+];
 
-    {item:"Ballistic Expert",   normal:4000},
-    {item:"Self Revive Kit",    normal:6000},
-    {item:"Backpack Lv.3",      normal:12000},
-    {item:"Backpack Lv.2",      normal:5000},
-
-    {item:"Level 1 Armor",      normal:3000},
-    {item:"Advanced Armor",     normal:3000},
-    {item:"Kinetic Armor",      normal:5000},
-    {item:"Thermite",           normal:3000},
-    {item:"C4",                 normal:3000},
-    {item:"Trophy System",      normal:3000},
-
-    {item:"Chip Upgrade",       normal:5000},
-    {item:"Revival Coin",       normal:15000},
-
-    {item:"Loadout Drop",       normal:50000},
-    {item:"Mini Loadout Drop",  normal:20000},
-    {item:"Mythic Weapon",      normal:12000},
-
-    {item:"Stealth Chopper",    normal:15000},
-    {item:"Strafe Run",         normal:8000},
-    {item:"RC XD",              normal:8000},
-
-    {item:"Legendary Mods",     normal:7000},
-    {item:"Purple Mods",        normal:5000},
-    {item:"Blue Mods",          normal:3000},
-
-    {item:"Normal BR Tank",     normal:30000},
-    {item:"Shrike AAV Tank",    normal:30000},
-    {item:"New Armored Vehicle",normal:30000},
-  ];
   const fmt = n => n>=1000 ? ((n%1000===0? (n/1000): (n/1000).toFixed(1)) + "K") : String(n);
-  const sale = n => Math.round(n * 0.7);
 
   function renderBuyPrices(){
     const host = document.getElementById('buyPrices');
@@ -545,7 +441,7 @@
       <tr>
         <td>${r.item}</td>
         <td>C ${fmt(r.normal)}</td>
-        <td>C ${fmt(sale(r.normal))}</td>
+        <td>C ${fmt(r.sale ?? Math.round(r.normal * 0.7))}</td>
       </tr>`).join('');
     host.innerHTML = `
       <details class="panel-list" open>
@@ -556,39 +452,39 @@
           </thead>
           <tbody>${rows}</tbody>
         </table>
-        <div class="price-note">Fire Sale applies a 30% discount to all Buy Station items. Prices may vary by mode/region.</div>
+        <div class="price-note">
+          Fire Sale reduces all prices by 30%.
+          <br/><i>Note:</i> “Ammunition (per type)” covers Heavy, Sniper, Light, Shotgun, and Rockets.
+        </div>
       </details>
     `;
   }
 
-  // Simple content model for BR Systems
+
+  // BR Systems content
   const BR_INFO = {
     buy: {
-      title: "Buy Station — How It Works",
+      title: "Buy Station — Flow",
       points: [
-        "<b>Where:</b> Spawns on <i>Isolated</i> (LT event in S5).",
-        "<b>Cash:</b> Looted on ground and from eliminations; dropped on death.",
-        "<b>What to buy:</b> Weapons, <i>Perks</i>, <i>Scorestreaks</i>, armor/ammo refills, special items (e.g., Purifier).",
-        "<b>Rotation timing:</b> Shop fast—exposure invites third parties."
+        "<b>Cash:</b> loot & eliminations; drops on death",
+        "<b>Spend:</b> perks, streaks, weapons, armor/ammo, specials",
+        "<b>Timing:</b> buy fast — exposed to third parties"
       ],
       tips: [
-        "Ping Cash and share before committing to a push.",
-        "Announce team economy (\"two streaks online, refills secured\").",
-        "If a teammate is down, prioritize Cash for a potential buyback flow in S7."
+        "Call team cash before pushes",
+        "Flag high-value buys (Loadout, Revive, Chopper)"
       ]
     },
     gulag: {
       title: "Gulag — Flow",
       points: [
-        "<b>Trigger:</b> First elimination sends you to a <b>1v1</b> Gulag.",
-        "<b>Win:</b> Immediate redeploy.",
-        "<b>Lose:</b> Spectate until a teammate <b>buys your dog tag</b> at a Buy Station.",
-        "<b>Attempts:</b> Everyone has <b>1 free</b>; extra via <b>Gulag Ticket</b> (purchased at Buy Station)."
+        "First death → <b>1v1</b> Gulag",
+        "<b>Win:</b> redeploy • <b>Lose:</b> teammates can buy your tag",
+        "Extra tries via <b>Gulag Ticket</b> (Buy Station)"
       ],
       tips: [
-        "Track who still has a free attempt vs. who needs a Ticket.",
-        "If two teammates are queued for Gulag, call potential staggered redeploys.",
-        "Remind viewers when a squad spends for buyback—economy pressure affects late zones."
+        "Track who has free attempt vs. ticket",
+        "Note staggered redeploys if multiple queued"
       ]
     }
   };
@@ -599,14 +495,13 @@
     box.innerHTML = `
       <h3>${data.title}</h3>
       <ul>${data.points.map(p=>`<li>${p}</li>`).join('')}</ul>
-      <h3 style="margin-top:10px">Desk Tips</h3>
+      <h3 style="margin-top:8px">Desk Tips</h3>
       <ul>${data.tips.map(p=>`<li>${p}</li>`).join('')}</ul>
     `;
     const btns = box.parentElement.querySelectorAll('.tabs .tab');
     btns.forEach(b=>b.setAttribute('aria-current', b.textContent.toLowerCase().includes(which) ? 'page':'false'));
     sessionStorage.setItem('codm_br_panel', which);
 
-    // render price table when Buy Station tab is active
     const pricesPanel = document.getElementById('buyPrices');
     pricesPanel.style.display = (which==='buy') ? 'block' : 'none';
     if(which==='buy') renderBuyPrices();
@@ -618,7 +513,7 @@
     if (document.querySelector('[data-title="BR Systems"]') && !document.querySelector('[data-title="BR Systems"]').classList.contains('hidden')) {
       setBRPanel(saved);
     }
-    // Hook into tab navigation
+    // Hook into tab navigation so BR Systems renders when opened
     const origGo = window.go;
     window.go = function(n){
       origGo(n);
@@ -658,7 +553,7 @@
         </div>`;
       grid.appendChild(card);
     });
-    meta.textContent = `${rows.length} shown • ${CLASSES.length} total`;
+    meta.textContent = `${rows.length} / ${CLASSES.length}`;
   }
   fCat.addEventListener('change', renderClasses);
   fSearch.addEventListener('input', renderClasses);
@@ -672,7 +567,6 @@
   function renderMini(){
     const cat = mCat.value || 'ALL';
     const q = (mSearch?.value||'').trim().toLowerCase();
-
     const rows = CLASSES.filter(c =>
       (cat==='ALL' || c.cat===cat) &&
       (!q || c.name.toLowerCase().includes(q) ||
@@ -698,7 +592,7 @@
       miniList.appendChild(li);
     });
 
-    miniMeta.textContent = `${rows.length} classes • hover for details`;
+    miniMeta.textContent = `${rows.length} classes`;
   }
 
   mCat.addEventListener('change', renderMini);
@@ -760,12 +654,11 @@
     Array.from(mapTabs.children).forEach(btn=>{
       btn.setAttribute('aria-current', btn.textContent===name ? 'page' : 'false');
     });
-    // notes
+    // notes (collapsible)
     mapNotes.innerHTML = '';
     data.notes.forEach(n=>{
       const wrap = document.createElement('details');
       wrap.className = 'panel-list';
-      // Open POIs by default, keep "Caster Notes" collapsed to reduce scroll
       if (!/Caster Notes/i.test(n.title)) wrap.open = true;
       wrap.innerHTML = `<summary>${n.title}</summary>`;
       const ul = document.createElement('ul');
@@ -777,7 +670,6 @@
       wrap.appendChild(ul);
       mapNotes.appendChild(wrap);
     });
-
     sessionStorage.setItem('codm_map', name);
   }
 
