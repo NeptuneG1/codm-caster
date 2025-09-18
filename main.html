@@ -4,40 +4,43 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>COD:M — BR Caster Reference</title>
-<meta name="theme-color" content="#0b0d0e"/>
+<meta name="theme-color" content="#292d42"/>
 
 <style>
   :root{
-    --bg:#0b0d0e; --panel:#111416; --panel2:#0e1012;
-    --ink:#e8ecef; --muted:#aab3bb;
-    --brand:#19ff9a; --brand2:#0de3ff; --accent:#00bcd4;
-    --line:#20262b; --chip:#151a1f; --good:#62e887; --bad:#ff6b6b; --warn:#ffd166;
+    /* CODM Palette */
+    --brand:#ffe93b;         /* Primary highlight (yellow) */
+    --ink:#ffffff;           /* Primary text */
+    --bg:#213830;            /* Deep slate/green (Secondary) */
+    --panel:#292d42;         /* Secondary dark panel */
+    --panel2:#1b2233;        /* Derived darker slate for contrast */
+    --line:#4c525d;          /* Secondary mid-gray for borders */
+    --muted:#cfd3da;         /* Lightened text */
+    --chip:#232a3b;          /* Chip bg */
+    --good:#62e887; --bad:#ff6b6b; --warn:#ffd166;
   }
   *{box-sizing:border-box}
   html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif}
-  a{color:var(--brand2);text-decoration:none}
+  a{color:var(--brand);text-decoration:none}
   a:hover{text-decoration:underline}
 
-  header{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,#0d1012 0%,#0b0d0e 100%);border-bottom:2px solid var(--brand)}
+  header{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,var(--panel) 0%, #1a2131 100%);border-bottom:2px solid var(--brand)}
   .head{display:flex;align-items:center;gap:14px;max-width:1200px;margin:0 auto;padding:12px 14px}
   .logo{width:40px;height:40px;border-radius:8px;object-fit:contain;flex:0 0 auto}
   h1{margin:0;font-size:1.1rem;letter-spacing:.4px;color:var(--brand)}
-  .head .bar{margin-left:auto;display:flex;gap:8px;align-items:center}
-  .btn{background:var(--brand);color:#06231a;border:0;border-radius:10px;padding:8px 12px;font-weight:800;cursor:pointer}
-  .btn.ghost{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
-  .btn:disabled{opacity:.5;cursor:not-allowed}
+  /* removed .bar/back button */
 
   .shell{max-width:1200px;margin:18px auto;padding:0 12px}
 
   /* top tabs (pagination) */
   .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 14px}
   .tab{background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:8px 12px;border-radius:10px;cursor:pointer}
-  .tab[aria-current="page"]{background:var(--brand);color:#06231a;border-color:var(--brand);font-weight:900}
+  .tab[aria-current="page"]{background:var(--brand);color:#1a1a1a;border-color:var(--brand);font-weight:900}
 
   /* filter bar */
   .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-  .chip{background:var(--chip);border:1px solid var(--line);color:#cfe7d9;border-radius:999px;padding:6px 10px}
-  .controls input,.controls select{background:#111a1f;color:var(--ink);border:1px solid #25313a;border-radius:8px;padding:8px 10px}
+  .chip{background:var(--chip);border:1px solid var(--line);color:#e7eaee;border-radius:999px;padding:6px 10px}
+  .controls input,.controls select{background:#141b2a;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
   .muted{color:var(--muted)}
   .hidden{display:none}
 
@@ -45,7 +48,7 @@
   .block h2{margin:0 0 8px 0;color:var(--brand)}
   .group-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
 
-  /* ===== Original Class Cards (Classes page) ===== */
+  /* ===== Classes page cards ===== */
   .grid{display:grid;grid-template-columns:1fr;gap:14px}
   @media(min-width:800px){ .grid{grid-template-columns:1fr 1fr} }
   @media(min-width:1080px){ .grid{grid-template-columns:1fr 1fr 1fr} }
@@ -54,33 +57,20 @@
   .class-info{padding:12px;display:flex;flex-direction:column;gap:6px}
   .title-row{display:flex;align-items:center;gap:8px}
   .title-row h3{margin:0;font-size:1.05rem}
-  .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#0c0f11;border:1px solid #20262b;color:#d8e6df;font-size:.8rem}
-  .kv b{color:#cfe7d9}
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#0c0f11;border:1px solid var(--line);color:#e7eaee;font-size:.8rem}
+  .kv b{color:#e7f2ff}
   .tag{font-size:.8rem;opacity:.9;margin-left:6px}
 
-  /* ===== NEW: Map-first layout (left mini-cards, right big map) ===== */
+  /* ===== Map-first layout ===== */
   .layout{display:grid;grid-template-columns:1fr;gap:14px}
   @media(min-width:900px){
-    .layout{grid-template-columns:minmax(260px,340px) 1fr}
+    .layout{grid-template-columns:minmax(260px,360px) 1fr}
   }
 
   /* left column mini list */
   .side{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
   .side .controls{margin-bottom:6px}
   .mini-meta{font-size:.85rem;color:var(--muted)}
-  .mini-list{display:flex;flex-direction:column;gap:8px;overflow:auto;max-height:calc(100dvh - 220px)}
-  @media(min-width:900px){
-    .mini-list{position:sticky;top:88px;max-height:calc(100dvh - 110px)}
-  }
-
-  /* compact mini card */
-  .mini-card{display:flex;align-items:center;gap:10px;padding:8px;border-radius:10px;background:#0d1114;border:1px solid var(--line)}
-  .mini-thumb{width:64px;height:40px;border-radius:8px;object-fit:cover;background:#000;flex:0 0 auto}
-  .mini-txt{display:flex;flex-direction:column;gap:2px;min-width:0}
-  .mini-name{font-size:.95rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .mini-pill{font-size:.7rem;opacity:.9;border:1px solid #233038;border-radius:999px;padding:1px 6px;display:inline-block;width:max-content}
-
-  /* === Mini cards: 2 columns + sizing + hover description === */
   .mini-list{
     display:grid;
     grid-template-columns:1fr;
@@ -91,28 +81,21 @@
   @media(min-width:900px){
     .mini-list{ grid-template-columns:1fr 1fr; position:sticky; top:88px; max-height:calc(100dvh - 110px); }
   }
-  
+
+  /* compact mini card */
   .mini-card{
     display:flex; align-items:flex-start; gap:10px;
     padding:10px; border-radius:12px;
-    background:#0d1114; border:1px solid var(--line);
+    background:#1a2131; border:1px solid var(--line);
     position:relative;
   }
-  
-  /* Bigger thumbnail */
   .mini-thumb{ width:84px; height:52px; border-radius:8px; object-fit:cover; background:#000; flex:0 0 auto }
-  
-  /* Slightly smaller title and type */
+  .mini-txt{display:flex;flex-direction:column;gap:2px;min-width:0}
   .mini-name{ font-size:.90rem; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
-  .mini-pill{ font-size:.68rem; opacity:.9; border:1px solid #233038; border-radius:999px; padding:1px 6px; display:inline-block; width:max-content }
-  
-  /* Hover reveal description */
-  .mini-desc{
-    display:none; font-size:.78rem; color:var(--muted); line-height:1.35; margin-top:6px;
-  }
+  .mini-pill{ font-size:.68rem; opacity:.9; border:1px solid var(--line); border-radius:999px; padding:1px 6px; display:inline-block; width:max-content }
+  .mini-desc{ display:none; font-size:.78rem; color:var(--muted); line-height:1.35; margin-top:6px; }
   .mini-card:hover .mini-desc{ display:block; }
 
-  
   /* right column map */
   .map-col{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px}
   .map-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
@@ -122,7 +105,7 @@
   .map-wrap img{width:100%;height:100%;object-fit:cover}
   .map-notes{margin-top:10px;display:grid;gap:10px}
   .panel-list{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px}
-  .panel-list h3{margin:0 0 6px 0;color:var(--brand2);font-size:1rem}
+  .panel-list h3{margin:0 0 6px 0;color:var(--brand);font-size:1rem}
   .panel-list ul{margin:0;padding-left:18px;line-height:1.45}
 
   footer{border-top:1px solid var(--line);margin-top:18px;padding:14px 0 28px}
@@ -130,8 +113,14 @@
 
   /* BR Systems tweaks */
   #brPanel ul{margin:0;padding-left:18px;line-height:1.5}
-  #brPanel h3{margin:0 0 8px 0;color:var(--brand2)}
+  #brPanel h3{margin:0 0 8px 0;color:var(--brand)}
 
+  /* Buy Station price table */
+  .price-table{width:100%;border-collapse:collapse;font-size:.92rem}
+  .price-table th,.price-table td{border:1px solid var(--line);padding:8px 10px}
+  .price-table th{background:#1a2131;text-align:left;color:var(--brand)}
+  .price-table td:nth-child(2),.price-table td:nth-child(3){text-align:right;white-space:nowrap}
+  .price-note{margin-top:6px;color:var(--muted);font-size:.85rem}
 </style>
 </head>
 <body>
@@ -139,9 +128,6 @@
   <div class="head">
     <img src="https://i.imgur.com/K0TTjUC.png" alt="Logo" class="logo">
     <h1>CODM — Battle Royale Caster Reference</h1>
-    <div class="bar">
-      <a href="dashboard.html" class="btn ghost">← Back to Dashboard</a>
-    </div>
   </div>
 </header>
 
@@ -213,7 +199,7 @@
         </div>
 
         <div class="map-wrap">
-          <img id="mapImage" alt="Map View" src="https://i.imgur.com/m3pYtQn.jpeg">
+          <img id="mapImage" alt="Map View" src="https://i.imgur.com/zhCe95I.png">
         </div>
 
         <div class="map-notes" id="mapNotes"><!-- filled by JS --></div>
@@ -257,43 +243,43 @@
   <!-- ===================== PAGE 4: BR SYSTEMS (BUY STATION + GULAG) ===================== -->
   <section class="block page hidden" data-title="BR Systems">
     <h2>BR Systems — Buy Station & Gulag</h2>
-  
+
     <div class="layout">
       <!-- Left: compact reference -->
       <aside class="side">
         <div class="controls">
           <span class="chip">Quick Reference</span>
         </div>
-  
+
         <!-- Buy Station mini card -->
         <div class="mini-card">
           <img class="mini-thumb" src="https://i.imgur.com/w3xxuAT.jpeg" alt="Isolated">
           <div class="mini-txt">
             <div class="mini-name">Buy Stations</div>
             <span class="mini-pill">Season 5 (LT) — Isolated</span>
+            <div class="mini-desc">
+              Loot <b>Cash</b> from ground & eliminations, spend at Buy Stations for <b>Perks</b>, <b>Scorestreaks</b>, weapons, armor/ammo, and specials.
+            </div>
           </div>
         </div>
-        <ul class="mini-meta" style="line-height:1.5;margin:0 0 8px 0;padding-left:16px">
-          <li>Loot <b>Cash</b> on ground & from eliminations.</li>
-          <li>Spend at Buy Stations for <b>Perks</b>, <b>Scorestreaks</b>, <b>weapons</b>, <b>armor/ammo refills</b>, and special items.</li>
-          <li>Eliminated players <b>drop Cash</b> — third-party & scoop.</li>
-        </ul>
-  
+
         <!-- Gulag mini card -->
         <div class="mini-card">
           <img class="mini-thumb" src="https://i.imgur.com/8S1A7ml.jpeg" alt="Isolated">
           <div class="mini-txt">
             <div class="mini-name">Gulag</div>
             <span class="mini-pill">Season 7 (LT) — Isolated</span>
+            <div class="mini-desc">
+              First death → <b>1v1 Gulag</b>. Win = redeploy. Lose = teammates can <b>buy your tag</b>. Extra attempts via <b>Gulag Ticket</b>.
+            </div>
           </div>
         </div>
-        <ul class="mini-meta" style="line-height:1.5;margin:0 0 8px 0;padding-left:16px">
-          <li>Upon first death: go to <b>1v1 Gulag</b>.</li>
-          <li><b>Win</b> to redeploy. <b>Lose</b> and teammates can <b>buy your tag</b> at a Buy Station.</li>
-          <li>Everyone gets <b>1 free attempt</b>; extra attempts need <b>Gulag Ticket</b> from a Buy Station.</li>
-        </ul>
+
+        <div class="mini-meta" style="line-height:1.5;margin:6px 0 0 0;">
+          Fire Sale applies a <b>30% discount</b> to all Buy Station items.
+        </div>
       </aside>
-  
+
       <!-- Right: big panel with details -->
       <section class="map-col">
         <div class="map-head">
@@ -301,13 +287,12 @@
             <button class="tab" aria-current="page" onclick="setBRPanel('buy')">Buy Station</button>
             <button class="tab" onclick="setBRPanel('gulag')">Gulag</button>
           </div>
-          <span class="muted">Use this as on-desk cheat-sheet while casting.</span>
+          <span class="muted">Use this as an on-desk cheat sheet while casting.</span>
         </div>
-  
-        <div id="brPanel" class="panel-list">
-          <!-- Filled by JS -->
-        </div>
-  
+
+        <div id="brPanel" class="panel-list"><!-- Filled by JS --></div>
+        <div id="buyPrices" class="panel-list"></div>
+
         <div class="map-notes">
           <div class="panel-list">
             <h3>Caster Callouts</h3>
@@ -323,7 +308,7 @@
   </section>
 
   <footer class="shell">
-    <small>Built for desk & tablet casting • Images © respective owners • This is a static reference using your provided art.</small>
+    <small>Built for desk & tablet casting • Images © respective owners • Static reference.</small>
   </footer>
 </div>
 
@@ -439,7 +424,41 @@
       passive:'Enemy footsteps can be heard from a distance.'}
   ];
 
-  
+  // --- Buy Station prices (Normal & Fire Sale) ---
+  const BUY_PRICES = [
+    {item:"Heavy Ammo",     normal:1000},
+    {item:"Sniper Ammo",    normal:1000},
+    {item:"Light Ammo",     normal:1000},
+    {item:"Shotgun Ammo",   normal:1000},
+    {item:"Rockets",        normal:1000},
+    {item:"Ballistic Expert",   normal:4000},
+    {item:"Self Revive Kit",    normal:6000},
+    {item:"Backpack Lv.3",      normal:12000},
+    {item:"Backpack Lv.2",      normal:5000},
+    {item:"Level 1 Armor",      normal:3000},
+    {item:"Advanced Armor",     normal:3000},
+    {item:"Kinetic Armor",      normal:5000},
+    {item:"Thermite",           normal:3000},
+    {item:"C4",                 normal:3000},
+    {item:"Trophy System",      normal:3000},
+    {item:"Chip Upgrade",       normal:5000},
+    {item:"Revival Coin",       normal:15000},
+    {item:"Loadout Drop",       normal:50000},
+    {item:"Mythic Weapon",      normal:12000},
+    {item:"Mini Loadout Drop",  normal:20000},
+    {item:"Stealth Chopper",    normal:15000},
+    {item:"Strafe Run",         normal:8000},
+    {item:"RC XD",              normal:8000},
+    {item:"Legendary Mods",     normal:7000},
+    {item:"Purple Mods",        normal:5000},
+    {item:"Blue Mods",          normal:3000},
+    {item:"Normal BR Tank",     normal:30000},
+    {item:"Shrike AAV Tank",    normal:30000},
+    {item:"New Armored Vehicle",normal:30000},
+  ];
+  const fmt = n => n>=1000 ? ((n%1000===0? (n/1000): (n/1000).toFixed(1)) + "K") : String(n);
+  const sale = n => Math.round(n * 0.7); // Fire Sale = 30% off
+
   // Simple content model for BR Systems
   const BR_INFO = {
     buy: {
@@ -472,6 +491,27 @@
     }
   };
 
+  function renderBuyPrices(){
+    const host = document.getElementById('buyPrices');
+    if(!host) return;
+    const rows = BUY_PRICES.map(r=>`
+      <tr>
+        <td>${r.item}</td>
+        <td>C ${fmt(r.normal)}</td>
+        <td>C ${fmt(sale(r.normal))}</td>
+      </tr>`).join('');
+    host.innerHTML = `
+      <h3>Buy Station Prices</h3>
+      <table class="price-table">
+        <thead>
+          <tr><th>Item</th><th>Normal</th><th>Fire&nbsp;Sale</th></tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="price-note">Fire Sale applies a 30% discount to all Buy Station items. Prices may vary by mode/region and can be tuned by updates.</div>
+    `;
+  }
+
   function setBRPanel(which){
     const data = BR_INFO[which] || BR_INFO.buy;
     const box = document.getElementById('brPanel');
@@ -481,26 +521,22 @@
       <h3 style="margin-top:10px">Desk Tips</h3>
       <ul>${data.tips.map(p=>`<li>${p}</li>`).join('')}</ul>
     `;
-    // toggle active tab style
     const btns = box.parentElement.querySelectorAll('.tabs .tab');
     btns.forEach(b=>b.setAttribute('aria-current', b.textContent.toLowerCase().includes(which) ? 'page':'false'));
     sessionStorage.setItem('codm_br_panel', which);
+    if(which === 'buy') renderBuyPrices();
+    else document.getElementById('buyPrices').innerHTML = '';
   }
 
   // init default panel on load of this page
   (function(){
     const saved = sessionStorage.getItem('codm_br_panel') || 'buy';
-    // If the BR Systems tab is open on load, render now; otherwise it will render when user clicks tab.
-    if (document.querySelector('[data-title="BR Systems"]') && !document.querySelector('[data-title="BR Systems"]').classList.contains('hidden')) {
-      setBRPanel(saved);
-    }
-    // Also hook into your tab navigation to render when BR Systems becomes active
     const origGo = window.go;
     window.go = function(n){
       origGo(n);
-      const pages = Array.from(document.querySelectorAll('.page'));
-      const idx = Math.max(0, Math.min(pages.length-1, n));
-      if (pages[idx].dataset.title === 'BR Systems') setBRPanel(sessionStorage.getItem('codm_br_panel') || 'buy');
+      const allPages = Array.from(document.querySelectorAll('.page'));
+      const idx = Math.max(0, Math.min(allPages.length-1, n));
+      if (allPages[idx].dataset.title === 'BR Systems') setBRPanel(sessionStorage.getItem('codm_br_panel') || 'buy');
     };
   })();
 
@@ -545,7 +581,6 @@
   const mSearch = document.getElementById('mSearch');
   const miniMeta = document.getElementById('miniMeta');
 
-  
   function renderMini(){
     const cat = mCat.value || 'ALL';
     const q = (mSearch?.value||'').trim().toLowerCase();
@@ -614,54 +649,3 @@
           '<b>Bridge fights:</b> Rivertown & Nuketown causeway — call team splits early.'
         ]}
       ]
-    }
-  };
-
-  const mapTabs = document.getElementById('mapTabs');
-  const mapImage = document.getElementById('mapImage');
-  const mapNotes = document.getElementById('mapNotes');
-
-  ['Isolated','Blackout'].forEach((name,i)=>{
-    const b = document.createElement('button');
-    b.className = 'tab';
-    b.textContent = name;
-    b.addEventListener('click', ()=> setMap(name));
-    if(i===0) b.setAttribute('aria-current','page');
-    mapTabs.appendChild(b);
-  });
-
-  function setMap(name){
-    const data = MAPS[name];
-    if(!data) return;
-    mapImage.src = data.img;
-    Array.from(mapTabs.children).forEach(btn=>{
-      btn.setAttribute('aria-current', btn.textContent===name ? 'page' : 'false');
-    });
-    // notes
-    mapNotes.innerHTML = '';
-    data.notes.forEach(n=>{
-      const wrap = document.createElement('div');
-      wrap.className = 'panel-list';
-      wrap.innerHTML = `<h3>${n.title}</h3>`;
-      const ul = document.createElement('ul');
-      n.items.forEach(item=>{
-        const li = document.createElement('li');
-        li.innerHTML = item;
-        ul.appendChild(li);
-      });
-      wrap.appendChild(ul);
-      mapNotes.appendChild(wrap);
-    });
-    sessionStorage.setItem('codm_map', name);
-  }
-
-  // init tab + views
-  const last = parseInt(sessionStorage.getItem('codm_ref_tab')||'0',10);
-  go(isFinite(last)? last : 0);
-  renderClasses();
-  renderMini();
-  const lastMap = sessionStorage.getItem('codm_map') || 'Isolated';
-  setMap(lastMap);
-</script>
-</body>
-</html>
