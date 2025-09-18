@@ -78,16 +78,21 @@
   .side .controls{margin-bottom:6px}
   .mini-meta{font-size:.85rem;color:var(--muted)}
 
-  /* 2-col mini cards with hover */
+  /* Mini cards: 1 column on all sizes */
   .mini-list{
     display:grid;
-    grid-template-columns:1fr;
+    grid-template-columns:1fr;  /* single column */
     gap:10px;
     overflow:auto;
     max-height:calc(100dvh - 220px);
   }
   @media(min-width:900px){
-    .mini-list{ grid-template-columns:1fr 1fr; position:sticky; top:88px; max-height:calc(100dvh - 110px); }
+    .mini-list{
+      grid-template-columns:1fr; /* keep single column on desktop too */
+      position:sticky;
+      top:88px;
+      max-height:calc(100dvh - 110px);
+    }
   }
 
   .mini-card{
