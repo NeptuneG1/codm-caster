@@ -41,15 +41,14 @@
   .muted{color:var(--muted)}
   .hidden{display:none}
 
-  /* card grid */
-  .grid{display:grid;grid-template-columns:1fr;gap:14px}
-  @media(min-width:800px){ .grid{grid-template-columns:1fr 1fr} }
-  @media(min-width:1080px){ .grid{grid-template-columns:1fr 1fr 1fr} }
-
   .block{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
   .block h2{margin:0 0 8px 0;color:var(--brand)}
   .group-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
 
+  /* ===== Original Class Cards (Classes page) ===== */
+  .grid{display:grid;grid-template-columns:1fr;gap:14px}
+  @media(min-width:800px){ .grid{grid-template-columns:1fr 1fr} }
+  @media(min-width:1080px){ .grid{grid-template-columns:1fr 1fr 1fr} }
   .class-card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
   .class-card img{width:100%;aspect-ratio:16/9;object-fit:cover;background:#000}
   .class-info{padding:12px;display:flex;flex-direction:column;gap:6px}
@@ -59,12 +58,39 @@
   .kv b{color:#cfe7d9}
   .tag{font-size:.8rem;opacity:.9;margin-left:6px}
 
-  /* map page */
-  .twocol{display:grid;grid-template-columns:1fr;gap:14px}
-  @media(min-width:900px){ .twocol{grid-template-columns:1fr 1fr} }
-  .panel-list{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px}
-  .panel-list h3{margin:0 0 8px 0;color:var(--brand2)}
-  .panel-list ul{margin:0;padding-left:18px;line-height:1.5}
+  /* ===== NEW: Map-first layout (left mini-cards, right big map) ===== */
+  .layout{display:grid;grid-template-columns:1fr;gap:14px}
+  @media(min-width:900px){
+    .layout{grid-template-columns:minmax(260px,340px) 1fr}
+  }
+
+  /* left column mini list */
+  .side{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
+  .side .controls{margin-bottom:6px}
+  .mini-meta{font-size:.85rem;color:var(--muted)}
+  .mini-list{display:flex;flex-direction:column;gap:8px;overflow:auto;max-height:calc(100dvh - 220px)}
+  @media(min-width:900px){
+    .mini-list{position:sticky;top:88px;max-height:calc(100dvh - 110px)}
+  }
+
+  /* compact mini card */
+  .mini-card{display:flex;align-items:center;gap:10px;padding:8px;border-radius:10px;background:#0d1114;border:1px solid var(--line)}
+  .mini-thumb{width:64px;height:40px;border-radius:8px;object-fit:cover;background:#000;flex:0 0 auto}
+  .mini-txt{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .mini-name{font-size:.95rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mini-pill{font-size:.7rem;opacity:.9;border:1px solid #233038;border-radius:999px;padding:1px 6px;display:inline-block;width:max-content}
+
+  /* right column map */
+  .map-col{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px}
+  .map-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+  .map-tabs .tab{padding:6px 10px;border-radius:999px}
+  .map-wrap{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#000;display:flex;align-items:center;justify-content:center;min-height:55vh}
+  @media(min-width:900px){ .map-wrap{min-height:72vh} }
+  .map-wrap img{width:100%;height:100%;object-fit:cover}
+  .map-notes{margin-top:10px;display:grid;gap:10px}
+  .panel-list{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px}
+  .panel-list h3{margin:0 0 6px 0;color:var(--brand2);font-size:1rem}
+  .panel-list ul{margin:0;padding-left:18px;line-height:1.45}
 
   footer{border-top:1px solid var(--line);margin-top:18px;padding:14px 0 28px}
   footer small{color:var(--muted)}
@@ -87,7 +113,7 @@
   <div class="block">
     <div class="group-head">
       <h2>Quick Pages</h2>
-      <span class="muted">Classes are all on one page. Use tabs for Maps and Other Details.</span>
+      <span class="muted">Left sidebar = compact class cards • Right = large map viewer.</span>
     </div>
     <div id="tabs" class="tabs"></div>
   </div>
@@ -96,7 +122,7 @@
   <section class="block page" data-title="Classes">
     <div class="group-head">
       <h2>All Operator Classes</h2>
-      <span class="muted">Filter by category or search (name/keywords).</span>
+      <span class="muted">Original grid view kept here. Use “Maps” for map-first layout.</span>
     </div>
 
     <div class="controls" style="margin:8px 0 12px">
@@ -119,48 +145,52 @@
     <div id="classGrid" class="grid"></div>
   </section>
 
-  <!-- ===================== PAGE 2: MAPS ===================== -->
+  <!-- ===================== PAGE 2: MAPS (map-first layout) ===================== -->
   <section class="block page hidden" data-title="Maps">
     <h2>Maps & Areas</h2>
-    <div class="twocol">
-      <div class="panel-list">
-        <h3>Isolated — POIs</h3>
-        <ul>
-          <li>Bus Station • Killhouse • Standoff • Sakura • Estate</li>
-          <li>Pipeline • Nuclear Plant • Launch Base • Crash</li>
-          <li>Downtown • Harbor • Countdown • Black Market</li>
-          <li>Farm • Sanitarium • Dock • Heat • Outpost</li>
-          <li>High-Tier Zones rotate each match (gold beacons).</li>
-        </ul>
-        <h3 style="margin-top:10px">Caster Notes</h3>
-        <ul>
-          <li><b>North rotations:</b> Pipeline → Nuclear Plant → Launch Base ridge.</li>
-          <li><b>Hot early drops:</b> Black Market, Launch Base, Nuketown Shipyard Dock.</li>
-          <li><b>Vehicle paths:</b> ring roads around Sakura & Nuclear Plant for quick wraps.</li>
-        </ul>
-      </div>
 
-      <div class="panel-list">
-        <h3>Blackout — POIs</h3>
-        <ul>
-          <li>Estates • Construction Site • Asylum • Array • Hydro Dam</li>
-          <li>Fracking Tower • Train Station • Rivertown • Factory</li>
-          <li>Cargo Docks • Lighthouse • Nuketown Island • Turbine</li>
-        </ul>
-        <h3 style="margin-top:10px">Caster Notes</h3>
-        <ul>
-          <li><b>Long rotates:</b> Lighthouse ↔ Cargo Docks shore road, watch third parties.</li>
-          <li><b>Top control:</b> Construction Site cranes, Fracking tower decks.</li>
-          <li><b>Bridge fights:</b> Rivertown & Nuketown causeway — call team splits early.</li>
-        </ul>
-      </div>
+    <div class="layout">
+      <!-- Left: Compact cards -->
+      <aside class="side">
+        <div class="controls">
+          <label class="chip">Category
+            <select id="mCat">
+              <option value="ALL">All</option>
+              <option>Disrupt</option>
+              <option>Stealth</option>
+              <option>Support</option>
+              <option>Defense</option>
+              <option>Tracker</option>
+            </select>
+          </label>
+          <label class="chip">Search
+            <input id="mSearch" type="text" placeholder="Type to filter…">
+          </label>
+        </div>
+        <div class="mini-meta" id="miniMeta">—</div>
+        <div id="miniList" class="mini-list"></div>
+      </aside>
+
+      <!-- Right: Big map -->
+      <section class="map-col">
+        <div class="map-head">
+          <div class="map-tabs tabs" id="mapTabs"></div>
+          <span class="muted">Tip: keep the mini cards on the left for quick callouts.</span>
+        </div>
+
+        <div class="map-wrap">
+          <img id="mapImage" alt="Map View" src="https://i.imgur.com/m3pYtQn.jpeg">
+        </div>
+
+        <div class="map-notes" id="mapNotes"><!-- filled by JS --></div>
+      </section>
     </div>
   </section>
 
   <!-- ===================== PAGE 3: OTHER DETAILS ===================== -->
   <section class="block page hidden" data-title="Other Details">
     <h2>Other Details</h2>
-    <div class="twocol">
+    <div class="layout">
       <div class="panel-list">
         <h3>Ammo & Weapons (quick)</h3>
         <ul>
@@ -213,7 +243,7 @@
     sessionStorage.setItem('codm_ref_tab', String(idx));
   }
 
-  /* ---------- Class data (ALL on one page) ---------- */
+  /* ---------- Class data ---------- */
   const CLASSES = [
     // DISRUPT
     {name:'Smoke Bomber', cat:'Disrupt', img:'https://i.imgur.com/5Von4HS.jpeg',
@@ -307,14 +337,15 @@
       passive:'Enemy footsteps can be heard from a distance.'}
   ];
 
+  /* ---------- Classes page rendering ---------- */
   const grid = document.getElementById('classGrid');
   const fCat = document.getElementById('fCat');
   const fSearch = document.getElementById('fSearch');
   const meta = document.getElementById('metaCount');
 
-  function render(){
+  function renderClasses(){
     const cat = fCat.value || 'ALL';
-    const q = (fSearch.value||'').trim().toLowerCase();
+    const q = (fSearch?.value||'').trim().toLowerCase();
     const rows = CLASSES.filter(c =>
       (cat==='ALL' || c.cat===cat) &&
       (!q || (c.name.toLowerCase().includes(q) || c.cat.toLowerCase().includes(q) ||
@@ -338,13 +369,121 @@
     });
     meta.textContent = `${rows.length} shown • ${CLASSES.length} total`;
   }
-  fCat.addEventListener('change', render);
-  fSearch.addEventListener('input', render);
+  fCat.addEventListener('change', renderClasses);
+  fSearch.addEventListener('input', renderClasses);
 
-  // init tab + classes
+  /* ---------- Maps page: mini list + big map ---------- */
+  const miniList = document.getElementById('miniList');
+  const mCat = document.getElementById('mCat');
+  const mSearch = document.getElementById('mSearch');
+  const miniMeta = document.getElementById('miniMeta');
+
+  function renderMini(){
+    const cat = mCat.value || 'ALL';
+    const q = (mSearch?.value||'').trim().toLowerCase();
+    const rows = CLASSES.filter(c =>
+      (cat==='ALL' || c.cat===cat) &&
+      (!q || (c.name.toLowerCase().includes(q) || c.cat.toLowerCase().includes(q) ||
+              c.skill.toLowerCase().includes(q) || (c.passive||'').toLowerCase().includes(q)))
+    );
+    miniList.innerHTML = '';
+    rows.forEach(c=>{
+      const li = document.createElement('div');
+      li.className = 'mini-card';
+      li.innerHTML = `
+        <img class="mini-thumb" src="${c.img}" alt="${c.name}">
+        <div class="mini-txt">
+          <div class="mini-name">${c.name}</div>
+          <span class="mini-pill">${c.cat}</span>
+        </div>`;
+      miniList.appendChild(li);
+    });
+    miniMeta.textContent = `${rows.length} classes • compact view`;
+  }
+  mCat.addEventListener('change', renderMini);
+  mSearch.addEventListener('input', renderMini);
+
+  /* ---------- Map viewer ---------- */
+  const MAPS = {
+    Isolated: {
+      img: 'https://i.imgur.com/m3pYtQn.jpeg',
+      notes: [
+        {title:'Isolated — POIs', items:[
+          'Bus Station • Killhouse • Standoff • Sakura • Estate',
+          'Pipeline • Nuclear Plant • Launch Base • Crash',
+          'Downtown • Harbor • Countdown • Black Market',
+          'Farm • Sanitarium • Dock • Heat • Outpost',
+          'High-Tier Zones rotate each match (gold beacons).'
+        ]},
+        {title:'Caster Notes', items:[
+          '<b>North rotations:</b> Pipeline → Nuclear Plant → Launch Base ridge.',
+          '<b>Hot early drops:</b> Black Market, Launch Base, Nuketown Shipyard Dock.',
+          '<b>Vehicle paths:</b> ring roads around Sakura & Nuclear Plant for quick wraps.'
+        ]}
+      ]
+    },
+    Blackout: {
+      img: 'https://i.imgur.com/6c6pXn8.jpeg',
+      notes: [
+        {title:'Blackout — POIs', items:[
+          'Estates • Construction Site • Asylum • Array • Hydro Dam',
+          'Fracking Tower • Train Station • Rivertown • Factory',
+          'Cargo Docks • Lighthouse • Nuketown Island • Turbine'
+        ]},
+        {title:'Caster Notes', items:[
+          '<b>Long rotates:</b> Lighthouse ↔ Cargo Docks shore road, watch third parties.',
+          '<b>Top control:</b> Construction Site cranes, Fracking tower decks.',
+          '<b>Bridge fights:</b> Rivertown & Nuketown causeway — call team splits early.'
+        ]}
+      ]
+    }
+  };
+
+  const mapTabs = document.getElementById('mapTabs');
+  const mapImage = document.getElementById('mapImage');
+  const mapNotes = document.getElementById('mapNotes');
+
+  ['Isolated','Blackout'].forEach((name,i)=>{
+    const b = document.createElement('button');
+    b.className = 'tab';
+    b.textContent = name;
+    b.addEventListener('click', ()=> setMap(name));
+    if(i===0) b.setAttribute('aria-current','page');
+    mapTabs.appendChild(b);
+  });
+
+  function setMap(name){
+    const data = MAPS[name];
+    if(!data) return;
+    mapImage.src = data.img;
+    Array.from(mapTabs.children).forEach(btn=>{
+      btn.setAttribute('aria-current', btn.textContent===name ? 'page' : 'false');
+    });
+    // notes
+    mapNotes.innerHTML = '';
+    data.notes.forEach(n=>{
+      const wrap = document.createElement('div');
+      wrap.className = 'panel-list';
+      wrap.innerHTML = `<h3>${n.title}</h3>`;
+      const ul = document.createElement('ul');
+      n.items.forEach(item=>{
+        const li = document.createElement('li');
+        li.innerHTML = item;
+        ul.appendChild(li);
+      });
+      wrap.appendChild(ul);
+      mapNotes.appendChild(wrap);
+    });
+    sessionStorage.setItem('codm_map', name);
+  }
+
+  // init tab + views
   const last = parseInt(sessionStorage.getItem('codm_ref_tab')||'0',10);
   go(isFinite(last)? last : 0);
-  render();
+  renderClasses();
+  renderMini();
+  const lastMap = sessionStorage.getItem('codm_map') || 'Isolated';
+  setMap(lastMap);
 </script>
 </body>
 </html>
