@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CODM — BR Caster Reference</title>
+<meta name="theme-color" content="#0b0d0e"/>
+
+<style>
+  :root{
+    --bg:#0b0d0e; --panel:#121417; --panel2:#0f1113;
+    --ink:#e8ecef; --muted:#aab3bb;
+    --brand:#19ff9a; --brand2:#29b375; --accent:#00bcd4;
+    --line:#20262b; --chip:#1a1f24; --good:#62e887; --bad:#ff6b6b; --warn:#ffd166;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  header{position:sticky;top:0;z-index:10;background:linear-gradient(180deg,#0d1012 0%,#0b0d0e 100%);border-bottom:2px solid var(--brand);}
+  .head{display:flex;align-items:center;gap:14px;padding:14px 16px;max-width:1200px;margin:0 auto}
+  .logo{width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,#19ff9a 0%,#00bcd4 100%);box-shadow:0 0 18px rgba(25,255,154,.35)}
+  h1{margin:0;font-size:1.1rem;letter-spacing:.4px;color:var(--brand)}
+  .shell{max-width:1200px;margin:18px auto;padding:0 12px}
+  .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .btn{background:var(--brand);color:#052016;border:0;border-radius:10px;padding:8px 12px;font-weight:800;cursor:pointer}
+  .btn.ghost{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 16px}
+  .tab{background:var(--panel2);border:1px solid var(--line);color:var(--ink);padding:8px 12px;border-radius:10px;cursor:pointer}
+  .tab[aria-current="page"]{background:var(--brand);color:#052016;border-color:var(--brand);font-weight:900}
+  .grid{display:grid;gap:12px}
+  .block{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}
+  .block h2{margin:0 0 8px 0;color:var(--brand)}
+  .block h3{margin:10px 0 6px 0;color:var(--accent)}
+  .muted{color:var(--muted)}
+  .chip{display:inline-flex;align-items:center;gap:6px;background:var(--chip);border:1px solid var(--line);padding:4px 8px;border-radius:999px;font-size:.85rem;color:#cfe7d9}
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#0c0f11;border:1px solid #20262b;margin:2px;font-size:.85rem;color:#d8e6df}
+  .kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:6px 0 2px}
+  .kpi > div{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px}
+  .kpi strong{display:block;font-size:1.1rem}
+  .two{display:grid;grid-template-columns:1fr;gap:12px}
+  @media(min-width:980px){ .two{grid-template-columns:1fr 1fr} }
+  table{width:100%;border-collapse:collapse}
+  th,td{border-bottom:1px solid var(--line);padding:8px;vertical-align:top}
+  thead th{background:#0f1215;text-align:left}
+  tbody tr:hover td{background:#0e1215}
+  .kbd{background:#0e1418;border:1px solid #20313a;color:#d1ffe9;padding:1px 6px;border-radius:6px;font-family:ui-monospace,Menlo,monospace}
+  .note{border-left:3px solid var(--accent);padding:8px 10px;background:rgba(0,188,212,.06);border-radius:8px}
+  .warn{border-left:3px solid var(--warn);background:rgba(255,209,102,.06)}
+  .ok{border-left:3px solid var(--good);background:rgba(98,232,135,.06)}
+  .navrow{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:12px 0}
+  .hidden{display:none}
+  .tag{opacity:.85}
+  footer{border-top:1px solid var(--line);margin-top:18px;padding:12px 0 30px}
+  footer small{color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <div class="head">
+    <div class="logo" aria-hidden="true"></div>
+    <h1>CODM — Battle Royale Caster Reference</h1>
+    <div style="margin-left:auto" class="bar">
+      <a href="dashboard.html" class="btn ghost">← Back to Dashboard</a>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+  <!-- TOP NAV -->
+  <nav class="tabs" id="topTabs" aria-label="Main Sections">
+    <button class="tab" data-target="view-overview" aria-current="page">Overview</button>
+    <button class="tab" data-target="view-classes">Classes</button>
+    <button class="tab" data-target="view-maps">Maps</button>
+    <button class="tab" data-target="view-weapons">Weapons</button>
+    <button class="tab" data-target="view-utils">Utilities</button>
+  </nav>
+
+  <!-- OVERVIEW -->
+  <section id="view-overview" class="grid">
+    <div class="block">
+      <h2>Caster Quick Brief</h2>
+      <div class="kpi">
+        <div><strong>Maps</strong><span class="muted">Isolated, Blackout</span></div>
+        <div><strong>Mode</strong><span class="muted">Battle Royale (Quads/Squads)</span></div>
+        <div><strong>Classes</strong><span class="muted">Legacy + New: e.g., Ninja, Medic, Defender… Rewind, Igniter, Pumped, Misdirection, Smoke Bomber, etc.</span></div>
+        <div><strong>Respawn</strong><span class="muted">Dog-tag scan → quick respawn (no scheduled flight)</span></div>
+      </div>
+      <p class="note ok" style="margin-top:8px">
+        <strong>Update context:</strong> POIs and class set reflect current BR rotation; revive flow reflects recent seasons where scanning tags revives teammates without waiting for a flight.
+      </p>
+      <div class="muted" style="margin-top:6px">Tips: Use <span class="kbd">1</span>/<span class="kbd">2</span>/<span class="kbd">3</span>/<span class="kbd">4</span>/<span class="kbd">5</span> to jump sections.</div>
+    </div>
+  </section>
+
+  <!-- CLASSES -->
+  <section id="view-classes" class="grid hidden">
+    <div class="block">
+      <h2>BR Classes / Operator Skills</h2>
+      <p class="muted">Tap a class to expand details. Summaries focus on their in-match use so you can cast fights quickly.</p>
+      <div class="two" id="classGrid">
+        <!-- Cards injected by JS -->
+      </div>
+    </div>
+  </section>
+
+  <!-- MAPS -->
+  <section id="view-maps" class="grid hidden">
+    <div class="block">
+      <h2>Maps</h2>
+      <div class="bar" role="tablist" aria-label="Map Tabs" style="margin:0 0 8px">
+        <button class="tab" data-subtab="iso" aria-current="page">Isolated</button>
+        <button class="tab" data-subtab="bo">Blackout</button>
+      </div>
+
+      <!-- Isolated -->
+      <div id="map-iso">
+        <h3>Isolated — Points of Interest</h3>
+        <div class="muted" style="margin-bottom:6px">Classic CODM BR island; mixed elevation and biomes; frequent chip terminals and vehicle spawns.</div>
+        <div class="two">
+          <div class="block" style="background:var(--panel2)">
+            <h3 class="muted" style="margin:0 0 6px">Major POIs</h3>
+            <div id="isoList" class="muted"></div>
+          </div>
+          <div class="block" style="background:var(--panel2)">
+            <h3 class="muted" style="margin:0 0 6px">Caster Beats</h3>
+            <ul class="muted" style="margin:0 0 0 18px;line-height:1.4">
+              <li><strong>Hot drops:</strong> Launch Base, Nuclear Plant, Sanitarium</li>
+              <li><strong>Rotate lanes:</strong> Pipeline → Docks; Sakura ridge; Countdown plateau</li>
+              <li><strong>Chip timing:</strong> watch for mid-zone upgrades leading to power spikes</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Blackout -->
+      <div id="map-bo" class="hidden">
+        <h3>Blackout — Points of Interest</h3>
+        <div class="muted" style="margin-bottom:6px">BO4’s stitched sandbox adapted for mobile; long sightlines and vertical anchors (Construction, Estates).</div>
+        <div class="two">
+          <div class="block" style="background:var(--panel2)">
+            <h3 class="muted" style="margin:0 0 6px">Major POIs</h3>
+            <div id="boList" class="muted"></div>
+          </div>
+          <div class="block" style="background:var(--panel2)">
+            <h3 class="muted" style="margin:0 0 6px">Caster Beats</h3>
+            <ul class="muted" style="margin:0 0 0 18px;line-height:1.4">
+              <li><strong>Power positions:</strong> Construction Site, Fracking Tower, Array ridges</li>
+              <li><strong>Island split:</strong> Nuketown Island crosses are risky mid-game; watch bridge camps</li>
+              <li><strong>Vehicle value:</strong> High—rotate between east/west river splits</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- WEAPONS -->
+  <section id="view-weapons" class="grid hidden">
+    <div class="block">
+      <h2>Weapons — Current Snapshot (2025)</h2>
+      <p class="muted">Quick caster crib of popular/meta picks this year. Adjust for custom loadouts and ground-loot variance.</p>
+
+      <div class="two">
+        <div class="block" style="background:var(--panel2)">
+          <h3>AR</h3>
+          <span class="pill">Vargo-S</span>
+          <span class="pill">DR-H</span>
+          <span class="pill">HVK-30</span>
+          <h3>SMG</h3>
+          <span class="pill">USS-9</span>
+          <span class="pill">CX-9</span>
+          <span class="pill">Fennec</span>
+          <h3>Sniper</h3>
+          <span class="pill">Tundra</span>
+          <span class="pill">DL Q33</span>
+        </div>
+        <div class="block" style="background:var(--panel2)">
+          <h3>LMG & Marksman</h3>
+          <span class="pill">MG42</span>
+          <span class="pill">RAAL MG</span>
+          <span class="pill">Type 63</span>
+          <span class="pill">SKS</span>
+          <h3>Shotguns</h3>
+          <span class="pill">R9-0</span>
+          <p class="muted" style="margin-top:8px">Meta evolves each season—check airdrop pool & custom gunsmiths on broadcast day.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- UTILITIES -->
+  <section id="view-utils" class="grid hidden">
+    <div class="block">
+      <h2>Utilities & Systems</h2>
+      <div class="two">
+        <div class="block" style="background:var(--panel2)">
+          <h3>Revive / Respawn</h3>
+          <ul class="muted" style="margin-left:18px;line-height:1.45">
+            <li><strong>Dog-tag Scan → Fast Respawn:</strong> recent seasons replace fixed “revival flights.” Casters can call out <em>scan races</em> in late circles.</li>
+            <li><strong>Chip Upgrade:</strong> mid-game power spike—track which teams hit terminals first.</li>
+          </ul>
+        </div>
+        <div class="block" style="background:var(--panel2)">
+          <h3>Vehicles (common)</h3>
+          <p class="muted">ATV, Off-road/Antelope (turreted), Motorcycle, SUV/Van, Helicopter, Boat. Impact: rotation tempo, third-party setups, and late-game cover.</p>
+        </div>
+      </div>
+      <p class="note" style="margin-top:8px"><strong>Caster tip:</strong> Tag class counters in real-time (e.g., <em>Hacker</em> vs <em>Trickster</em>, <em>Defender</em> vs pushes, <em>Igniter</em> choke denial).</p>
+    </div>
+  </section>
+
+  <footer>
+    <small>
+      Sources embedded: Isolated POIs (COD Wiki), Blackout POIs (Zilliongamer); BR class index (COD Wiki) + 2025 class meta roundup; 2025 weapons snapshot (Zilliongamer); revive flow confirmations via community/creator notes. See documentation/comments in source.
+    </small>
+  </footer>
+</div>
+
+<script>
+  // ===== Keyboard quick-jump =====
+  const keyMap = ['view-overview','view-classes','view-maps','view-weapons','view-utils'];
+  document.addEventListener('keydown', (e)=>{
+    if(!/^[1-5]$/.test(e.key)) return;
+    showView(keyMap[Number(e.key)-1]);
+  });
+
+  // ===== Top-level views =====
+  const tabs = Array.from(document.querySelectorAll('#topTabs .tab'));
+  tabs.forEach(t => t.addEventListener('click', () => showView(t.dataset.target)));
+  function showView(id){
+    document.querySelectorAll('section[id^="view-"]').forEach(s => s.classList.add('hidden'));
+    document.getElementById(id).classList.remove('hidden');
+    tabs.forEach(t => t.setAttribute('aria-current', t.dataset.target===id ? 'page' : 'false'));
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  // ===== Subtabs (Maps) =====
+  const mapTabs = document.querySelectorAll('[data-subtab]');
+  mapTabs.forEach(btn => btn.addEventListener('click', ()=>{
+    const which = btn.dataset.subtab;
+    document.getElementById('map-iso').classList.toggle('hidden', which!=='iso');
+    document.getElementById('map-bo').classList.toggle('hidden', which!=='bo');
+    mapTabs.forEach(x=> x.setAttribute('aria-current', x===btn ? 'page' : 'false'));
+  }));
+
+  // ===== Data (kept lightweight & caster-focused) =====
+
+  // Class summaries (names reflect current roster incl. newer classes)
+  const CLASSES = [
+    {name:'Ninja', tags:['Grapple','Silent step'], summary:'Grapple Hook for instant vertical/forward reposition; reduced footstep audio enables flanks.'},
+    {name:'Medic', tags:['Heal station','Faster revive'], summary:'Deploys a medical station; accelerates healing and revives—ideal for bunker holds.'},
+    {name:'Defender', tags:['Transform shield','DR'], summary:'Drop a portable shield and gain damage reduction—break pushes or anchor power spots.'},
+    {name:'Mechanic', tags:['EMP drone','Spot gear'], summary:'EMP Drone disrupts enemy devices; passively highlights vehicles/equipment.'},
+    {name:'Hacker', tags:['Disable','Intel'], summary:'Blocks enemy minimaps & deployables—counters Trickster/Smokes; forces fair fights.'},
+    {name:'Trickster', tags:['Decoys','Confuse'], summary:'Spawns clones and scrambles audio—use to cross open or re-peek safely.'},
+    {name:'Smoke Bomber', tags:['Vision','Smokes'], summary:'Creates thick smokes while highlighting enemies inside—push or reset safely.'},
+    {name:'Igniter', tags:['Area denial','Burn'], summary:'Deploy sticky fire traps to block doors/stairs and cut rotations.'},
+    {name:'Poltergeist', tags:['Stealth','Mobility'], summary:'Temporary invisibility with movement boost for disengage or surprise entry.'},
+    {name:'Pumped', tags:['Air dash','Mobility'], summary:'Charged jump/dash to cross gaps & stack rooftops quickly.'},
+    {name:'Rewind', tags:['Teleport back'], summary:'Snap back to a safe position you were in seconds earlier—great for over-peeks.'},
+    {name:'Misdirection', tags:['Audio bait'], summary:'Projects fake gunfire/footsteps to mislead; set traps around corners.'},
+    {name:'Refitter', tags:['Armor plates','Team buff'], summary:'Supplies plates & improves durability—sustain for long fights.'},
+    {name:'Kinetic Station', tags:['Temp HP'], summary:'Deploy station to grant kinetic armor—entry tool for breaches.'},
+    {name:'Spotter', tags:['Airstrike'], summary:'Call precision strike to flush compounds and deny revives.'},
+    {name:'Ravager Launcher', tags:['Explosives'], summary:'Portable launcher for vehicles/fortified angles—limited but decisive.'},
+    {name:'Quick Strike', tags:['Shockwave dash'], summary:'Short burst dash that knocks back and disrupts tight holds.'},
+    {name:'Shock Wave', tags:['Crowd control'], summary:'Emit a kinetic pulse to scatter enemies and open space.'},
+    {name:'Scout', tags:['Sensor dart'], summary:'Reveal footprints & nearby enemies—track third parties.'},
+    {name:'Clown', tags:['Zombie lure'], summary:'Distract/zone with toy that summons zombies—niche area control.'}
+  ];
+
+  // Isolated POIs (COD Wiki list condensed to major broadcast anchors)
+  const ISO_POIS = [
+    'Launch Base','Nuclear Plant','Sanitarium','Sakura','Countdown','Docks',
+    'Pier','Pipeline','Crash','Killhouse','Standoff','Estate','Farm',
+    'Downtown','Harbor','Ski Town','Frigid Wetland','Radar Base','Outpost'
+  ];
+
+  // Blackout POIs (Zilliongamer)
+  const BO_POIS = [
+    'Estates','Construction Site','Hydro Dam','Train Station','Asylum','Firing Range',
+    'Array','Rivertown','Nuketown Island','Fracking Tower','Turbine','Factory',
+    'Cargo Docks','Lighthouse','Ghost Town','Hijacked'
+  ];
+
+  // Weapons snapshot (Zilliongamer S4 2025). Keep short for on-air callouts.
+  const META = {
+    AR:['Vargo-S','DR-H','HVK-30'],
+    SMG:['USS-9','CX-9','Fennec'],
+    SNI:['Tundra','DL Q33'],
+    LMG:['MG42','RAAL MG'],
+    MRK:['Type 63','SKS'],
+    SG:['R9-0']
+  };
+
+  // ===== Render: classes =====
+  const cg = document.getElementById('classGrid');
+  CLASSES.forEach(c=>{
+    const card = document.createElement('div');
+    card.className = 'block';
+    card.style.cursor = 'pointer';
+    card.innerHTML = `
+      <div class="bar" style="justify-content:space-between">
+        <div><strong>${c.name}</strong></div>
+        <div>${(c.tags||[]).map(t=>`<span class="pill">${t}</span>`).join('')}</div>
+      </div>
+      <div class="muted" style="margin-top:6px">${c.summary}</div>
+    `;
+    card.addEventListener('click', ()=> card.classList.toggle('open'));
+    cg.appendChild(card);
+  });
+
+  // ===== Render: map POIs =====
+  function pillList(el, arr){ el.innerHTML = arr.map(n=>`<span class="pill">${n}</span>`).join(''); }
+  pillList(document.getElementById('isoList'), ISO_POIS);
+  pillList(document.getElementById('boList'), BO_POIS);
+
+  // Init default views
+  showView('view-overview');
+</script>
+
+<!--
+SOURCE NOTES for maintainers / TOs (linked on page footer):
+- Isolated POIs list: COD Wiki Isolated page (kept updated with S2023–2025 adds). https://callofduty.fandom.com/wiki/Isolated
+- Blackout POIs list: Zilliongamer Blackout guide. https://zilliongamer.com/call-of-duty-mobile/c/guide/call-of-duty-mobile-blackout-map-guide
+- BR classes index/name set: COD Wiki class category (includes newer classes). https://callofduty.fandom.com/wiki/Category:Call_of_Duty:_Mobile_Classes
+- 2025 class meta roundup (context): https://item4gamer.com/blog/https-item4gamer-com-blog-best-classes-cod-mobile-battle-royale/
+- 2025 weapons snapshot (Season 4): https://zilliongamer.com/call-of-duty-mobile/c/weapon-guide/best-guns-cod-mobile-season-4-2025
+- Revive flow (dog-tag scan → quick respawn vs flight): community/creator confirmations in recent seasons.
+-->
+</body>
+</html>
