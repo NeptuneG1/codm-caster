@@ -623,7 +623,7 @@ const MAPS = {
     data.notes.forEach(n=>{
       const wrap = document.createElement('details');
       wrap.className = 'panel-list';
-      if (!/Caster Notes/i.test(n.title)) wrap.open = true; // reduce scroll
+      // Start collapsed for every note panel (no wrap.open here)
       wrap.innerHTML = `<summary>${n.title}</summary>`;
       const ul = document.createElement('ul');
       n.items.forEach(item=>{
@@ -677,8 +677,8 @@ const MAPS = {
         <td>C ${fmt(r.sale ?? Math.round(r.normal * 0.7))}</td>
       </tr>`).join('');
     host.innerHTML = `
-      <details class="panel-list" open>
-        <summary>Buy Station Prices</summary>
+    <details class="panel-list">
+      <summary>Buy Station Prices</summary>
         <div class="price-wrap">
           <table class="price-table">
             <thead>
