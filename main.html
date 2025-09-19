@@ -535,53 +535,68 @@
   mSearch?.addEventListener('input', renderMini);
 
   /* ---------- Map viewer ---------- */
-  const MAPS = {
-    Isolated: {
-      img: 'https://i.imgur.com/zhCe95I.png',
-      notes: [
-        {title:'Isolated — POIs', items:[
-          'Bus Station • Killhouse • Standoff • Sakura • Estate',
-          'Pipeline • Nuclear Plant • Launch Base • Crash',
-          'Downtown • Harbor • Countdown • Black Market',
-          'Farm • Sanitarium • Dock • Heat • Outpost',
-          'High-Tier Zones rotate each match (gold beacons).'
-        ]},
-        {title:'Caster Notes', items:[
-          '<b>North rotations:</b> Pipeline → Nuclear Plant → Launch Base ridge.',
-          '<b>Hot early drops:</b> Black Market, Launch Base, Nuketown Shipyard Dock.',
-          '<b>Vehicle paths:</b> ring roads around Sakura & Nuclear Plant for quick wraps.'
-        ]}
-      ]
-    },
-    Blackout: {
-      img: 'https://i.imgur.com/XzkG6cV.png',
-      notes: [
-        {title:'Blackout — POIs', items:[
-          'Estates • Construction Site • Asylum • Array • Hydro Dam',
-          'Fracking Tower • Train Station • Rivertown • Factory',
-          'Cargo Docks • Lighthouse • Nuketown Island • Turbine'
-        ]},
-        {title:'Helicopter Spawns (Blackout)', items:[
-          'Estates — One helicopter can spawn at the Estates (on the eastern side, near the mansion’s helipad).',
-          'Construction Site — One helicopter spawns on the helipad at the top of the Construction Site tower (reachable by landing there or using the elevator).',
-          'Hijacked (ship) — One helicopter spawn on the Hijacked yacht, located on the helipad on the ship’s eastern end.',
-          'Forest Clearing — One helicopter in an unnamed clearing in the woods south of Estates and east of Construction Site (a spawn point in the middle of the forest).',
-          'Firing Range (Farm) — One helicopter spawns just south of Firing Range, by a small farm area.',
-          'Rivertown (Barn) — Another helicopter can spawn near a barn north-west of Rivertown, just across the river (east of the Firing Range farm spawn).',
-          'Nuketown Island — One helicopter spawn on Nuketown Island, at the north-west corner of the island (near the end of the main street).',
-          'Cargo Docks — One helicopter spawns at the Cargo Docks, toward the southern end behind some shipping crates.',
-          'Factory — One helicopter spawn at the Factory (behind the main factory building, at the southern edge of the map).',
-          'Turbine — Two helicopter spawns at Turbine: one at the north-west corner parking lot near the hangars, and another on a large helipad with fencing at the south end of Turbine.',
-          '<span class="muted">Source: GamesRadar</span>'
-        ]},
-        {title:'Caster Notes', items:[
-          '<b>Long rotates:</b> Lighthouse ↔ Cargo Docks shore road, watch third parties.',
-          '<b>Top control:</b> Construction Site cranes, Fracking tower decks.',
-          '<b>Bridge fights:</b> Rivertown & Nuketown causeway — call team splits early.'
-        ]}
-      ]
-    }
-  };
+
+const MAPS = {
+  Isolated: {
+    img: 'https://i.imgur.com/zhCe95I.png',
+    notes: [
+      {title:'Isolated — POIs', items:[
+        'Bus Station • Killhouse • Standoff • Sakura • Estate',
+        'Pipeline • Nuclear Plant • Launch Base • Crash',
+        'Downtown • Harbor • Countdown • Black Market',
+        'Farm • Sanitarium • Dock • Heat • Outpost',
+        'High-Tier Zones rotate each match (gold beacons).'
+      ]},
+      {title:'Helicopter Spawns (Isolated)', items:[
+        'Nuclear Plant — One helicopter spawn at this northern location.',
+        'Overgrown — One helicopter spawn in Overgrown.',
+        'Sakura — One helicopter spawn in Sakura.',
+        'Killhouse — One helicopter spawn at Killhouse.',
+        'Countdown — Up to three helicopter spawns around the Countdown area (south-east).',
+        'Practice Range — Up to two helicopter spawns at Practice Range (south-east).',
+        'Estate — One helicopter spawn at the Estate compound.',
+        'Docks — Three possible helicopter spawns around the Docks (south-west).',
+        'Pier — One helicopter spawn near the Pier (south-west island).',
+        'Nuketown — One helicopter spawn at Nuketown (south-west corner of main island), which appears almost every game.',
+        '<span class="muted">Source: DigiStatement</span>'
+      ]},
+      {title:'Caster Notes', items:[
+        '<b>North rotations:</b> Pipeline → Nuclear Plant → Launch Base ridge.',
+        '<b>Hot early drops:</b> Black Market, Launch Base, Nuketown Shipyard Dock.',
+        '<b>Vehicle paths:</b> ring roads around Sakura & Nuclear Plant for quick wraps.'
+      ]}
+    ]
+  },
+  Blackout: {
+    img: 'https://i.imgur.com/XzkG6cV.png',
+    notes: [
+      {title:'Blackout — POIs', items:[
+        'Estates • Construction Site • Asylum • Array • Hydro Dam',
+        'Fracking Tower • Train Station • Rivertown • Factory',
+        'Cargo Docks • Lighthouse • Nuketown Island • Turbine'
+      ]},
+      {title:'Helicopter Spawns (Blackout)', items:[
+        'Estates — One helicopter can spawn at the Estates (on the eastern side, near the mansion’s helipad).',
+        'Construction Site — One helicopter spawns on the helipad at the top of the Construction Site tower (reachable by landing there or using the elevator).',
+        'Hijacked (ship) — One helicopter spawn on the Hijacked yacht, located on the helipad on the ship’s eastern end.',
+        'Forest Clearing — One helicopter in an unnamed clearing in the woods south of Estates and east of Construction Site (a spawn point in the middle of the forest).',
+        'Firing Range (Farm) — One helicopter spawns just south of Firing Range, by a small farm area.',
+        'Rivertown (Barn) — Another helicopter can spawn near a barn north-west of Rivertown, just across the river (east of the Firing Range farm spawn).',
+        'Nuketown Island — One helicopter spawn on Nuketown Island, at the north-west corner of the island (near the end of the main street).',
+        'Cargo Docks — One helicopter spawns at the Cargo Docks, toward the southern end behind some shipping crates.',
+        'Factory — One helicopter spawn at the Factory (behind the main factory building, at the southern edge of the map).',
+        'Turbine — Two helicopter spawns at Turbine: one at the north-west corner parking lot near the hangars, and another on a large helipad with fencing at the south end of Turbine.',
+        '<span class="muted">Source: GamesRadar</span>'
+      ]},
+      {title:'Caster Notes', items:[
+        '<b>Long rotates:</b> Lighthouse ↔ Cargo Docks shore road, watch third parties.',
+        '<b>Top control:</b> Construction Site cranes, Fracking tower decks.',
+        '<b>Bridge fights:</b> Rivertown & Nuketown causeway — call team splits early.'
+      ]}
+    ]
+  }
+};
+
 
 
   const mapTabs = document.getElementById('mapTabs');
