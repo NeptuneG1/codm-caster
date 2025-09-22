@@ -130,6 +130,19 @@
   .price-table td:nth-child(2),.price-table td:nth-child(3){text-align:right;white-space:nowrap}
   .price-note{margin-top:6px;color:var(--muted);font-size:.85rem}
 
+  /* ===== Weapon table ===== */
+  .attach-wrap{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px}
+  .attach-table{width:100%;border-collapse:collapse;font-size:.9rem}
+  .attach-table th,.attach-table td{border:1px solid var(--line);padding:8px 10px}
+  .attach-table th{background:#141b27;text-align:center;position:sticky;top:0;z-index:1}
+  .attach-table td{text-align:center;vertical-align:middle}
+  .attach-table td:first-child,
+  .attach-table td:nth-child(2),
+  .attach-table th:first-child,
+  .attach-table th:nth-child(2){text-align:left}
+  .yes-icon{width:18px;height:18px;object-fit:contain;display:inline-block;vertical-align:middle}
+  .attach-scroll{overflow:auto;max-height:70vh;border:1px solid var(--line);border-radius:10px}
+  
   footer{border-top:1px solid var(--line);margin-top:18px;padding:14px 0 28px}
   footer small{color:var(--muted)}
 </style>
@@ -188,6 +201,21 @@
     </div>
   </section>
 
+    <!-- ===================== PAGE: WEAPON (ground loot table) ===================== -->
+  <section class="block page" data-title="Map">
+
+  <section class="block page hidden" data-title="Weapon">
+    <h2>Ground Loot & Attachments (Sep 2025)</h2>
+    <div class="attach-wrap">
+      <div class="muted" style="margin-bottom:8px">
+        CODM logo = recommended/available on best floor blueprints; blank = low priority / not applicable.
+      </div>
+      <div class="attach-scroll">
+        <table class="attach-table" id="weaponAttachTable"><!-- filled by JS --></table>
+      </div>
+    </div>
+  </section>
+  
   <!-- ===================== PAGE: CLASSES ===================== -->
   <section class="block page hidden" data-title="Classes">
     <h2>All Operator Classes</h2>
@@ -316,7 +344,8 @@
   document.addEventListener('keydown', (e) => {
     const tag = (e.target.tagName || '').toLowerCase();
     if (tag === 'input' || tag === 'textarea') return;
-    if (['1','2','3','4'].includes(e.key)) { go(parseInt(e.key,10)-1); } // 1=Maps, 2=Classes, 3=BR Systems, 4=Other Details
+   // 1=Map, 2=Weapon, 3=BR Systems, 4=Classes, 5=Other Details
+    if (['1','2','3','4','5'].includes(e.key)) { go(parseInt(e.key,10)-1); }
     else if (e.key === '/') {
       e.preventDefault();
       const active = pagesOrdered.find(p => !p.classList.contains('hidden'));
@@ -326,7 +355,7 @@
   });
 
   /* ---------- Page order: MAPS first (tabs in header) ---------- */
-  const PAGE_ORDER = ['Maps', 'Classes', 'BR Systems', 'Other Details'];
+  const PAGE_ORDER = ['Map', 'Weapon', 'BR Systems', 'Classes', 'Other Details'];
 
   const pagesByTitle = {};
   document.querySelectorAll('.page').forEach(p => pagesByTitle[p.dataset.title] = p);
@@ -364,7 +393,7 @@
   }
 
   const savedTitle = sessionStorage.getItem('codm_ref_title');
-  go(savedTitle && pagesByTitle[savedTitle] ? savedTitle : 'Maps');
+go(savedTitle && pagesByTitle[savedTitle] ? savedTitle : 'Map');
 
   /* ---------- Class data ---------- */
   const CLASSES = [
@@ -653,6 +682,107 @@ Object.values(MAPS).forEach(m => { const im = new Image(); im.src = m.img; });
 // Initialize from storage or default
 setMap(sessionStorage.getItem('codm_map') || 'isolated');
 
+/* ---------- Weapon table (ground loot, Sep 2025) ---------- */
+const YES_ICON_URL = 'https://i.imgur.com/K0TTjUC.png';
+const ATTACH_COLS = [
+  'Suppressor','Long Barrel','Tactical Laser','Foregrip',
+  'Extended Mag','Mobility Stock','Optic (Red Dot)',
+  'Rear Grip (Control)','Perk (Special)'
+];
+
+// Same dataset you reviewed
+const WEAPONS = [
+  // AR
+  {weapon:'DR-H',      class:'AR',  Suppressor:1, LongBarrel:1, Laser:0, Grip:0, ExtMag:0, Stock:1, Optic:0, Rear:1, Perk:0},
+  {weapon:'ODEN',      class:'AR',  Suppressor:1, LongBarrel:1, Laser:0, Grip:0, ExtMag:1, Stock:0, Optic:0, Rear:1, Perk:1},
+  {weapon:'RAM-7',     class:'AR',  Suppressor:1, LongBarrel:1, Laser:0, Grip:1, ExtMag:0, Stock:1, Optic:0, Rear:1, Perk:0},
+  {weapon:'M13',       class:'AR',  Suppressor:1, LongBarrel:1, Laser:0, Grip:1, ExtMag:1, Stock:0, Optic:0, Rear:1, Perk:0},
+  {weapon:'BP50',      class:'AR',  Suppressor:1, LongBarrel:1, Laser:0, Grip:1, ExtMag:1, Stock:0, Optic:0, Rear:1, Perk:0},
+  {weapon:'Grau 5.56', class:'AR',  Suppressor:1, LongBarrel:1, Laser:0, Grip:1, ExtMag:1, Stock:0, Optic:0, Rear:1, Perk:0},
+  {weapon:'Krig 6',    class:'AR',  Suppressor:1, LongBarrel:1, Laser:0, Grip:1, ExtMag:1, Stock:0, Optic:0, Rear:1, Perk:0},
+  {weapon:'XM4',       class:'AR',  Suppressor:1, LongBarrel:1, Laser:0, Grip:1, ExtMag:1, Stock:0, Optic:0, Rear:1, Perk:0},
+  {weapon:'EM2',       class:'AR',  Suppressor:1, LongBarrel:1, Laser:0, Grip:1, ExtMag:1, Stock:0, Optic:0, Rear:1, Perk:0},
+  {weapon:'Kilo 141',  class:'AR',  Suppressor:1, LongBarrel:1, Laser:0, Grip:1, ExtMag:1, Stock:0, Optic:0, Rear:1, Perk:0},
+  {weapon:'Man-O-War', class:'AR',  Suppressor:1, LongBarrel:1, Laser:0, Grip:1, ExtMag:1, Stock:0, Optic:0, Rear:1, Perk:0},
+  {weapon:'Type 19',   class:'AR',  Suppressor:1, LongBarrel:1, Laser:0, Grip:1, ExtMag:1, Stock:0, Optic:0, Rear:1, Perk:0},
+
+  // SMG
+  {weapon:'USS 9',     class:'SMG', Suppressor:1, LongBarrel:1, Laser:0, Grip:0, ExtMag:1, Stock:0, Optic:0, Rear:1, Perk:0},
+  {weapon:'VMP',       class:'SMG', Suppressor:1, LongBarrel:1, Laser:0, Grip:0, ExtMag:1, Stock:0, Optic:0, Rear:1, Perk:0},
+  {weapon:'CX-9',      class:'SMG', Suppressor:1, LongBarrel:0, Laser:0, Grip:1, ExtMag:1, Stock:1, Optic:0, Rear:1, Perk:0},
+  {weapon:'Fennec',    class:'SMG', Suppressor:1, LongBarrel:0, Laser:0, Grip:1, ExtMag:1, Stock:1, Optic:0, Rear:1, Perk:0},
+  {weapon:'TEC-9',     class:'SMG', Suppressor:1, LongBarrel:0, Laser:0, Grip:1, ExtMag:1, Stock:1, Optic:0, Rear:1, Perk:0},
+  {weapon:'QQ9',       class:'SMG', Suppressor:1, LongBarrel:0, Laser:0, Grip:1, ExtMag:1, Stock:0, Optic:0, Rear:1, Perk:0},
+  {weapon:'PPSH-41',   class:'SMG', Suppressor:1, LongBarrel:0, Laser:0, Grip:1, ExtMag:1, Stock:0, Optic:0, Rear:1, Perk:0},
+
+  // LMG
+  {weapon:'MG 82',     class:'LMG', Suppressor:0, LongBarrel:1, Laser:0, Grip:1, ExtMag:1, Stock:0, Optic:0, Rear:1, Perk:0},
+  {weapon:'MG 42',     class:'LMG', Suppressor:0, LongBarrel:0, Laser:0, Grip:1, ExtMag:1, Stock:1, Optic:0, Rear:1, Perk:0},
+  {weapon:'Bruen MK9', class:'LMG', Suppressor:0, LongBarrel:1, Laser:0, Grip:1, ExtMag:1, Stock:0, Optic:0, Rear:1, Perk:0},
+  {weapon:'RPD',       class:'LMG', Suppressor:0, LongBarrel:1, Laser:0, Grip:1, ExtMag:1, Stock:0, Optic:0, Rear:1, Perk:0},
+  {weapon:'Holger 26', class:'LMG', Suppressor:0, LongBarrel:1, Laser:0, Grip:1, ExtMag:1, Stock:0, Optic:0, Rear:1, Perk:0},
+
+  // Marksman
+  {weapon:'Type 63',   class:'Marksman', Suppressor:1, LongBarrel:1, Laser:0, Grip:0, ExtMag:1, Stock:1, Optic:0, Rear:1, Perk:1},
+  {weapon:'SKS',       class:'Marksman', Suppressor:1, LongBarrel:1, Laser:0, Grip:0, ExtMag:0, Stock:1, Optic:0, Rear:1, Perk:1},
+  {weapon:'SP-R 208',  class:'Marksman', Suppressor:1, LongBarrel:1, Laser:1, Grip:0, ExtMag:1, Stock:1, Optic:0, Rear:1, Perk:0},
+  {weapon:'MK2 Carbine',class:'Marksman',Suppressor:1, LongBarrel:1, Laser:1, Grip:0, ExtMag:1, Stock:1, Optic:0, Rear:1, Perk:0},
+
+  // Sniper
+  {weapon:'LW3-Tundra',class:'Sniper', Suppressor:1, LongBarrel:1, Laser:1, Grip:0, ExtMag:0, Stock:1, Optic:0, Rear:1, Perk:0},
+  {weapon:'DL Q33',    class:'Sniper', Suppressor:0, LongBarrel:1, Laser:1, Grip:0, ExtMag:0, Stock:1, Optic:0, Rear:1, Perk:0},
+  {weapon:'Rytec AMR', class:'Sniper', Suppressor:1, LongBarrel:1, Laser:1, Grip:0, ExtMag:1, Stock:1, Optic:0, Rear:1, Perk:0},
+  {weapon:'Locus',     class:'Sniper', Suppressor:0, LongBarrel:1, Laser:1, Grip:0, ExtMag:0, Stock:1, Optic:0, Rear:1, Perk:0},
+  {weapon:'Arctic .50',class:'Sniper', Suppressor:1, LongBarrel:1, Laser:1, Grip:0, ExtMag:1, Stock:1, Optic:0, Rear:1, Perk:0},
+
+  // Shotgun
+  {weapon:'HS0405',    class:'Shotgun', Suppressor:0, LongBarrel:0, Laser:1, Grip:0, ExtMag:1, Stock:1, Optic:0, Rear:1, Perk:1},
+  {weapon:'R9-0',      class:'Shotgun', Suppressor:0, LongBarrel:1, Laser:1, Grip:0, ExtMag:1, Stock:1, Optic:0, Rear:1, Perk:0},
+  {weapon:'KRM-262',   class:'Shotgun', Suppressor:0, LongBarrel:1, Laser:1, Grip:0, ExtMag:1, Stock:1, Optic:0, Rear:1, Perk:0},
+  {weapon:'HS2126',    class:'Shotgun', Suppressor:0, LongBarrel:0, Laser:1, Grip:0, ExtMag:1, Stock:1, Optic:0, Rear:1, Perk:0},
+];
+
+function renderWeapons(){
+  const table = document.getElementById('weaponAttachTable');
+  if(!table) return;
+
+  // Header
+  const headRow = `
+    <tr>
+      <th style="min-width:220px">Weapon</th>
+      <th style="min-width:120px">Class</th>
+      ${ATTACH_COLS.map(a=>`<th>${a}</th>`).join('')}
+    </tr>`;
+  // Rows
+  const yes = `<img class="yes-icon" src="${YES_ICON_URL}" alt="Yes" aria-label="Yes">`;
+
+  // Order by class then weapon name
+  const classOrder = ['AR','SMG','LMG','Marksman','Sniper','Shotgun','Unknown'];
+  const rowsSorted = [...WEAPONS].sort((a,b)=>{
+    const ai = classOrder.indexOf(a.class); const bi = classOrder.indexOf(b.class);
+    if (ai!==bi) return ai-bi;
+    return a.weapon.localeCompare(b.weapon);
+  });
+
+  const bodyRows = rowsSorted.map(w=>{
+    const cells = [
+      `<td><b>${w.weapon}</b></td>`,
+      `<td>${w.class}</td>`,
+      `<td>${w.Suppressor?yes:''}</td>`,
+      `<td>${w.LongBarrel?yes:''}</td>`,
+      `<td>${w.Laser?yes:''}</td>`,
+      `<td>${w.Grip?yes:''}</td>`,
+      `<td>${w.ExtMag?yes:''}</td>`,
+      `<td>${w.Stock?yes:''}</td>`,
+      `<td>${w.Optic?yes:''}</td>`,
+      `<td>${w.Rear?yes:''}</td>`,
+      `<td>${w.Perk?yes:''}</td>`
+    ];
+    return `<tr>${cells.join('')}</tr>`;
+  }).join('');
+
+  table.innerHTML = `<thead>${headRow}</thead><tbody>${bodyRows}</tbody>`;
+}
 
   /* ---------- BR Systems content + Buy Station prices ---------- */
   const BUY_PRICES = [
@@ -767,6 +897,7 @@ setMap(sessionStorage.getItem('codm_map') || 'isolated');
     renderMini();
     const lastMap = sessionStorage.getItem('codm_map') || 'Isolated';
     setMap(lastMap);
+    renderWeapons(); // build the Weapon tab
   }
   initAfterLoad();
 </script>
