@@ -535,7 +535,7 @@
   /* ---------- Map viewer ---------- */
 
 const MAPS = {
-  Isolated: {
+  isolated: {
     img: 'https://i.imgur.com/zhCe95I.png',
     notes: [
       {title:'Isolated — POIs', items:[
@@ -560,11 +560,11 @@ const MAPS = {
       {title:'Caster Notes', items:[
         '<b>North rotations:</b> Pipeline → Nuclear Plant → Launch Base ridge.',
         '<b>Hot early drops:</b> Black Market, Launch Base, Nuketown Shipyard Dock.',
-        '<b>Vehicle paths:</b> ring roads around Sakura & Nuclear Plant for quick wraps.'
+        '<b>Vehicle paths:</b> Ring roads around Sakura & Nuclear Plant for quick wraps.'
       ]}
     ]
   },
-  Blackout: {
+  blackout: {
     img: 'https://i.imgur.com/XzkG6cV.png',
     notes: [
       {title:'Blackout — POIs', items:[
@@ -573,65 +573,86 @@ const MAPS = {
         'Cargo Docks • Lighthouse • Nuketown Island • Turbine'
       ]},
       {title:'Helicopter Spawns (Blackout)', items:[
-        'Estates — One helicopter can spawn at the Estates (on the eastern side, near the mansion’s helipad).',
-        'Construction Site — One helicopter spawns on the helipad at the top of the Construction Site tower (reachable by landing there or using the elevator).',
-        'Hijacked (ship) — One helicopter spawn on the Hijacked yacht, located on the helipad on the ship’s eastern end.',
-        'Forest Clearing — One helicopter in an unnamed clearing in the woods south of Estates and east of Construction Site (a spawn point in the middle of the forest).',
-        'Firing Range (Farm) — One helicopter spawns just south of Firing Range, by a small farm area.',
-        'Rivertown (Barn) — Another helicopter can spawn near a barn north-west of Rivertown, just across the river (east of the Firing Range farm spawn).',
-        'Nuketown Island — One helicopter spawn on Nuketown Island, at the north-west corner of the island (near the end of the main street).',
-        'Cargo Docks — One helicopter spawns at the Cargo Docks, toward the southern end behind some shipping crates.',
-        'Factory — One helicopter spawn at the Factory (behind the main factory building, at the southern edge of the map).',
-        'Turbine — Two helicopter spawns at Turbine: one at the north-west corner parking lot near the hangars, and another on a large helipad with fencing at the south end of Turbine.'
+        'Estates — One helicopter can spawn at the Estates.',
+        'Construction Site — Helipad at the top of the tower.',
+        'Hijacked (ship) — Helipad on the yacht’s eastern end.',
+        'Forest Clearing — Unnamed clearing S of Estates / E of Construction Site.',
+        'Firing Range (Farm) — Just south of Firing Range.',
+        'Rivertown (Barn) — Near a barn NW of Rivertown.',
+        'Nuketown Island — NW corner of the island.',
+        'Cargo Docks — Toward the southern end behind crates.',
+        'Factory — Behind the main building (south edge).',
+        'Turbine — Two spawns: NW parking lot & S helipad.'
       ]},
       {title:'Caster Notes', items:[
-        '<b>Long rotates:</b> Lighthouse ↔ Cargo Docks shore road, watch third parties.',
-        '<b>Top control:</b> Construction Site cranes, Fracking tower decks.',
-        '<b>Bridge fights:</b> Rivertown & Nuketown causeway — call team splits early.'
+        '<b>Long rotates:</b> Lighthouse ↔ Cargo Docks shore road; expect third parties.',
+        '<b>Top control:</b> Construction cranes, Fracking tower decks.',
+        '<b>Bridge fights:</b> Rivertown & Nuketown causeway—call early splits.'
       ]}
     ]
   }
 };
 
+const mapTabs = document.getElementById('mapTabs');
+const mapImage = document.getElementById('mapImage');
+const mapNotes = document.getElementById('mapNotes');
 
+// Build tabs with data-map keys (not text)
+mapTabs.innerHTML = '';
+['isolated','blackout'].forEach((key, i)=>{
+  const b = document.createElement('button');
+  b.className = 'tab';
+  b.type = 'button';
+  b.dataset.map = key;
+  b.textContent = key.charAt(0).toUpperCase() + key.slice(1); // Isolated / Blackout
+  if (i===0) b.setAttribute('aria-current','page');
+  mapTabs.appendChild(b);
+});
 
-  const mapTabs = document.getElementById('mapTabs');
-  const mapImage = document.getElementById('mapImage');
-  const mapNotes = document.getElementById('mapNotes');
+// Delegate clicks safely
+mapTabs.addEventListener('click', (e)=>{
+  const btn = e.target.closest('button[data-map]');
+  if (!btn) return;
+  setMap(btn.dataset.map);
+});
 
-  ['Isolated','Blackout'].forEach((name,i)=>{
-    const b = document.createElement('button');
-    b.className = 'tab';
-    b.textContent = name;
-    b.addEventListener('click', ()=> setMap(name));
-    if(i===0) b.setAttribute('aria-current','page');
-    mapTabs.appendChild(b);
+function setMap(key){
+  const data = MAPS[key];
+  if(!data) return;
+
+  // Update image
+  mapImage.src = data.img; // if your browser caches too hard, add:  + '?t=' + Date.now()
+
+  // Toggle selected state
+  Array.from(mapTabs.children).forEach(btn=>{
+    btn.setAttribute('aria-current', btn.dataset.map === key ? 'page' : 'false');
   });
 
-  function setMap(name){
-    const data = MAPS[name];
-    if(!data) return;
-    mapImage.src = data.img;
-    Array.from(mapTabs.children).forEach(btn=>{
-      btn.setAttribute('aria-current', btn.textContent===name ? 'page' : 'false');
+  // Render notes
+  mapNotes.innerHTML = '';
+  data.notes.forEach(n=>{
+    const wrap = document.createElement('details');
+    wrap.className = 'panel-list';
+    wrap.innerHTML = `<summary>${n.title}</summary>`;
+    const ul = document.createElement('ul');
+    n.items.forEach(item=>{
+      const li = document.createElement('li');
+      li.innerHTML = item;
+      ul.appendChild(li);
     });
-    mapNotes.innerHTML = '';
-    data.notes.forEach(n=>{
-      const wrap = document.createElement('details');
-      wrap.className = 'panel-list';
-      // Start collapsed for every note panel (no wrap.open here)
-      wrap.innerHTML = `<summary>${n.title}</summary>`;
-      const ul = document.createElement('ul');
-      n.items.forEach(item=>{
-        const li = document.createElement('li');
-        li.innerHTML = item;
-        ul.appendChild(li);
-      });
-      wrap.appendChild(ul);
-      mapNotes.appendChild(wrap);
-    });
-    sessionStorage.setItem('codm_map', name);
-  }
+    wrap.appendChild(ul);
+    mapNotes.appendChild(wrap);
+  });
+
+  sessionStorage.setItem('codm_map', key);
+}
+
+// Preload images so switching feels instant
+Object.values(MAPS).forEach(m => { const im = new Image(); im.src = m.img; });
+
+// Initialize from storage or default
+setMap(sessionStorage.getItem('codm_map') || 'isolated');
+
 
   /* ---------- BR Systems content + Buy Station prices ---------- */
   const BUY_PRICES = [
