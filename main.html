@@ -161,7 +161,7 @@
 <div class="shell">
 
   <!-- ===================== PAGE: MAPS (first) ===================== -->
-  <section class="block page" data-title="Maps">
+  <section class="block page" data-title="Map">
     <h2>Maps & Areas</h2>
 
     <div class="layout">
@@ -202,19 +202,18 @@
   </section>
 
     <!-- ===================== PAGE: WEAPON (ground loot table) ===================== -->
-  <section class="block page" data-title="Map">
-
   <section class="block page hidden" data-title="Weapon">
-    <h2>Ground Loot & Attachments (Sep 2025)</h2>
-    <div class="attach-wrap">
-      <div class="muted" style="margin-bottom:8px">
-        CODM logo = recommended/available on best floor blueprints; blank = low priority / not applicable.
-      </div>
-      <div class="attach-scroll">
-        <table class="attach-table" id="weaponAttachTable"><!-- filled by JS --></table>
-      </div>
+    
+  <h2>Ground Loot & Attachments (Sep 2025)</h2>
+  <div class="attach-wrap">
+    <div class="muted" style="margin-bottom:8px">
+      CODM logo = recommended/available on best floor blueprints; blank = low priority / not applicable.
     </div>
-  </section>
+    <div class="attach-scroll">
+      <table class="attach-table" id="weaponAttachTable"><!-- filled by JS --></table>
+    </div>
+  </div>
+</section>
   
   <!-- ===================== PAGE: CLASSES ===================== -->
   <section class="block page hidden" data-title="Classes">
@@ -895,7 +894,7 @@ function renderWeapons(){
   function initAfterLoad(){
     renderClasses();
     renderMini();
-    const lastMap = sessionStorage.getItem('codm_map') || 'Isolated';
+    const lastMap = (sessionStorage.getItem('codm_map') || 'isolated');
     setMap(lastMap);
     renderWeapons(); // build the Weapon tab
   }
