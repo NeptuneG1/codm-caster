@@ -43,7 +43,7 @@
   .btn{background:var(--brand);color:#0c0e10;border:0;border-radius:10px;padding:8px 12px;font-weight:800;cursor:pointer}
   .btn.secondary{background:#1a2030;color:#d6dbe6;border:1px solid var(--line)}
 
-  /* ===== Series card (balanced two sides; mode above map, centered) ===== */
+  /* ===== Series card (balanced lanes; mode above map, centered) ===== */
   .series-card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden}
   .series-head{
     display:grid;grid-template-columns:1fr max-content 1fr;gap:8px;align-items:center;
@@ -184,7 +184,7 @@
     </div>
 
     <details class="fold" id="perModeFold">
-      <summary>Per Mode standings (click to expand)</summary>
+      <summary>Per Mode standings (map-only)</summary>
       <div class="grid2" style="margin-top:8px">
         <div>
           <h3>Hardpoint</h3>
@@ -566,33 +566,24 @@ function renderStandings(){
     {label:'M Win %',key:'map_winrate',format:'pct',right:true},
   ], '—');
 
-  const hp  = computeStandings(GAME_ENTRIES, 'Hardpoint');
-  const snd = computeStandings(GAME_ENTRIES, 'Search & Destroy');
-  const ctl = computeStandings(GAME_ENTRIES, 'Control');
-  const cols = [
+  /* === Per Mode: MAP-ONLY tables (no series columns) === */
+  const hp  = computeStandings(GAME_ENTRIES, 'Hardpoint').map(r=>({...r, maps:r.map_wins+r.map_losses}));
+  const snd = computeStandings(GAME_ENTRIES, 'Search & Destroy').map(r=>({...r, maps:r.map_wins+r.map_losses}));
+  const ctl = computeStandings(GAME_ENTRIES, 'Control').map(r=>({...r, maps:r.map_wins+r.map_losses}));
+
+  const modeCols = [
     {label:'Team',key:'team'},
-    {label:'Series',key:'series_played',right:true},
-    {label:'SW',key:'series_wins',right:true},
-    {label:'SL',key:'series_losses',right:true},
-    {label:'S %',key:'series_winrate',format:'pct',right:true},
+    {label:'Maps',key:'maps',right:true},
     {label:'MW',key:'map_wins',right:true},
     {label:'ML',key:'map_losses',right:true},
     {label:'M %',key:'map_winrate',format:'pct',right:true},
   ];
-  renderTable('stand_hp',  hp.slice(0,20),  cols, '—');
-  renderTable('stand_snd', snd.slice(0,20), cols, '—');
-  renderTable('stand_ctrl',ctl.slice(0,20), cols, '—');
+  renderTable('stand_hp',  hp.slice(0,20),  modeCols, '—');
+  renderTable('stand_snd', snd.slice(0,20), modeCols, '—');
+  renderTable('stand_ctrl',ctl.slice(0,20), modeCols, '—');
 }
 
 /* ===== Extra insights ===== */
-function quickStats(rows){
-  const games = rows.length;
-  const w = rows.filter(r=>cleanWL(r['W/L'])==='W').length;
-  const l = rows.filter(r=>cleanWL(r['W/L'])==='L').length;
-  const ptsFor = sum(rows,'Score');
-  const ptsAg  = sum(rows,'Opp Score');
-  return { games, wins:w, losses:l, winrate: games ? (w/games) : 0, ptsFor, ptsAg, diff: ptsFor-ptsAg };
-}
 function renderBestTeams(){
   const g = groupBy(SCOPE, r=>norm(r.Tag));
   const rows = Object.entries(g).map(([team,list])=>{
@@ -666,7 +657,15 @@ function renderAll(){
   setSeriesOptions(SCOPE);
   renderSeriesCard(el('fSeries').value);
 
-  const q = quickStats(SCOPE);
+  const q = (function(rows){
+    const games = rows.length;
+    const w = rows.filter(r=>cleanWL(r['W/L'])==='W').length;
+    const l = rows.filter(r=>cleanWL(r['W/L'])==='L').length;
+    const ptsFor = sum(rows,'Score');
+    const ptsAg  = sum(rows,'Opp Score');
+    return {games,wins:w,losses:l,winrate:games?(w/games):0,ptsFor,ptsAg,diff:ptsFor-ptsAg};
+  })(SCOPE);
+
   renderTable('quickTbl', [{
     games:q.games, wins:q.wins, losses:q.losses, winrate:q.winrate, points_for:q.ptsFor, points_against:q.ptsAg, diff:q.diff
   }], [
