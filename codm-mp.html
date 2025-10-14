@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>CODM — Worlds MP Analyzer</title>
+<meta name="theme-color" content="#0d1014"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  /* ===== Palette / base (from your theme) ===== */
+  :root{
+    --bg:#0d1014; --panel:#292d42; --panel2:#1e2432;
+    --ink:#f3f6fa; --muted:#b8c0cc; --brand:#ffe93b; --brandText:#0b0d0e;
+    --brand2:#ffffff; --line:#4c525d; --chip:#213830;
+    --good:#62e887; --bad:#ff6b6b; --warn:#ffe93b;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif}
+  a{color:var(--brand);text-decoration:none}
+  a:hover{text-decoration:underline}
+  header{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,#141a23 0%,#0d1014 100%);border-bottom:2px solid var(--brand)}
+  .head{display:flex;align-items:center;gap:14px;max-width:1240px;margin:0 auto;padding:12px 14px}
+  h1{margin:0;font-size:1.1rem;letter-spacing:.4px;color:var(--brand)}
+  .shell{max-width:1240px;margin:18px auto;padding:0 12px}
+  .block{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+  .block h2{margin:0 0 8px 0;color:var(--brand2)}
+  .muted{color:var(--muted)}
+  .grid2{display:grid;grid-template-columns:1fr;gap:14px}
+  @media(min-width:1024px){ .grid2{grid-template-columns:1fr 1fr} }
+
+  /* ===== Filter bar ===== */
+  .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .chip{background:var(--chip);border:1px solid var(--line);color:#d2efe1;border-radius:999px;padding:6px 10px}
+  .controls input,.controls select{background:#151b26;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+  .btn{background:var(--brand);color:#0c0e10;border:0;border-radius:10px;padding:8px 12px;font-weight:800;cursor:pointer}
+  .btn.secondary{background:#1a2030;color:#d6dbe6;border:1px solid var(--line)}
+  .right{ text-align:right }
+
+  /* ===== Series card (replicates your screenshot) ===== */
+  .series-card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .series-head{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--line);background:#1a2030}
+  .series-teams{display:flex;gap:10px;align-items:center;font-weight:900}
+  .series-score{font-weight:900;font-size:1.05rem;color:#fff;background:#101420;border:1px solid var(--line);border-radius:8px;padding:6px 10px}
+  .series-meta{font-size:.85rem;color:var(--muted)}
+  .map-row{display:grid;grid-template-columns:110px 1fr 110px;gap:10px;padding:10px 12px;border-top:1px solid #2f3545;align-items:center}
+  .map-row:nth-child(odd){background:#181e2a}
+  .map-name{display:flex;gap:8px;align-items:center;color:#fff}
+  .mode-pill{font-size:.7rem;border:1px solid var(--line);padding:2px 6px;border-radius:999px;background:#111827;color:#e8ecf5}
+  .side{display:flex;gap:8px;align-items:center}
+  .tick{width:16px;height:16px;border-radius:50%;background:var(--good);display:inline-block}
+  .cross{width:16px;height:16px;border-radius:50%;background:var(--bad);display:inline-block}
+  .dim{opacity:.5}
+  .series-foot{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-top:1px solid var(--line);background:#1a2030;color:var(--muted);font-size:.9rem}
+
+  /* ===== Tables ===== */
+  table{width:100%;border-collapse:collapse;font-size:.92rem}
+  th,td{border-bottom:1px solid #40475a;padding:8px 10px;vertical-align:top}
+  thead th{background:#141a1f;text-align:left;position:sticky;top:0}
+</style>
+</head>
+<body>
+<header>
+  <div class="head">
+    <h1>CODM — Worlds MP Analyzer</h1>
+  </div>
+</header>
+
+<div class="shell">
+
+  <!-- FILTERS -->
+  <section class="block">
+    <h2>Filters</h2>
+    <div class="controls">
+      <label class="chip">Team
+        <select id="fTeam"></select>
+      </label>
+      <label class="chip">Opponent
+        <select id="fOpp"></select>
+      </label>
+      <label class="chip">Mode
+        <select id="fMode"></select>
+      </label>
+      <label class="chip">Map
+        <select id="fMap"></select>
+      </label>
+      <label class="chip">Stage
+        <select id="fStage"></select>
+      </label>
+      <label class="chip">Day
+        <select id="fDay"></select>
+      </label>
+      <label class="chip">Result
+        <select id="fWL">
+          <option value="ALL">All</option>
+          <option value="W">Win</option>
+          <option value="L">Loss</option>
+        </select>
+      </label>
+      <label class="chip">Search
+        <input id="fSearch" type="text" placeholder="Team / Opponent / Map / Mode…">
+      </label>
+      <button class="btn" id="applyBtn">Apply</button>
+      <button class="btn secondary" id="resetBtn">Reset</button>
+      <button class="btn secondary" id="exportBtn">Export CSV</button>
+    </div>
+    <div class="muted" id="meta">—</div>
+  </section>
+
+  <!-- SERIES VIEWER + QUICK ANALYTICS -->
+  <section class="block">
+    <div class="grid2">
+      <div>
+        <h2>Series Viewer</h2>
+        <div class="controls" style="margin-bottom:8px">
+          <label class="chip">Pick Series
+            <select id="fSeries"></select>
+          </label>
+          <span class="muted" id="seriesHint">—</span>
+        </div>
+        <div id="seriesCard" class="series-card">Loading…</div>
+      </div>
+
+      <div>
+        <h2>Quick Analytics (current scope)</h2>
+        <table id="quickTbl"></table>
+        <div class="grid2" style="margin-top:12px">
+          <div>
+            <h3 style="margin:8px 0">By Mode</h3>
+            <table id="modeTbl"></table>
+          </div>
+          <div>
+            <h3 style="margin:8px 0">By Map</h3>
+            <table id="mapTbl"></table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RAW ROWS (optional debugging) -->
+  <section class="block">
+    <h2>Rows</h2>
+    <table id="rowsTbl"></table>
+  </section>
+</div>
+
+<script>
+/* ====== Supabase client ====== */
+const SUPA_URL = 'https://fjdyppkanjnvyscqrfum.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqZHlwcGthbmpudnlzY3FyZnVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAzNDU1NzIsImV4cCI6MjA3NTkyMTU3Mn0.ssEN7uA9BVm9AkhsjkWxhPzV1-VQVxc4-u7LS2wt4Aw';
+const client = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+/* ====== Helpers ====== */
+const el = id => document.getElementById(id);
+const n  = v => Number(v ?? 0) || 0;
+const norm= v => (v==null ? '' : String(v)).trim();
+const sum = (arr, k) => arr.reduce((a,r)=>a+n(r[k]),0);
+const groupBy = (arr, keyFn) => arr.reduce((m,r)=>{ const k = keyFn(r); (m[k]=m[k]||[]).push(r); return m; },{});
+const distinct = (rows,key) => Array.from(new Set(rows.map(r=>r[key]).filter(Boolean)));
+const pct = (a,b) => b ? (a/b*100).toFixed(1)+'%' : '—';
+
+function toCSV(rows){
+  if(!rows.length) return '';
+  const cols = Object.keys(rows[0]);
+  const head = cols.join(',');
+  const body = rows.map(r => cols.map(c=>{
+    const s = r[c]==null ? '' : String(r[c]);
+    return /(,|\n|\"|\r)/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
+  }).join(',')).join('\n');
+  return head+'\n'+body;
+}
+function download(name, text){
+  const blob = new Blob([text], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+}
+
+/* ====== State ====== */
+let ALL = [];
+let SCOPE = [];
+
+/* ====== Fetch (with pagination) ====== */
+async function fetchAll(){
+  const step = 1000;
+  let from = 0;
+  const out = [];
+  for(;;){
+    const { data, error } = await client
+      .from('mp_data')
+      .select('*')
+      .order('id', { ascending: true })
+      .range(from, from + step - 1);
+
+    if (error){ console.error(error); alert('Failed to load mp_data: '+error.message); break; }
+    const rows = data || [];
+    out.push(...rows);
+    if (rows.length < step) break;
+    from += rows.length;
+  }
+  return out;
+}
+
+/* ====== Filters ====== */
+function setOptions(sel, values, labelAll='All'){
+  const prev = sel.value || 'ALL';
+  sel.innerHTML = `<option value="ALL">${labelAll}</option>` +
+    values.sort((a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true}))
+          .map(v=>`<option value="${v}">${v}</option>`).join('');
+  sel.value = (prev && (prev==='ALL' || values.includes(prev))) ? prev : 'ALL';
+}
+function populateDropdowns(){
+  setOptions(el('fTeam'),  distinct(ALL,'Tag'),  'All teams');
+  setOptions(el('fOpp'),   distinct(ALL,'Vs Opponent'), 'All opponents');
+  setOptions(el('fMode'),  distinct(ALL,'Mode'), 'All modes');
+  setOptions(el('fMap'),   distinct(ALL,'Map'),  'All maps');
+  setOptions(el('fStage'), distinct(ALL,'Stage'),'All stages');
+  setOptions(el('fDay'),   distinct(ALL,'Day'),  'All days');
+
+  // Series picker: build unique (Stage-Day-Series-Tag vs Opp)
+  const series = [...new Set(ALL.map(r=>{
+    const tag = norm(r.Tag), opp = norm(r['Vs Opponent']);
+    const s   = norm(r.Series)||'?';
+    const key = `${norm(r.Stage)}|${norm(r.Day)}|${s}|${tag}|${opp}`;
+    const label = `${tag} vs ${opp} • ${norm(r.Stage)||'—'} D${norm(r.Day)||'—'} • Series ${s}`;
+    return JSON.stringify({key, label});
+  }))].map(x=>JSON.parse(x));
+  const sel = el('fSeries');
+  const prev = sel.value || '';
+  sel.innerHTML = series.map(s=>`<option value="${s.key}">${s.label}</option>`).join('');
+  sel.value = series.find(s=>s.key===prev) ? prev : (series[series.length-1]?.key || '');
+  el('seriesHint').textContent = `${series.length} series found`;
+}
+
+function applyFilters(){
+  const F = {
+    team: el('fTeam').value,
+    opp:  el('fOpp').value,
+    mode: el('fMode').value,
+    map:  el('fMap').value,
+    stage:el('fStage').value,
+    day:  el('fDay').value,
+    wl:   el('fWL').value,
+    q:    (el('fSearch').value||'').trim().toLowerCase()
+  };
+  let rows = ALL;
+  if (F.team!=='ALL') rows = rows.filter(r=>norm(r.Tag)===norm(F.team));
+  if (F.opp!=='ALL')  rows = rows.filter(r=>norm(r['Vs Opponent'])===norm(F.opp));
+  if (F.mode!=='ALL') rows = rows.filter(r=>norm(r.Mode)===norm(F.mode));
+  if (F.map!=='ALL')  rows = rows.filter(r=>norm(r.Map)===norm(F.map));
+  if (F.stage!=='ALL')rows = rows.filter(r=>norm(r.Stage)===norm(F.stage));
+  if (F.day!=='ALL')  rows = rows.filter(r=>String(r.Day)===String(F.day));
+  if (F.wl!=='ALL')   rows = rows.filter(r=>String(r['W/L']).toUpperCase()===F.wl);
+  if (F.q){
+    rows = rows.filter(r=>{
+      const hay = [r.Tag, r['Vs Opponent'], r.Map, r.Mode, r.Stage, r.Series].map(x=>norm(x).toLowerCase()).join('|');
+      return hay.includes(F.q);
+    });
+  }
+  SCOPE = rows;
+  el('meta').textContent = `Rows: ${SCOPE.length} / ${ALL.length} • Teams: ${distinct(SCOPE,'Tag').length} • Opponents: ${distinct(SCOPE,'Vs Opponent').length}`;
+}
+
+/* ====== Analytics ====== */
+function quickStats(rows){
+  const games = rows.length;
+  const w = rows.filter(r=>String(r['W/L']).toUpperCase()==='W').length;
+  const l = rows.filter(r=>String(r['W/L']).toUpperCase()==='L').length;
+  const ptsFor = sum(rows,'Score');
+  const ptsAg  = sum(rows,'Opp Score');
+  return { games, wins:w, losses:l, winrate: games ? (w/games) : 0, ptsFor, ptsAg, diff: ptsFor-ptsAg };
+}
+function byMode(rows){
+  const g = groupBy(rows, r=>norm(r.Mode)||'—');
+  return Object.entries(g).map(([mode,list])=>{
+    const qs = quickStats(list);
+    return { mode, games:qs.games, wins:qs.wins, losses:qs.losses, winrate:qs.winrate };
+  }).sort((a,b)=> b.winrate-a.winrate || b.games-a.games);
+}
+function byMap(rows){
+  const g = groupBy(rows, r=>norm(r.Map)||'—');
+  return Object.entries(g).map(([map,list])=>{
+    const qs = quickStats(list);
+    return { map, games:qs.games, wins:qs.wins, losses:qs.losses, winrate:qs.winrate };
+  }).sort((a,b)=> b.winrate-a.winrate || b.games-a.games);
+}
+
+/* ====== Render tables ====== */
+function renderTable(hostId, rows, cols, empty='No rows.'){
+  const host = el(hostId);
+  if (!rows.length){ host.innerHTML = `<div class="muted">${empty}</div>`; return; }
+  const thead = `<thead><tr>${cols.map(c=>`<th class="${c.right?'right':''}">${c.label}</th>`).join('')}</tr></thead>`;
+  const tbody = `<tbody>${rows.map(r=>`<tr>${cols.map(c=>{
+    let v = r[c.key];
+    if (c.format==='pct') v = (typeof v==='number') ? (v*100).toFixed(1)+'%' : '—';
+    else if (c.format==='1d') v = (typeof v==='number') ? v.toFixed(1) : v;
+    return `<td class="${c.right?'right':''}">${v ?? '—'}</td>`;
+  }).join('')}</tr>`).join('')}</tbody>`;
+  host.innerHTML = `<table>${thead}${tbody}</table>`;
+}
+
+/* ====== Series viewer ====== */
+function seriesKeyForRow(r){
+  return `${norm(r.Stage)}|${norm(r.Day)}|${norm(r.Series)}|${norm(r.Tag)}|${norm(r['Vs Opponent'])}`;
+}
+function renderSeriesCard(key){
+  if (!key){ el('seriesCard').innerHTML = '<div class="muted" style="padding:12px">No series selected.</div>'; return; }
+  const rows = ALL.filter(r => seriesKeyForRow(r) === key)
+                  .sort((a,b)=> n(a.MATCHES) - n(b.MATCHES) || n(a.id)-n(b.id));
+  if (!rows.length){ el('seriesCard').innerHTML = '<div class="muted" style="padding:12px">Series not found.</div>'; return; }
+
+  const T = norm(rows[0].Tag), O = norm(rows[0]['Vs Opponent']);
+  const stage = norm(rows[0].Stage)||'—', day = norm(rows[0].Day)||'—', ser = norm(rows[0].Series)||'—';
+  const wins = rows.filter(r=>String(r['W/L']).toUpperCase()==='W').length;
+  const losses = rows.filter(r=>String(r['W/L']).toUpperCase()==='L').length;
+
+  const head = `
+    <div class="series-head">
+      <div class="series-teams"><span style="font-weight:900">${T}</span> <span class="muted">vs</span> <span style="font-weight:900">${O}</span></div>
+      <div class="series-score">${wins} : ${losses} <span class="muted" style="font-weight:600"> (Bo${rows.length})</span></div>
+      <div class="series-meta">${stage} • Day ${day} • Series ${ser}</div>
+    </div>`;
+
+  const body = rows.map(r=>{
+    const youWin = String(r['W/L']).toUpperCase()==='W';
+    const left = `<div class="side ${youWin?'':'dim'}"><span class="${youWin?'tick':'cross'}"></span><b>${n(r.Score)}</b></div>`;
+    const mid  = `<div class="map-name"><span class="mode-pill">${norm(r.Mode)||'—'}</span> ${norm(r.Map)||'—'}</div>`;
+    const right= `<div class="side ${youWin?'dim':''}" style="justify-self:end"><b>${n(r['Opp Score'])}</b><span class="${youWin?'cross':'tick'}"></span></div>`;
+    return `<div class="map-row">${left}${mid}${right}</div>`;
+  }).join('');
+
+  const foot = `<div class="series-foot"><span>Maps played: ${rows.length}</span><span>Pick a different series from the dropdown above.</span></div>`;
+
+  el('seriesCard').innerHTML = head + body + foot;
+}
+
+/* ====== Rows viewer ====== */
+function renderRows(){
+  const cols = [
+    {label:'ID',key:'id'}, {label:'Team',key:'Tag'}, {label:'Opponent',key:'Vs Opponent'},
+    {label:'Stage',key:'Stage'}, {label:'Day',key:'Day'}, {label:'Series',key:'Series'},
+    {label:'Mode',key:'Mode'}, {label:'Map',key:'Map'}, {label:'W/L',key:'W/L'},
+    {label:'Score',key:'Score',right:true}, {label:'Opp',key:'Opp Score',right:true},
+  ];
+  renderTable('rowsTbl', SCOPE, cols, 'No rows in scope.');
+}
+
+/* ====== Wire up ====== */
+el('applyBtn').onclick = ()=>{ applyFilters(); renderAll(); };
+el('resetBtn').onclick = ()=>{
+  ['fTeam','fOpp','fMode','fMap','fStage','fDay','fWL'].forEach(id=> el(id).value='ALL');
+  el('fSearch').value = '';
+  applyFilters(); renderAll();
+};
+el('exportBtn').onclick = ()=>{
+  const csv = toCSV(SCOPE);
+  download('codm_mp_scope.csv', csv);
+};
+el('fSeries').addEventListener('change', (e)=> renderSeriesCard(e.target.value));
+
+/* ====== Main render ====== */
+function renderAll(){
+  // Quick stats
+  const q = quickStats(SCOPE);
+  renderTable('quickTbl', [{
+    games:q.games, wins:q.wins, losses:q.losses, winrate:q.winrate, points_for:q.ptsFor, points_against:q.ptsAg, diff:q.diff
+  }], [
+    {label:'Games',key:'games',right:true},
+    {label:'Wins',key:'wins',right:true},
+    {label:'Losses',key:'losses',right:true},
+    {label:'Win %',key:'winrate',format:'pct',right:true},
+    {label:'Pts For',key:'points_for',right:true},
+    {label:'Pts Ag',key:'points_against',right:true},
+    {label:'Diff',key:'diff',right:true},
+  ]);
+
+  // Mode/map splits (top 8 rows each)
+  const modes = byMode(SCOPE).slice(0,8).map(r=>({mode:r.mode, games:r.games, wins:r.wins, losses:r.losses, winrate:r.winrate}));
+  renderTable('modeTbl', modes, [
+    {label:'Mode',key:'mode'}, {label:'G',key:'games',right:true},
+    {label:'W',key:'wins',right:true}, {label:'L',key:'losses',right:true}, {label:'Win %',key:'winrate',format:'pct',right:true}
+  ], '—');
+
+  const maps = byMap(SCOPE).slice(0,8).map(r=>({map:r.map, games:r.games, wins:r.wins, losses:r.losses, winrate:r.winrate}));
+  renderTable('mapTbl', maps, [
+    {label:'Map',key:'map'}, {label:'G',key:'games',right:true},
+    {label:'W',key:'wins',right:true}, {label:'L',key:'losses',right:true}, {label:'Win %',key:'winrate',format:'pct',right:true}
+  ], '—');
+
+  renderRows();
+
+  // default the series viewer to a sensible latest series in current filter
+  const dd = el('fSeries');
+  if (dd.value) renderSeriesCard(dd.value);
+}
+
+/* ====== Boot ====== */
+(async function init(){
+  ALL = await fetchAll();
+  // Normalize number columns
+  ALL.forEach(r=>{
+    r.Score = n(r.Score);
+    r['Opp Score'] = n(r['Opp Score']);
+    r.Day = r.Day ?? '';
+    r.MATCHES = n(r.MATCHES);
+  });
+  populateDropdowns();
+  applyFilters();
+  renderAll();
+})();
+</script>
+</body>
+</html>
