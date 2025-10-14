@@ -8,7 +8,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-  /* ===== Palette / base (from your theme) ===== */
+  /* ===== Palette / base ===== */
   :root{
     --bg:#0d1014; --panel:#292d42; --panel2:#1e2432;
     --ink:#f3f6fa; --muted:#b8c0cc; --brand:#ffe93b; --brandText:#0b0d0e;
@@ -35,9 +35,9 @@
   .controls input,.controls select{background:#151b26;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
   .btn{background:var(--brand);color:#0c0e10;border:0;border-radius:10px;padding:8px 12px;font-weight:800;cursor:pointer}
   .btn.secondary{background:#1a2030;color:#d6dbe6;border:1px solid var(--line)}
-  .right{ text-align:right }
+  .right{text-align:right}
 
-  /* ===== Series card (replicates your screenshot) ===== */
+  /* ===== Series card (screenshot style) ===== */
   .series-card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden}
   .series-head{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--line);background:#1a2030}
   .series-teams{display:flex;gap:10px;align-items:center;font-weight:900}
@@ -138,7 +138,7 @@
     </div>
   </section>
 
-  <!-- RAW ROWS (optional debugging) -->
+  <!-- RAW ROWS -->
   <section class="block">
     <h2>Rows</h2>
     <table id="rowsTbl"></table>
@@ -157,7 +157,7 @@ const n  = v => Number(v ?? 0) || 0;
 const norm= v => (v==null ? '' : String(v)).trim();
 const sum = (arr, k) => arr.reduce((a,r)=>a+n(r[k]),0);
 const groupBy = (arr, keyFn) => arr.reduce((m,r)=>{ const k = keyFn(r); (m[k]=m[k]||[]).push(r); return m; },{});
-const distinct = (rows,key) => Array.from(new Set(rows.map(r=>r[key]).filter(Boolean)));
+const distinct = (rows,key) => Array.from(new Set(rows.map(r=>r[key]).filter(v=>v!==undefined && v!==null && String(v)!=='')));
 const pct = (a,b) => b ? (a/b*100).toFixed(1)+'%' : '—';
 
 function toCSV(rows){
@@ -171,37 +171,18 @@ function toCSV(rows){
   return head+'\n'+body;
 }
 function download(name, text){
-  const blob = new Blob([text], {type:'text/csv;charset=utf-8;'});
-  const a = document.createElement('a');
+  const blob = new Blob([text], {type:'text/csv;charset=utf-8;'}); const a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = name; a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
 }
 
-
-function setSeriesOptions(rows){
-  const dd = el('fSeries');
-  // Build unique series keys from rows in scope
-  const items = [...new Set(rows.map(r=>{
-    const key = seriesKeyForRow(r); // `${Stage}|${Day}|${Series}|${Tag}|${Vs Opponent}`
-    const label = `${norm(r.Tag)} vs ${norm(r['Vs Opponent'])} • ${norm(r.Stage)||'—'} D${norm(r.Day)||'—'} • Series ${norm(r.Series)||'—'}`;
-    // lightweight sort tuple (stage, day, series, match idx, id)
-    const ord = [norm(r.Stage), n(r.Day), n(r.Series), n(r.MATCHES), n(r.id)];
-    return JSON.stringify({key, label, ord});
-  }))].map(JSON.parse).sort((a,b)=>{
-    const A=a.ord, B=b.ord;
-    return (String(A[0]).localeCompare(String(B[0])) || A[1]-B[1] || A[2]-B[2] || A[3]-B[3] || A[4]-B[4]);
-  });
-
-  const prev = dd.value;
-  dd.innerHTML = items.map(s=>`<option value="${s.key}">${s.label}</option>`).join('');
-  // keep current selection if still valid, else pick the latest (last)
-  const keep = items.find(s=>s.key===prev);
-  dd.value = keep ? keep.key : (items[items.length-1]?.key || '');
-  el('seriesHint').textContent = `${items.length} series in scope`;
-
-  if (!items.length){
-    el('seriesCard').innerHTML = '<div class="muted" style="padding:12px">No series in scope — widen your filters.</div>';
-  }
+/* ====== Series helpers ====== */
+function seriesKeyForRow(r){
+  const series = r.Series ?? r['Series #'] ?? r['Series No'] ?? r.SeriesID ?? '';
+  return `${norm(r.Stage)}|${norm(r.Day)}|${norm(series)}|${norm(r.Tag)}|${norm(r['Vs Opponent'])}`;
+}
+function matchIdx(r){
+  return n(r.MATCHES ?? r.Match ?? r['Game #'] ?? r.Game ?? r.MapIdx ?? r.MapNo ?? 0);
 }
 
 /* ====== State ====== */
@@ -246,6 +227,31 @@ function populateDropdowns(){
   setOptions(el('fDay'),   distinct(ALL,'Day'),  'All days');
 }
 
+/* Build the Series dropdown from the CURRENT scope */
+function setSeriesOptions(rows){
+  const dd = el('fSeries');
+  const items = [...new Set(rows.map(r=>{
+    const key = seriesKeyForRow(r);
+    const series = r.Series ?? r['Series #'] ?? r['Series No'] ?? r.SeriesID ?? '';
+    const label = `${norm(r.Tag)} vs ${norm(r['Vs Opponent'])} • ${norm(r.Stage)||'—'} D${norm(r.Day)||'—'} • Series ${norm(series)||'—'}`;
+    const ord = [norm(r.Stage), n(r.Day), n(series), matchIdx(r), n(r.id)];
+    return JSON.stringify({key, label, ord});
+  }))].map(JSON.parse).sort((a,b)=>{
+    const A=a.ord, B=b.ord;
+    return (String(A[0]).localeCompare(String(B[0])) || A[1]-B[1] || A[2]-B[2] || A[3]-B[3] || A[4]-B[4]);
+  });
+
+  const prev = dd.value;
+  dd.innerHTML = items.map(s=>`<option value="${s.key}">${s.label}</option>`).join('');
+  // keep current selection if still valid, else pick the latest
+  const keep = items.find(s=>s.key===prev);
+  dd.value = keep ? keep.key : (items[items.length-1]?.key || '');
+  el('seriesHint').textContent = `${items.length} series in scope`;
+
+  if (!items.length){
+    el('seriesCard').innerHTML = '<div class="muted" style="padding:12px">No series in scope — widen your filters.</div>';
+  }
+}
 
 function applyFilters(){
   const F = {
@@ -258,6 +264,7 @@ function applyFilters(){
     wl:   el('fWL').value,
     q:    (el('fSearch').value||'').trim().toLowerCase()
   };
+
   let rows = ALL;
   if (F.team!=='ALL') rows = rows.filter(r=>norm(r.Tag)===norm(F.team));
   if (F.opp!=='ALL')  rows = rows.filter(r=>norm(r['Vs Opponent'])===norm(F.opp));
@@ -268,13 +275,18 @@ function applyFilters(){
   if (F.wl!=='ALL')   rows = rows.filter(r=>String(r['W/L']).toUpperCase()===F.wl);
   if (F.q){
     rows = rows.filter(r=>{
-      const hay = [r.Tag, r['Vs Opponent'], r.Map, r.Mode, r.Stage, r.Series].map(x=>norm(x).toLowerCase()).join('|');
+      const hay = [r.Tag, r['Vs Opponent'], r.Map, r.Mode, r.Stage, r.Series]
+        .map(x=>norm(x).toLowerCase()).join('|');
       return hay.includes(F.q);
     });
   }
+
   SCOPE = rows;
-  
-   el('meta').textContent =
+
+  // NEW: the series picker follows the current filter scope
+  setSeriesOptions(SCOPE);
+
+  el('meta').textContent =
     `Rows: ${SCOPE.length} / ${ALL.length} • Teams: ${distinct(SCOPE,'Tag').length} • Opponents: ${distinct(SCOPE,'Vs Opponent').length}`;
 }
 
@@ -317,17 +329,16 @@ function renderTable(hostId, rows, cols, empty='No rows.'){
 }
 
 /* ====== Series viewer ====== */
-function seriesKeyForRow(r){
-  return `${norm(r.Stage)}|${norm(r.Day)}|${norm(r.Series)}|${norm(r.Tag)}|${norm(r['Vs Opponent'])}`;
-}
 function renderSeriesCard(key){
   if (!key){ el('seriesCard').innerHTML = '<div class="muted" style="padding:12px">No series selected.</div>'; return; }
+  // Use ALL so the chosen series shows its full BoX even if filters hide some maps
   const rows = ALL.filter(r => seriesKeyForRow(r) === key)
-                  .sort((a,b)=> n(a.MATCHES) - n(b.MATCHES) || n(a.id)-n(b.id));
+                  .sort((a,b)=> matchIdx(a) - matchIdx(b) || n(a.id)-n(b.id));
   if (!rows.length){ el('seriesCard').innerHTML = '<div class="muted" style="padding:12px">Series not found.</div>'; return; }
 
   const T = norm(rows[0].Tag), O = norm(rows[0]['Vs Opponent']);
-  const stage = norm(rows[0].Stage)||'—', day = norm(rows[0].Day)||'—', ser = norm(rows[0].Series)||'—';
+  const stage = norm(rows[0].Stage)||'—', day = norm(rows[0].Day)||'—';
+  const seriesNo = norm(rows[0].Series ?? rows[0]['Series #'] ?? rows[0]['Series No'] ?? rows[0].SeriesID ?? '—');
   const wins = rows.filter(r=>String(r['W/L']).toUpperCase()==='W').length;
   const losses = rows.filter(r=>String(r['W/L']).toUpperCase()==='L').length;
 
@@ -335,7 +346,7 @@ function renderSeriesCard(key){
     <div class="series-head">
       <div class="series-teams"><span style="font-weight:900">${T}</span> <span class="muted">vs</span> <span style="font-weight:900">${O}</span></div>
       <div class="series-score">${wins} : ${losses} <span class="muted" style="font-weight:600"> (Bo${rows.length})</span></div>
-      <div class="series-meta">${stage} • Day ${day} • Series ${ser}</div>
+      <div class="series-meta">${stage} • Day ${day} • Series ${seriesNo}</div>
     </div>`;
 
   const body = rows.map(r=>{
@@ -369,10 +380,7 @@ el('resetBtn').onclick = ()=>{
   el('fSearch').value = '';
   applyFilters(); renderAll();
 };
-el('exportBtn').onclick = ()=>{
-  const csv = toCSV(SCOPE);
-  download('codm_mp_scope.csv', csv);
-};
+el('exportBtn').onclick = ()=> download('codm_mp_scope.csv', toCSV(SCOPE));
 el('fSeries').addEventListener('change', (e)=> renderSeriesCard(e.target.value));
 
 /* ====== Main render ====== */
@@ -406,24 +414,27 @@ function renderAll(){
 
   renderRows();
 
-  // default the series viewer to a sensible latest series in current filter
+  // Ensure the series viewer paints something sensible
   const dd = el('fSeries');
-  if (dd.value) renderSeriesCard(dd.value);
+  if (dd && dd.value) renderSeriesCard(dd.value);
 }
 
 /* ====== Boot ====== */
 (async function init(){
   ALL = await fetchAll();
-  // Normalize number columns
+  // Normalize numeric columns that we use
   ALL.forEach(r=>{
     r.Score = n(r.Score);
     r['Opp Score'] = n(r['Opp Score']);
     r.Day = r.Day ?? '';
-    r.MATCHES = n(r.MATCHES);
+    r.MATCHES = n(r.MATCHES ?? r.Match ?? r['Game #'] ?? r.Game ?? r.MapIdx ?? r.MapNo);
   });
   populateDropdowns();
-  applyFilters();
-  renderAll();
+  applyFilters();           // builds SCOPE + series options
+  renderAll();              // paints stats/tables
+  // first paint for series card (if a selection exists)
+  const firstKey = el('fSeries').value;
+  if (firstKey) renderSeriesCard(firstKey);
 })();
 </script>
 </body>
