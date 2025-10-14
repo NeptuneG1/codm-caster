@@ -35,28 +35,59 @@
   .controls input,.controls select{background:#151b26;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
   .btn{background:var(--brand);color:#0c0e10;border:0;border-radius:10px;padding:8px 12px;font-weight:800;cursor:pointer}
   .btn.secondary{background:#1a2030;color:#d6dbe6;border:1px solid var(--line)}
-  .right{text-align:right}
+  .right{ text-align:right }
 
-  /* ===== Series card (screenshot style) ===== */
+  /* ===== Series card (balanced header + centered mid cell) ===== */
   .series-card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden}
-  .series-head{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid var(--line);background:#1a2030}
-  .series-teams{display:flex;gap:10px;align-items:center;font-weight:900}
-  .series-score{font-weight:900;font-size:1.05rem;color:#fff;background:#101420;border:1px solid var(--line);border-radius:8px;padding:6px 10px}
-  .series-meta{font-size:.85rem;color:var(--muted)}
-  .map-row{display:grid;grid-template-columns:110px 1fr 110px;gap:10px;padding:10px 12px;border-top:1px solid #2f3545;align-items:center}
+  .series-head{
+    display:grid;
+    grid-template-columns:1fr auto 1fr;
+    grid-template-rows:auto auto;
+    gap:6px 10px;
+    align-items:center;
+    padding:10px 12px;
+    border-bottom:1px solid var(--line);
+    background:#1a2030;
+  }
+  .team{display:flex;align-items:center;font-weight:900}
+  .team.right{justify-content:flex-end;text-align:right}
+  .series-score{
+    justify-self:center;
+    font-weight:900;font-size:1.05rem;color:#fff;
+    background:#101420;border:1px solid var(--line);
+    border-radius:8px;padding:6px 10px
+  }
+  .series-meta{grid-column:1/-1;justify-self:center;font-size:.85rem;color:var(--muted)}
+
+  .map-row{
+    display:grid;
+    grid-template-columns:1fr minmax(200px,1.4fr) 1fr;
+    gap:10px;padding:10px 12px;border-top:1px solid #2f3545;align-items:center
+  }
   .map-row:nth-child(odd){background:#181e2a}
-  .map-name{display:flex;gap:8px;align-items:center;color:#fff}
-  .mode-pill{font-size:.7rem;border:1px solid var(--line);padding:2px 6px;border-radius:999px;background:#111827;color:#e8ecf5}
   .side{display:flex;gap:8px;align-items:center}
-  .tick{width:16px;height:16px;border-radius:50%;background:var(--good);display:inline-block}
-  .cross{width:16px;height:16px;border-radius:50%;background:var(--bad);display:inline-block}
+  .side.left{justify-content:flex-start}
+  .side.right{justify-content:flex-end}
+  .tick,.cross{width:16px;height:16px;border-radius:50%;display:inline-block}
+  .tick{background:var(--good)} .cross{background:var(--bad)}
   .dim{opacity:.5}
+  .mid{display:flex;flex-direction:column;align-items:center;gap:2px;color:#fff}
+  .mode-pill{font-size:.7rem;border:1px solid var(--line);padding:2px 6px;border-radius:999px;background:#111827;color:#e8ecf5}
+  .map-title{font-weight:800}
   .series-foot{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-top:1px solid var(--line);background:#1a2030;color:var(--muted);font-size:.9rem}
 
   /* ===== Tables ===== */
   table{width:100%;border-collapse:collapse;font-size:.92rem}
   th,td{border-bottom:1px solid #40475a;padding:8px 10px;vertical-align:top}
   thead th{background:#141a1f;text-align:left;position:sticky;top:0}
+
+  /* ===== Standings look (like your screenshot) ===== */
+  .standings caption{caption-side:top;text-align:left;color:var(--muted);margin-bottom:6px}
+  .standings thead th{background:#203045}
+  .standings tbody tr:nth-child(-n+6) td{background:#2a4a34;border-bottom:1px solid #335540} /* green shade top 6 */
+  .standings td.right{ text-align:right }
+  .wrap2{display:grid;grid-template-columns:1fr;gap:12px}
+  @media(min-width:1100px){ .wrap2{ grid-template-columns:1fr 1fr } }
 </style>
 </head>
 <body>
@@ -138,6 +169,19 @@
     </div>
   </section>
 
+  <!-- STANDINGS: Overall + per-mode -->
+  <section class="block">
+    <h2>Standings (series-based) — Overall and Per Mode</h2>
+    <div class="wrap2">
+      <table class="standings" id="standOverall"></table>
+      <div id="standModesWrap"></div>
+    </div>
+    <div class="muted" style="margin-top:6px">
+      Notes: <b>Series Points</b> = 3 × Series Wins. <b>Series Score</b> = Series Wins.  
+      Per-mode tables compute Match Win/Loss using only that mode, but Series Points/Score/Played are based on full series outcomes for the series set in scope.
+    </div>
+  </section>
+
   <!-- RAW ROWS -->
   <section class="block">
     <h2>Rows</h2>
@@ -157,8 +201,8 @@ const n  = v => Number(v ?? 0) || 0;
 const norm= v => (v==null ? '' : String(v)).trim();
 const sum = (arr, k) => arr.reduce((a,r)=>a+n(r[k]),0);
 const groupBy = (arr, keyFn) => arr.reduce((m,r)=>{ const k = keyFn(r); (m[k]=m[k]||[]).push(r); return m; },{});
-const distinct = (rows,key) => Array.from(new Set(rows.map(r=>r[key]).filter(v=>v!==undefined && v!==null && String(v)!=='')));
-const pct = (a,b) => b ? (a/b*100).toFixed(1)+'%' : '—';
+const distinct = (rows,key) => Array.from(new Set(rows.map(r=>r[key]).filter(Boolean)));
+const matchIdx = r => n(r.MATCHES) || n(r.Match) || n(r.Game) || n(r.MapNo) || 0;
 
 function toCSV(rows){
   if(!rows.length) return '';
@@ -171,18 +215,36 @@ function toCSV(rows){
   return head+'\n'+body;
 }
 function download(name, text){
-  const blob = new Blob([text], {type:'text/csv;charset=utf-8;'}); const a = document.createElement('a');
+  const blob = new Blob([text], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = name; a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
 }
 
-/* ====== Series helpers ====== */
+/* ====== Series identity / dropdown ====== */
 function seriesKeyForRow(r){
-  const series = r.Series ?? r['Series #'] ?? r['Series No'] ?? r.SeriesID ?? '';
-  return `${norm(r.Stage)}|${norm(r.Day)}|${norm(series)}|${norm(r.Tag)}|${norm(r['Vs Opponent'])}`;
+  return `${norm(r.Stage)}|${norm(r.Day)}|${norm(r.Series)}|${norm(r.Tag)}|${norm(r['Vs Opponent'])}`;
 }
-function matchIdx(r){
-  return n(r.MATCHES ?? r.Match ?? r['Game #'] ?? r.Game ?? r.MapIdx ?? r.MapNo ?? 0);
+function setSeriesOptions(rows){
+  const dd = el('fSeries');
+  const items = [...new Set(rows.map(r=>{
+    const key = seriesKeyForRow(r);
+    const label = `${norm(r.Tag)} vs ${norm(r['Vs Opponent'])} • ${norm(r.Stage)||'—'} D${norm(r.Day)||'—'} • Series ${norm(r.Series)||'—'}`;
+    const ord = [norm(r.Stage), n(r.Day), n(r.Series), matchIdx(r), n(r.id)];
+    return JSON.stringify({key, label, ord});
+  }))].map(JSON.parse).sort((a,b)=>{
+    const A=a.ord, B=b.ord;
+    return (String(A[0]).localeCompare(String(B[0])) || A[1]-B[1] || A[2]-B[2] || A[3]-B[3] || A[4]-B[4]);
+  });
+
+  const prev = dd.value;
+  dd.innerHTML = items.map(s=>`<option value="${s.key}">${s.label}</option>`).join('');
+  dd.value = items.find(s=>s.key===prev)?.key || (items[items.length-1]?.key || '');
+  el('seriesHint').textContent = `${items.length} series in scope`;
+
+  if (!items.length){
+    el('seriesCard').innerHTML = '<div class="muted" style="padding:12px">No series in scope — widen your filters.</div>';
+  }
 }
 
 /* ====== State ====== */
@@ -227,32 +289,6 @@ function populateDropdowns(){
   setOptions(el('fDay'),   distinct(ALL,'Day'),  'All days');
 }
 
-/* Build the Series dropdown from the CURRENT scope */
-function setSeriesOptions(rows){
-  const dd = el('fSeries');
-  const items = [...new Set(rows.map(r=>{
-    const key = seriesKeyForRow(r);
-    const series = r.Series ?? r['Series #'] ?? r['Series No'] ?? r.SeriesID ?? '';
-    const label = `${norm(r.Tag)} vs ${norm(r['Vs Opponent'])} • ${norm(r.Stage)||'—'} D${norm(r.Day)||'—'} • Series ${norm(series)||'—'}`;
-    const ord = [norm(r.Stage), n(r.Day), n(series), matchIdx(r), n(r.id)];
-    return JSON.stringify({key, label, ord});
-  }))].map(JSON.parse).sort((a,b)=>{
-    const A=a.ord, B=b.ord;
-    return (String(A[0]).localeCompare(String(B[0])) || A[1]-B[1] || A[2]-B[2] || A[3]-B[3] || A[4]-B[4]);
-  });
-
-  const prev = dd.value;
-  dd.innerHTML = items.map(s=>`<option value="${s.key}">${s.label}</option>`).join('');
-  // keep current selection if still valid, else pick the latest
-  const keep = items.find(s=>s.key===prev);
-  dd.value = keep ? keep.key : (items[items.length-1]?.key || '');
-  el('seriesHint').textContent = `${items.length} series in scope`;
-
-  if (!items.length){
-    el('seriesCard').innerHTML = '<div class="muted" style="padding:12px">No series in scope — widen your filters.</div>';
-  }
-}
-
 function applyFilters(){
   const F = {
     team: el('fTeam').value,
@@ -264,7 +300,6 @@ function applyFilters(){
     wl:   el('fWL').value,
     q:    (el('fSearch').value||'').trim().toLowerCase()
   };
-
   let rows = ALL;
   if (F.team!=='ALL') rows = rows.filter(r=>norm(r.Tag)===norm(F.team));
   if (F.opp!=='ALL')  rows = rows.filter(r=>norm(r['Vs Opponent'])===norm(F.opp));
@@ -275,19 +310,17 @@ function applyFilters(){
   if (F.wl!=='ALL')   rows = rows.filter(r=>String(r['W/L']).toUpperCase()===F.wl);
   if (F.q){
     rows = rows.filter(r=>{
-      const hay = [r.Tag, r['Vs Opponent'], r.Map, r.Mode, r.Stage, r.Series]
-        .map(x=>norm(x).toLowerCase()).join('|');
+      const hay = [r.Tag, r['Vs Opponent'], r.Map, r.Mode, r.Stage, r.Series].map(x=>norm(x).toLowerCase()).join('|');
       return hay.includes(F.q);
     });
   }
-
   SCOPE = rows;
-
-  // NEW: the series picker follows the current filter scope
-  setSeriesOptions(SCOPE);
 
   el('meta').textContent =
     `Rows: ${SCOPE.length} / ${ALL.length} • Teams: ${distinct(SCOPE,'Tag').length} • Opponents: ${distinct(SCOPE,'Vs Opponent').length}`;
+
+  // refresh series dropdown based on scope
+  setSeriesOptions(SCOPE);
 }
 
 /* ====== Analytics ====== */
@@ -328,38 +361,120 @@ function renderTable(hostId, rows, cols, empty='No rows.'){
   host.innerHTML = `<table>${thead}${tbody}</table>`;
 }
 
-/* ====== Series viewer ====== */
+/* ====== Series viewer (balanced + mode on top) ====== */
 function renderSeriesCard(key){
-  if (!key){ el('seriesCard').innerHTML = '<div class="muted" style="padding:12px">No series selected.</div>'; return; }
-  // Use ALL so the chosen series shows its full BoX even if filters hide some maps
+  if (!key){
+    el('seriesCard').innerHTML = '<div class="muted" style="padding:12px">No series selected.</div>'; return;
+  }
+  // Show the *full* BoX from ALL so the series card is complete even if filters hide some maps
   const rows = ALL.filter(r => seriesKeyForRow(r) === key)
                   .sort((a,b)=> matchIdx(a) - matchIdx(b) || n(a.id)-n(b.id));
   if (!rows.length){ el('seriesCard').innerHTML = '<div class="muted" style="padding:12px">Series not found.</div>'; return; }
 
   const T = norm(rows[0].Tag), O = norm(rows[0]['Vs Opponent']);
-  const stage = norm(rows[0].Stage)||'—', day = norm(rows[0].Day)||'—';
-  const seriesNo = norm(rows[0].Series ?? rows[0]['Series #'] ?? rows[0]['Series No'] ?? rows[0].SeriesID ?? '—');
+  const stage = norm(rows[0].Stage)||'—', day = norm(rows[0].Day)||'—', ser = norm(rows[0].Series)||'—';
   const wins = rows.filter(r=>String(r['W/L']).toUpperCase()==='W').length;
   const losses = rows.filter(r=>String(r['W/L']).toUpperCase()==='L').length;
 
   const head = `
     <div class="series-head">
-      <div class="series-teams"><span style="font-weight:900">${T}</span> <span class="muted">vs</span> <span style="font-weight:900">${O}</span></div>
+      <div class="team left">${T}</div>
       <div class="series-score">${wins} : ${losses} <span class="muted" style="font-weight:600"> (Bo${rows.length})</span></div>
-      <div class="series-meta">${stage} • Day ${day} • Series ${seriesNo}</div>
+      <div class="team right">${O}</div>
+      <div class="series-meta">${stage} • Day ${day} • Series ${ser}</div>
     </div>`;
 
   const body = rows.map(r=>{
     const youWin = String(r['W/L']).toUpperCase()==='W';
-    const left = `<div class="side ${youWin?'':'dim'}"><span class="${youWin?'tick':'cross'}"></span><b>${n(r.Score)}</b></div>`;
-    const mid  = `<div class="map-name"><span class="mode-pill">${norm(r.Mode)||'—'}</span> ${norm(r.Map)||'—'}</div>`;
-    const right= `<div class="side ${youWin?'dim':''}" style="justify-self:end"><b>${n(r['Opp Score'])}</b><span class="${youWin?'cross':'tick'}"></span></div>`;
+    const left  = `<div class="side left ${youWin?'':'dim'}"><span class="${youWin?'tick':'cross'}"></span><b>${n(r.Score)}</b></div>`;
+    const mid   = `<div class="mid"><span class="mode-pill">${norm(r.Mode)||'—'}</span><div class="map-title">${norm(r.Map)||'—'}</div></div>`;
+    const right = `<div class="side right ${youWin?'dim':''}"><b>${n(r['Opp Score'])}</b><span class="${youWin?'cross':'tick'}"></span></div>`;
     return `<div class="map-row">${left}${mid}${right}</div>`;
   }).join('');
 
   const foot = `<div class="series-foot"><span>Maps played: ${rows.length}</span><span>Pick a different series from the dropdown above.</span></div>`;
-
   el('seriesCard').innerHTML = head + body + foot;
+}
+
+/* ====== Standings (overall + per mode) ====== */
+function seriesKeysFromScope(){
+  return new Set(SCOPE.map(r => seriesKeyForRow(r)));
+}
+function seriesOutcomesByTeam(seriesKeys){
+  // compute series W/L from ALL rows so outcomes are correct even if scope hides some maps
+  const W = {}, L = {};
+  for (const key of seriesKeys){
+    const rows = ALL.filter(r => seriesKeyForRow(r) === key);
+    if (!rows.length) continue;
+    const tag = norm(rows[0].Tag);
+    const w = rows.filter(r=>String(r['W/L']).toUpperCase()==='W').length;
+    const l = rows.filter(r=>String(r['W/L']).toUpperCase()==='L').length;
+    if (w>l) (W[tag]=(W[tag]||0)+1);
+    else     (L[tag]=(L[tag]||0)+1);
+  }
+  return {W,L};
+}
+function buildStandingsRows(rowsForMaps, seriesKeys){
+  const {W:seriesW, L:seriesL} = seriesOutcomesByTeam(seriesKeys);
+  const teamsSet = new Set([...rowsForMaps.map(r=>norm(r.Tag)), ...Object.keys(seriesW), ...Object.keys(seriesL)]);
+  const mapW = {}, mapL = {};
+  rowsForMaps.forEach(r=>{
+    const t = norm(r.Tag);
+    if (String(r['W/L']).toUpperCase()==='W') mapW[t]=(mapW[t]||0)+1;
+    else mapL[t]=(mapL[t]||0)+1;
+  });
+
+  const rows = [...teamsSet].map(team=>{
+    const sw = seriesW[team]||0, sl = seriesL[team]||0;
+    return {
+      team,
+      series_points: sw*3,
+      series_score: sw,
+      match_wins: mapW[team]||0,
+      match_losses: mapL[team]||0,
+      played: sw + sl
+    };
+  }).sort((a,b)=> b.series_points-a.series_points || b.series_score-a.series_score || b.match_wins-a.match_wins || a.match_losses-b.match_losses || a.team.localeCompare(b.team));
+  return rows;
+}
+function renderStandings(){
+  const keys = seriesKeysFromScope();
+  if (!keys.size){
+    el('standOverall').innerHTML = '<div class="muted">No series in scope.</div>';
+    el('standModesWrap').innerHTML = '';
+    return;
+  }
+  // all maps from those series (overall), then mode splits
+  const allMaps = ALL.filter(r => keys.has(seriesKeyForRow(r)));
+  const overall = buildStandingsRows(allMaps, keys);
+  const cols = [
+    {label:'Teams',key:'team'},
+    {label:'Series Points',key:'series_points',right:true},
+    {label:'Series Score',key:'series_score',right:true},
+    {label:'Match Win',key:'match_wins',right:true},
+    {label:'Match Loss',key:'match_losses',right:true},
+    {label:'Played',key:'played',right:true},
+  ];
+  // Overall table
+  el('standOverall').innerHTML =
+    `<caption>Overall (all modes)</caption>
+     <thead><tr>${cols.map(c=>`<th class="${c.right?'right':''}">${c.label}</th>`).join('')}</tr></thead>
+     <tbody>${overall.map(r=>`<tr>${cols.map(c=>`<td class="${c.right?'right':''}">${r[c.key]}</td>`).join('')}</tr>`).join('')}</tbody>`;
+
+  // Per-mode tables
+  const modes = Array.from(new Set(allMaps.map(r=>norm(r.Mode)).filter(Boolean)))
+    .sort((a,b)=>String(a).localeCompare(String(b)));
+  const wrap = el('standModesWrap');
+  if (!modes.length){ wrap.innerHTML = ''; return; }
+  wrap.innerHTML = modes.map(mode=>{
+    const rows = buildStandingsRows(allMaps.filter(r=>norm(r.Mode)===mode), keys);
+    return `
+      <table class="standings">
+        <caption>${mode}</caption>
+        <thead><tr>${cols.map(c=>`<th class="${c.right?'right':''}">${c.label}</th>`).join('')}</tr></thead>
+        <tbody>${rows.map(r=>`<tr>${cols.map(c=>`<td class="${c.right?'right':''}">${r[c.key]}</td>`).join('')}</tr>`).join('')}</tbody>
+      </table>`;
+  }).join('');
 }
 
 /* ====== Rows viewer ====== */
@@ -380,7 +495,7 @@ el('resetBtn').onclick = ()=>{
   el('fSearch').value = '';
   applyFilters(); renderAll();
 };
-el('exportBtn').onclick = ()=> download('codm_mp_scope.csv', toCSV(SCOPE));
+el('exportBtn').onclick = ()=>{ const csv = toCSV(SCOPE); download('codm_mp_scope.csv', csv); };
 el('fSeries').addEventListener('change', (e)=> renderSeriesCard(e.target.value));
 
 /* ====== Main render ====== */
@@ -412,29 +527,30 @@ function renderAll(){
     {label:'W',key:'wins',right:true}, {label:'L',key:'losses',right:true}, {label:'Win %',key:'winrate',format:'pct',right:true}
   ], '—');
 
+  // Standings
+  renderStandings();
+
+  // Rows
   renderRows();
 
-  // Ensure the series viewer paints something sensible
+  // If dropdown has a value, render that series
   const dd = el('fSeries');
-  if (dd && dd.value) renderSeriesCard(dd.value);
+  if (dd.value) renderSeriesCard(dd.value);
 }
 
 /* ====== Boot ====== */
 (async function init(){
   ALL = await fetchAll();
-  // Normalize numeric columns that we use
+  // Normalize number columns
   ALL.forEach(r=>{
     r.Score = n(r.Score);
     r['Opp Score'] = n(r['Opp Score']);
     r.Day = r.Day ?? '';
-    r.MATCHES = n(r.MATCHES ?? r.Match ?? r['Game #'] ?? r.Game ?? r.MapIdx ?? r.MapNo);
+    r.MATCHES = n(r.MATCHES);
   });
   populateDropdowns();
-  applyFilters();           // builds SCOPE + series options
-  renderAll();              // paints stats/tables
-  // first paint for series card (if a selection exists)
-  const firstKey = el('fSeries').value;
-  if (firstKey) renderSeriesCard(firstKey);
+  applyFilters();
+  renderAll();
 })();
 </script>
 </body>
