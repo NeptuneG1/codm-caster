@@ -43,7 +43,7 @@
   .btn{background:var(--brand);color:#0c0e10;border:0;border-radius:10px;padding:8px 12px;font-weight:800;cursor:pointer}
   .btn.secondary{background:#1a2030;color:#d6dbe6;border:1px solid var(--line)}
 
-  /* ===== Series card (balanced two sides; mode above map) ===== */
+  /* ===== Series card (balanced two sides; mode above map, centered) ===== */
   .series-card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden}
   .series-head{
     display:grid;grid-template-columns:1fr max-content 1fr;gap:8px;align-items:center;
@@ -71,15 +71,22 @@
   .cross{background:var(--bad)}
   .dim{opacity:.55}
 
-  .mode-stack{display:flex;flex-direction:column;line-height:1.15}
-  .mode-pill{font-size:.7rem;border:1px solid var(--line);padding:1px 6px;border-radius:999px;background:#111827;color:#e8ecf5;width:max-content}
-  .map-title{font-size:.95rem;margin-top:2px}
+  /* CENTERED middle stack */
+  .mode-stack{
+    display:flex;flex-direction:column;line-height:1.15;
+    justify-self:center; align-items:center; text-align:center;
+  }
+  .mode-pill{
+    font-size:.7rem;border:1px solid var(--line);padding:1px 6px;border-radius:999px;
+    background:#111827;color:#e8ecf5;width:max-content;margin:0 auto;
+  }
+  .map-title{font-size:.95rem;margin-top:2px;text-align:center}
+
   .series-foot{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-top:1px solid var(--line);background:#1a2030;color:var(--muted);font-size:.85rem}
 
   /* fold */
   details.fold{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px;margin-top:10px}
   details.fold>summary{cursor:pointer;color:#e7ecf5}
-
 </style>
 </head>
 <body>
@@ -165,7 +172,6 @@
   <section class="block compact">
     <h2>Standings (series-based)</h2>
 
-    <!-- 2-column overall to keep height short -->
     <div class="grid2">
       <div>
         <h3>Overall (Series + Maps)</h3>
@@ -177,7 +183,6 @@
       </div>
     </div>
 
-    <!-- Per mode (collapsed for height) -->
     <details class="fold" id="perModeFold">
       <summary>Per Mode standings (click to expand)</summary>
       <div class="grid2" style="margin-top:8px">
@@ -309,24 +314,19 @@ function seriesKeyNeutral(r){
   return `${stage}|${day}|${ser}|${pair}`;
 }
 
-/* ===== Build merged map-level entries (for correct series math) =====
-   Each "unit" = one MATCHES + MAP + MODE within a neutral series.
-   We produce TWO entries: one for each side. */
+/* ===== Build merged map-level entries (for correct series math) ===== */
 function buildGameEntries(rows){
   const valid = rows.filter(r=> cleanWL(r['W/L']) );
   const g = groupBy(valid, r=> `${seriesKeyNeutral(r)}|${n(r.MATCHES)}|${norm(r.Map)}|${norm(r.ModeN)}`);
   const out = [];
   Object.values(g).forEach(list=>{
     if (!list.length) return;
-    // infer sides
-    // Prefer using both rows; if only one present, try to reconstruct with Opp Score
     let rA = list[0];
     let rB = list.find(x => norm(x.Tag)!==norm(rA.Tag)) || null;
 
     const keyParts = (seriesKeyNeutral(rA)).split('|');
     const [stage,day,ser] = keyParts;
 
-    // derive team names
     const A = norm(rA.Tag);
     const B = rB ? norm(rB.Tag) : norm(rA['Vs Opponent']);
 
@@ -336,7 +336,6 @@ function buildGameEntries(rows){
     const map = norm(rA.Map);
     const mode= norm(rA.ModeN);
 
-    // Skip completely unplayed lines
     if ((aScore + bScore) <= 0) return;
 
     out.push({
@@ -501,14 +500,9 @@ function renderSeriesCard(neutralKey){
   el('seriesCard').innerHTML = head + body + foot;
 }
 
-/* ===== Standings (series-based, simplified & correct) ===== */
-
-/* Compute from merged GAME_ENTRIES.
-   If modeFilter is set, only count games of that mode when deciding series results. */
+/* ===== Standings (series-based) ===== */
 function computeStandings(entries, modeFilter=null){
   const rows = modeFilter ? entries.filter(e=>e.mode===modeFilter) : entries;
-
-  // group by (seriesNeutral + team)
   const bySeriesTeam = groupBy(rows, e => `${e.seriesNeutral}|${e.team}`);
   const perSeriesOutcome = Object.values(bySeriesTeam).map(list=>{
     const team = list[0].team;
@@ -520,7 +514,6 @@ function computeStandings(entries, modeFilter=null){
     return { team, seriesW, seriesL, seriesP: played ? 1 : 0, mapsW, mapsL };
   });
 
-  // aggregate across all series per team
   const agg = {};
   perSeriesOutcome.forEach(r=>{
     const A = (agg[r.team] ||= { team:r.team, seriesP:0, seriesW:0, seriesL:0, mapsW:0, mapsL:0 });
@@ -541,7 +534,6 @@ function computeStandings(entries, modeFilter=null){
     };
   });
 
-  // sort: series win% → series wins → map win% → map wins
   return out.sort((a,b)=>
     (b.series_winrate - a.series_winrate) ||
     (b.series_wins - a.series_wins) ||
@@ -574,7 +566,6 @@ function renderStandings(){
     {label:'M Win %',key:'map_winrate',format:'pct',right:true},
   ], '—');
 
-  // Per Mode (collapsed)
   const hp  = computeStandings(GAME_ENTRIES, 'Hardpoint');
   const snd = computeStandings(GAME_ENTRIES, 'Search & Destroy');
   const ctl = computeStandings(GAME_ENTRIES, 'Control');
@@ -593,7 +584,15 @@ function renderStandings(){
   renderTable('stand_ctrl',ctl.slice(0,20), cols, '—');
 }
 
-/* ===== Extra insights (unchanged) ===== */
+/* ===== Extra insights ===== */
+function quickStats(rows){
+  const games = rows.length;
+  const w = rows.filter(r=>cleanWL(r['W/L'])==='W').length;
+  const l = rows.filter(r=>cleanWL(r['W/L'])==='L').length;
+  const ptsFor = sum(rows,'Score');
+  const ptsAg  = sum(rows,'Opp Score');
+  return { games, wins:w, losses:l, winrate: games ? (w/games) : 0, ptsFor, ptsAg, diff: ptsFor-ptsAg };
+}
 function renderBestTeams(){
   const g = groupBy(SCOPE, r=>norm(r.Tag));
   const rows = Object.entries(g).map(([team,list])=>{
@@ -651,7 +650,7 @@ function renderMatrix(){
   renderTable('matrixTbl', rows, cols, '—');
 }
 
-/* ===== Rows viewer (scope only, blank W/L already removed) ===== */
+/* ===== Rows viewer ===== */
 function renderRows(){
   const cols = [
     {label:'ID',key:'id'}, {label:'Team',key:'Tag'}, {label:'Opponent',key:'Vs Opponent'},
@@ -718,7 +717,6 @@ el('fSeries').addEventListener('change', (e)=> renderSeriesCard(e.target.value))
     r.ModeN = normalizeMode(r.Mode);
     r['W/L'] = cleanWL(r['W/L']);
   });
-  // Build merged game entries ONCE from all valid rows (correct series math)
   GAME_ENTRIES = buildGameEntries(ALL);
 
   populateDropdowns();
