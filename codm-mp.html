@@ -530,15 +530,16 @@ function renderStandings(){
   }).join('');
 }
 
-/* ====== Rows viewer ====== */
+/* ====== Rows viewer (now ignores blank/NULL W/L) ====== */
 function renderRows(){
+  const rows = SCOPE.filter(hasResult); // <<< change: hide rows with blank/NULL W/L
   const cols = [
     {label:'ID',key:'id'}, {label:'Team',key:'Tag'}, {label:'Opponent',key:'Vs Opponent'},
     {label:'Stage',key:'Stage'}, {label:'Day',key:'Day'}, {label:'Series',key:'Series'},
     {label:'Mode',key:'ModeC'}, {label:'Map',key:'Map'}, {label:'W/L',key:'W/L'},
     {label:'Score',key:'Score',right:true}, {label:'Opp',key:'Opp Score',right:true},
   ];
-  renderTable('rowsTbl', SCOPE, cols, 'No rows in scope.');
+  renderTable('rowsTbl', rows, cols, 'No rows in scope.');
 }
 
 /* ====== Wire up ====== */
@@ -583,7 +584,7 @@ function renderAll(){
   // Standings
   renderStandings();
 
-  // Rows
+  // Rows (now filtered to only rows with valid W/L)
   renderRows();
 
   // Series card (if dropdown has value)
