@@ -177,6 +177,33 @@ function download(name, text){
   setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
 }
 
+
+function setSeriesOptions(rows){
+  const dd = el('fSeries');
+  // Build unique series keys from rows in scope
+  const items = [...new Set(rows.map(r=>{
+    const key = seriesKeyForRow(r); // `${Stage}|${Day}|${Series}|${Tag}|${Vs Opponent}`
+    const label = `${norm(r.Tag)} vs ${norm(r['Vs Opponent'])} • ${norm(r.Stage)||'—'} D${norm(r.Day)||'—'} • Series ${norm(r.Series)||'—'}`;
+    // lightweight sort tuple (stage, day, series, match idx, id)
+    const ord = [norm(r.Stage), n(r.Day), n(r.Series), n(r.MATCHES), n(r.id)];
+    return JSON.stringify({key, label, ord});
+  }))].map(JSON.parse).sort((a,b)=>{
+    const A=a.ord, B=b.ord;
+    return (String(A[0]).localeCompare(String(B[0])) || A[1]-B[1] || A[2]-B[2] || A[3]-B[3] || A[4]-B[4]);
+  });
+
+  const prev = dd.value;
+  dd.innerHTML = items.map(s=>`<option value="${s.key}">${s.label}</option>`).join('');
+  // keep current selection if still valid, else pick the latest (last)
+  const keep = items.find(s=>s.key===prev);
+  dd.value = keep ? keep.key : (items[items.length-1]?.key || '');
+  el('seriesHint').textContent = `${items.length} series in scope`;
+
+  if (!items.length){
+    el('seriesCard').innerHTML = '<div class="muted" style="padding:12px">No series in scope — widen your filters.</div>';
+  }
+}
+
 /* ====== State ====== */
 let ALL = [];
 let SCOPE = [];
@@ -217,21 +244,8 @@ function populateDropdowns(){
   setOptions(el('fMap'),   distinct(ALL,'Map'),  'All maps');
   setOptions(el('fStage'), distinct(ALL,'Stage'),'All stages');
   setOptions(el('fDay'),   distinct(ALL,'Day'),  'All days');
-
-  // Series picker: build unique (Stage-Day-Series-Tag vs Opp)
-  const series = [...new Set(ALL.map(r=>{
-    const tag = norm(r.Tag), opp = norm(r['Vs Opponent']);
-    const s   = norm(r.Series)||'?';
-    const key = `${norm(r.Stage)}|${norm(r.Day)}|${s}|${tag}|${opp}`;
-    const label = `${tag} vs ${opp} • ${norm(r.Stage)||'—'} D${norm(r.Day)||'—'} • Series ${s}`;
-    return JSON.stringify({key, label});
-  }))].map(x=>JSON.parse(x));
-  const sel = el('fSeries');
-  const prev = sel.value || '';
-  sel.innerHTML = series.map(s=>`<option value="${s.key}">${s.label}</option>`).join('');
-  sel.value = series.find(s=>s.key===prev) ? prev : (series[series.length-1]?.key || '');
-  el('seriesHint').textContent = `${series.length} series found`;
 }
+
 
 function applyFilters(){
   const F = {
@@ -259,7 +273,9 @@ function applyFilters(){
     });
   }
   SCOPE = rows;
-  el('meta').textContent = `Rows: ${SCOPE.length} / ${ALL.length} • Teams: ${distinct(SCOPE,'Tag').length} • Opponents: ${distinct(SCOPE,'Vs Opponent').length}`;
+  
+   el('meta').textContent =
+    `Rows: ${SCOPE.length} / ${ALL.length} • Teams: ${distinct(SCOPE,'Tag').length} • Opponents: ${distinct(SCOPE,'Vs Opponent').length}`;
 }
 
 /* ====== Analytics ====== */
