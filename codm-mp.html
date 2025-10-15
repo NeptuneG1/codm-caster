@@ -234,7 +234,7 @@ const client = supabase.createClient(SUPA_URL, SUPA_KEY);
 const el = id => document.getElementById(id);
 const n  = v => Number(v ?? 0) || 0;
 const norm= v => (v==null ? '' : String(v)).trim();
-const key  = v => norm(v).toLowerCase();
+const key = v => norm(v).toLowerCase();
 const sum = (arr, k) => arr.reduce((a,r)=>a+n(r[k]),0);
 const groupBy = (arr, keyFn) => arr.reduce((m,r)=>{ const k = keyFn(r); (m[k]=m[k]||[]).push(r); return m; },{});
 const distinct = (rows,key) => Array.from(new Set(rows.map(r=>r[key]).filter(Boolean)));
@@ -280,7 +280,7 @@ function download(name, text){
 }
 
 /* ===== Data state ===== */
-let ALL = [];   // normalized + filtered by allowed teams & maps
+let ALL = [];   // normalized + filtered by allowed teams & maps (either side allowed)
 let SCOPE = []; // filtered rows (ignores blank W/L)
 let GAME_ENTRIES = []; // merged map-level entries for standings
 
@@ -309,10 +309,26 @@ function setOptions(sel, values, labelAll='All'){
           .map(v=>`<option value="${v}">${v}</option>`).join('');
   sel.value = (prev && (prev==='ALL' || values.includes(prev))) ? prev : 'ALL';
 }
+
+/* build display list of allowed teams present in data (preserve casing seen in data) */
+function listAllowedTeamsPresent(){
+  const present = new Map(); // lower -> original casing
+  ALL.forEach(r=>{
+    [r.Tag, r['Vs Opponent']].forEach(name=>{
+      const k = key(name);
+      if (ALLOWED_TAGS.has(k) && !present.has(k)) present.set(k, norm(name));
+    });
+  });
+  return Array.from(present.values());
+}
+
 function populateDropdowns(){
   setOptions(el('fTourn'), distinct(ALL,'Tournament'), 'All tournaments');
-  setOptions(el('fTeam'),  distinct(ALL,'Tag'),  'All teams');
-  setOptions(el('fOpp'),   distinct(ALL,'Vs Opponent'), 'All opponents');
+
+  const allowedTeamList = listAllowedTeamsPresent();
+  setOptions(el('fTeam'), allowedTeamList,  'All teams');
+  setOptions(el('fOpp'),  allowedTeamList,  'All opponents');
+
   setOptions(el('fMode'),  Array.from(new Set(ALL.map(r=>r.ModeN).filter(Boolean))), 'All modes');
   // only allowed maps present in ALL
   setOptions(el('fMap'),   Array.from(new Set(ALL.map(r=>r.Map).filter(m=>isAllowedMap(m)))),  'All maps');
@@ -369,7 +385,7 @@ function buildGameEntries(rows){
   return out;
 }
 
-/* ===== Filters apply ===== */
+/* ===== Filters apply (team/opponent are symmetric) ===== */
 function applyFilters(){
   const F = {
     tourn:el('fTourn').value,
@@ -384,13 +400,24 @@ function applyFilters(){
   };
   let rows = ALL;
 
-  if (F.tourn!=='ALL') rows = rows.filter(r=>norm(r.Tournament)===norm(F.tourn));
-  if (F.team!=='ALL')  rows = rows.filter(r=>norm(r.Tag)===norm(F.team));
-  if (F.opp!=='ALL')   rows = rows.filter(r=>norm(r['Vs Opponent'])===norm(F.opp));
-  if (F.mode!=='ALL')  rows = rows.filter(r=>norm(r.ModeN)===norm(F.mode));
-  if (F.map!=='ALL')   rows = rows.filter(r=>norm(r.Map)===norm(F.map));
-  if (F.stage!=='ALL') rows = rows.filter(r=>norm(r.Stage)===norm(F.stage));
+  if (F.tourn!=='ALL') rows = rows.filter(r=>key(r.Tournament)===key(F.tourn));
+
+  const teamSel = key(F.team), oppSel = key(F.opp);
+  if (F.team!=='ALL' && F.opp!=='ALL'){
+    rows = rows.filter(r=>{
+      const a = key(r.Tag), b = key(r['Vs Opponent']);
+      return (a===teamSel && b===oppSel) || (a===oppSel && b===teamSel);
+    });
+  } else {
+    if (F.team!=='ALL') rows = rows.filter(r=> key(r.Tag)===teamSel || key(r['Vs Opponent'])===teamSel );
+    if (F.opp!=='ALL')  rows = rows.filter(r=> key(r.Tag)===oppSel  || key(r['Vs Opponent'])===oppSel  );
+  }
+
+  if (F.mode!=='ALL')  rows = rows.filter(r=>key(r.ModeN)===key(F.mode));
+  if (F.map!=='ALL')   rows = rows.filter(r=>key(r.Map)===key(F.map));
+  if (F.stage!=='ALL') rows = rows.filter(r=>key(r.Stage)===key(F.stage));
   if (F.day!=='ALL')   rows = rows.filter(r=>String(r.Day)===String(F.day));
+
   if (F.q){
     rows = rows.filter(r=>{
       const hay = [r.Tournament,r.Tag, r['Vs Opponent'], r.Map, r.ModeN, r.Stage, r.Series].map(x=>norm(x).toLowerCase()).join('|');
@@ -410,12 +437,12 @@ function applyFilters(){
 function setSeriesOptions(rows){
   const dd = el('fSeries');
   const items = [...new Map(rows.map(r=>{
-    const key = seriesKeyNeutral(r);
-    const [tourn,stage,day,ser,pair] = key.split('|');
+    const keyN = seriesKeyNeutral(r);
+    const [tourn,stage,day,ser,pair] = keyN.split('|');
     const [t1,t2] = pair.split('~');
     const label = `${tourn? (tourn+' • ') : ''}${t1} vs ${t2} • ${stage||'—'} • Day ${day||'—'} • Series ${ser||'—'}`;
     const ord = [tourn, stage, Number(day)||0, Number(ser)||0, Number(r.MATCHES)||0, Number(r.id)||0];
-    return [key, {key,label,ord}];
+    return [keyN, {key:keyN,label,ord}];
   })).values()]
   .sort((a,b)=> String(a.ord[0]).localeCompare(String(b.ord[0])) ||
                String(a.ord[1]).localeCompare(String(b.ord[1])) ||
@@ -471,7 +498,7 @@ function renderTable(hostId, rows, cols, empty='No rows.'){
   host.innerHTML = `<table>${thead}${tbody}</table>`;
 }
 
-/* ===== Series viewer (balanced lanes; skip 0–0) ===== */
+/* ===== Series viewer ===== */
 function renderSeriesCard(neutralKey){
   if (!neutralKey){ el('seriesCard').innerHTML = '<div class="muted" style="padding:12px">No series selected.</div>'; return; }
   const seriesRows = ALL.filter(r => seriesKeyNeutral(r) === neutralKey)
@@ -723,7 +750,9 @@ el('fSeries').addEventListener('change', (e)=> renderSeriesCard(e.target.value))
   // fetch matches
   const raw = await fetchAllMatches();
 
-  // normalize + hard filter by allowed teams & maps
+  // normalize + hard filter:
+  // - include row if EITHER side is in player_list.Tag
+  // - maps limited to ALLOWED_MAPS
   ALL = raw.map(r=>({
       ...r,
       Score: n(r.Score),
@@ -736,8 +765,7 @@ el('fSeries').addEventListener('change', (e)=> renderSeriesCard(e.target.value))
       ['Vs Opponent']: norm(r['Vs Opponent']),
       Map: norm(r.Map)
   })).filter(r =>
-      isAllowedTeam(r.Tag) &&
-      isAllowedTeam(r['Vs Opponent']) &&
+      (isAllowedTeam(r.Tag) || isAllowedTeam(r['Vs Opponent'])) &&
       isAllowedMap(r.Map)
   );
 
