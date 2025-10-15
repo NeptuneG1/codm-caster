@@ -385,7 +385,7 @@ function buildGameEntries(rows){
   return out;
 }
 
-/* ===== Filters apply (team/opponent are symmetric) ===== */
+/* ===== Filters apply to ROWS (team/opponent symmetric) ===== */
 function applyFilters(){
   const F = {
     tourn:el('fTourn').value,
@@ -433,6 +433,42 @@ function applyFilters(){
    `Rows: ${SCOPE.length} / ${ALL.length} • Tournaments: ${distinct(SCOPE,'Tournament').length} • Teams: ${distinct(SCOPE,'Tag').length} • Opponents: ${distinct(SCOPE,'Vs Opponent').length}`;
 }
 
+/* ===== Apply current filters to GAME_ENTRIES for standings ===== */
+/* Note: we intentionally ignore WL for series math integrity. */
+function filteredEntriesForStandings(){
+  const F = {
+    tourn:el('fTourn').value,
+    team: el('fTeam').value,
+    opp:  el('fOpp').value,
+    mode: el('fMode').value,
+    map:  el('fMap').value,
+    stage:el('fStage').value,
+    day:  el('fDay').value,
+    // fWL, fSearch intentionally not applied here
+  };
+  let E = GAME_ENTRIES.slice();
+
+  if (F.tourn!=='ALL') E = E.filter(e=>key(e.tournament)===key(F.tourn));
+
+  const teamSel = key(F.team), oppSel = key(F.opp);
+  if (F.team!=='ALL' && F.opp!=='ALL'){
+    E = E.filter(e=>{
+      const t = key(e.team), o = key(e.opp);
+      return (t===teamSel && o===oppSel) || (t===oppSel && o===teamSel);
+    });
+  } else {
+    if (F.team!=='ALL') E = E.filter(e=> key(e.team)===teamSel || key(e.opp)===teamSel );
+    if (F.opp!=='ALL')  E = E.filter(e=> key(e.team)===oppSel  || key(e.opp)===oppSel  );
+  }
+
+  if (F.mode!=='ALL')  E = E.filter(e=> key(e.mode)===key(F.mode));
+  if (F.map!=='ALL')   E = E.filter(e=> key(e.map)===key(F.map));
+  if (F.stage!=='ALL') E = E.filter(e=> key(e.stage)===key(F.stage));
+  if (F.day!=='ALL')   E = E.filter(e=> String(e.day)===String(F.day));
+
+  return E;
+}
+
 /* ===== Series dropdown (dedup, neutral key) ===== */
 function setSeriesOptions(rows){
   const dd = el('fSeries');
@@ -468,7 +504,7 @@ function quickStats(rows){
   return { games, wins:w, losses:l, winrate: games ? (w/games) : 0, ptsFor, ptsAg, diff: ptsFor-ptsAg };
 }
 
-/* ⬇️ Choose the exact rows to use for Quick Analytics based on Team/Opp filters */
+/* Choose exact rows for Quick Analytics based on Team/Opp filters */
 function getQuickRows(){
   const t = el('fTeam').value, o = el('fOpp').value;
   const tSel = key(t), oSel = key(o);
@@ -477,7 +513,7 @@ function getQuickRows(){
   } else if (o !== 'ALL'){
     return SCOPE.filter(r => key(r.Tag) === oSel);      // perspective: Opponent (when Team=ALL)
   }
-  return SCOPE;                                         // neutral scope when no team/opponent picked
+  return SCOPE;                                         // neutral scope
 }
 
 function byMode(rows){
@@ -564,7 +600,7 @@ function computeStandings(entries, modeFilter=null){
   // filter to mode (if any)
   const base = modeFilter ? entries.filter(e=>e.mode===modeFilter) : entries;
 
-  // 🔒 only keep teams that are in player_list.Tag
+  // only keep teams in player_list.Tag
   const rows = base.filter(e => ALLOWED_TAGS.has(key(e.team)));
 
   // group by (series, team) to get series outcome per team
@@ -611,7 +647,10 @@ function computeStandings(entries, modeFilter=null){
 }
 
 function renderStandings(){
-  const overall = computeStandings(GAME_ENTRIES);
+  // 🔎 entries respect the current filters (tournament, team/opponent, mode, map, stage, day)
+  const E = filteredEntriesForStandings();
+
+  const overall = computeStandings(E);
   renderTable('standOverall', overall, [
     {label:'Team',key:'team'},
     {label:'Series',key:'series_played',right:true},
@@ -624,9 +663,9 @@ function renderStandings(){
   ], 'No series.');
 
   /* === Per Mode: MAP-ONLY tables (no series columns) === */
-  const hp  = computeStandings(GAME_ENTRIES, 'Hardpoint').map(r=>({...r, maps:r.map_wins+r.map_losses}));
-  const snd = computeStandings(GAME_ENTRIES, 'Search & Destroy').map(r=>({...r, maps:r.map_wins+r.map_losses}));
-  const ctl = computeStandings(GAME_ENTRIES, 'Control').map(r=>({...r, maps:r.map_wins+r.map_losses}));
+  const hp  = computeStandings(E, 'Hardpoint').map(r=>({...r, maps:r.map_wins+r.map_losses}));
+  const snd = computeStandings(E, 'Search & Destroy').map(r=>({...r, maps:r.map_wins+r.map_losses}));
+  const ctl = computeStandings(E, 'Control').map(r=>({...r, maps:r.map_wins+r.map_losses}));
 
   const modeCols = [
     {label:'Team',key:'team'},
@@ -693,7 +732,7 @@ function renderMatrix(){
   // Only allowed teams’ games feed the matrix
   const rowsSrc = SCOPE.filter(r => ALLOWED_TAGS.has(key(r.Tag)));
 
-  // Pick the top maps from allowed-only rows (keeps your current behavior)
+  // Pick the top maps from allowed-only rows
   const byMapAll = (function(rows){
     const g = groupBy(rows, r=>norm(r.Map)||'—');
     return Object.entries(g).map(([map,list])=>{
@@ -745,7 +784,7 @@ function renderAll(){
   setSeriesOptions(SCOPE);
   renderSeriesCard(el('fSeries').value);
 
-  // 👉 Use perspective-correct rows for Quick Analytics
+  // Use perspective-correct rows for Quick Analytics
   const QA_ROWS = getQuickRows();
 
   const q = (function(rows){
@@ -769,7 +808,7 @@ function renderAll(){
     {label:'Diff',key:'diff',right:true},
   ]);
 
-  // By Mode / By Map should also respect the same perspective
+  // By Mode / By Map respect the same perspective
   const modes = byMode(QA_ROWS).map(r=>({mode:r.mode, games:r.games, wins:r.wins, losses:r.losses, winrate:r.winrate}));
   renderTable('modeTbl', modes, [
     {label:'Mode',key:'mode'}, {label:'G',key:'games',right:true},
@@ -781,6 +820,9 @@ function renderAll(){
     {label:'Map',key:'map'}, {label:'G',key:'games',right:true},
     {label:'W',key:'wins',right:true}, {label:'L',key:'losses',right:true}, {label:'Win %',key:'winrate',format:'pct',right:true}
   ], '—');
+
+  // Now standings computed from filtered entries
+  renderStandings();
 
   renderRows();
   renderBestTeams();
@@ -829,7 +871,6 @@ el('fSeries').addEventListener('change', (e)=> renderSeriesCard(e.target.value))
 
   populateDropdowns();
   applyFilters();
-  renderStandings();
   renderAll();
 })();
 </script>
