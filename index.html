@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#0d1014"/>
 
 <style>
-  /* ===== Palette / base (kept consistent with your MP pages) ===== */
+  /* ===== Palette / base (consistent with your MP pages) ===== */
   :root{
     --bg:#0d1014; --panel:#292d42; --panel2:#1e2432;
     --ink:#f3f6fa; --muted:#b8c0cc; --brand:#ffe93b; --brandText:#0b0d0e;
@@ -26,8 +26,9 @@
   }
   .head{max-width:1200px;margin:0 auto;padding:14px;display:flex;align-items:center;gap:12px}
   .logo{
-    width:34px;height:34px;border-radius:8px;background:var(--brand);
-    color:#0b0d0e;font-weight:900;display:grid;place-items:center;letter-spacing:.5px
+    width:36px;height:36px;border-radius:8px;
+    object-fit:contain;background:#0d1014;
+    border:1px solid #2a3144; box-shadow: var(--shadow);
   }
   h1{margin:0;font-size:1.15rem;color:var(--brand)}
 
@@ -80,7 +81,7 @@
 
 <header>
   <div class="head">
-    <div class="logo">COD</div>
+    <img src="https://i.imgur.com/K0TTjUC.png" alt="COD:M Logo" class="logo" />
     <h1>Call of Duty: Mobile — Dashboards</h1>
   </div>
 </header>
