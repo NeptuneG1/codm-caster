@@ -234,6 +234,7 @@ const client = supabase.createClient(SUPA_URL, SUPA_KEY);
 const el = id => document.getElementById(id);
 const n  = v => Number(v ?? 0) || 0;
 const norm= v => (v==null ? '' : String(v)).trim();
+const key  = v => norm(v).toLowerCase();
 const sum = (arr, k) => arr.reduce((a,r)=>a+n(r[k]),0);
 const groupBy = (arr, keyFn) => arr.reduce((m,r)=>{ const k = keyFn(r); (m[k]=m[k]||[]).push(r); return m; },{});
 const distinct = (rows,key) => Array.from(new Set(rows.map(r=>r[key]).filter(Boolean)));
@@ -250,6 +251,16 @@ function normalizeMode(m){
   if (s.includes('control')) return 'Control';
   return norm(m);
 }
+
+/* ===== Allowed maps and teams ===== */
+const ALLOWED_MAPS = new Set([
+  'Summit','Hacienda','Apocalypse','Slums','Combine','Tunisia','Firing Range',
+  'Kurohana Metropolis','Standoff','Coastal','Raid','Takeoff','Crossfire'
+].map(key));
+let ALLOWED_TAGS = new Set(); // filled from player_list.Tag
+
+function isAllowedMap(m){ return ALLOWED_MAPS.has(key(m)); }
+function isAllowedTeam(t){ return !ALLOWED_TAGS.size ? true : ALLOWED_TAGS.has(key(t)); }
 
 /* CSV */
 function toCSV(rows){
@@ -269,12 +280,12 @@ function download(name, text){
 }
 
 /* ===== Data state ===== */
-let ALL = [];   // normalized rows
+let ALL = [];   // normalized + filtered by allowed teams & maps
 let SCOPE = []; // filtered rows (ignores blank W/L)
 let GAME_ENTRIES = []; // merged map-level entries for standings
 
 /* ===== Fetch ===== */
-async function fetchAll(){
+async function fetchAllMatches(){
   const step = 1000; let from = 0; const out = [];
   for(;;){
     const { data, error } = await client.from('mp_data').select('*').order('id',{ascending:true}).range(from, from+step-1);
@@ -282,6 +293,12 @@ async function fetchAll(){
     const rows = data || []; out.push(...rows); if (rows.length < step) break; from += rows.length;
   }
   return out;
+}
+async function fetchAllowedTags(){
+  const { data, error } = await client.from('player_list').select('Tag');
+  if (error){ console.error('player_list fetch failed:', error); return new Set(); }
+  const tags = (data||[]).map(r=>norm(r.Tag)).filter(Boolean);
+  return new Set(tags.map(key));
 }
 
 /* ===== Filters ===== */
@@ -297,7 +314,8 @@ function populateDropdowns(){
   setOptions(el('fTeam'),  distinct(ALL,'Tag'),  'All teams');
   setOptions(el('fOpp'),   distinct(ALL,'Vs Opponent'), 'All opponents');
   setOptions(el('fMode'),  Array.from(new Set(ALL.map(r=>r.ModeN).filter(Boolean))), 'All modes');
-  setOptions(el('fMap'),   distinct(ALL,'Map'),  'All maps');
+  // only allowed maps present in ALL
+  setOptions(el('fMap'),   Array.from(new Set(ALL.map(r=>r.Map).filter(m=>isAllowedMap(m)))),  'All maps');
   setOptions(el('fStage'), distinct(ALL,'Stage'),'All stages');
   setOptions(el('fDay'),   distinct(ALL,'Day'),  'All days');
 }
@@ -699,15 +717,30 @@ el('fSeries').addEventListener('change', (e)=> renderSeriesCard(e.target.value))
 
 /* ===== Boot ===== */
 (async function init(){
-  ALL = await fetchAll();
-  ALL.forEach(r=>{
-    r.Score = n(r.Score);
-    r['Opp Score'] = n(r['Opp Score']);
-    r.MATCHES = n(r.MATCHES);
-    r.ModeN = normalizeMode(r.Mode);
-    r['W/L'] = cleanWL(r['W/L']);
-    r.Tournament = norm(r.Tournament);
-  });
+  // fetch allowed teams first
+  ALLOWED_TAGS = await fetchAllowedTags();
+
+  // fetch matches
+  const raw = await fetchAllMatches();
+
+  // normalize + hard filter by allowed teams & maps
+  ALL = raw.map(r=>({
+      ...r,
+      Score: n(r.Score),
+      ['Opp Score']: n(r['Opp Score']),
+      MATCHES: n(r.MATCHES),
+      ModeN: normalizeMode(r.Mode),
+      ['W/L']: cleanWL(r['W/L']),
+      Tournament: norm(r.Tournament),
+      Tag: norm(r.Tag),
+      ['Vs Opponent']: norm(r['Vs Opponent']),
+      Map: norm(r.Map)
+  })).filter(r =>
+      isAllowedTeam(r.Tag) &&
+      isAllowedTeam(r['Vs Opponent']) &&
+      isAllowedMap(r.Map)
+  );
+
   GAME_ENTRIES = buildGameEntries(ALL);
 
   populateDropdowns();
