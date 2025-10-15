@@ -21,6 +21,11 @@
   a:hover{text-decoration:underline}
   header{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,#141a23 0%,#0d1014 100%);border-bottom:2px solid var(--brand)}
   .head{display:flex;align-items:center;gap:14px;max-width:1240px;margin:0 auto;padding:12px 14px}
+  /* logo */
+  .logo{
+    width:36px;height:36px;border-radius:8px;object-fit:contain;
+    background:#0d1014;border:1px solid #2a3144;box-shadow:0 6px 16px rgba(0,0,0,.35)
+  }
   h1{margin:0;font-size:1.1rem;letter-spacing:.4px;color:var(--brand)}
   .shell{max-width:1240px;margin:18px auto;padding:0 12px}
   .block{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
@@ -89,6 +94,7 @@
 <body>
 <header>
   <div class="head">
+    <img src="https://i.imgur.com/K0TTjUC.png" alt="COD:M Logo" class="logo">
     <h1>COD:M — MP Analyzer</h1>
   </div>
 </header>
