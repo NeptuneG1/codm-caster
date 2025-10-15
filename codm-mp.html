@@ -458,7 +458,7 @@ function setSeriesOptions(rows){
   }
 }
 
-/* ===== Quick analytics (scope) ===== */
+/* ===== Quick analytics helpers ===== */
 function quickStats(rows){
   const games = rows.length;
   const w = rows.filter(r=>cleanWL(r['W/L'])==='W').length;
@@ -467,6 +467,19 @@ function quickStats(rows){
   const ptsAg  = sum(rows,'Opp Score');
   return { games, wins:w, losses:l, winrate: games ? (w/games) : 0, ptsFor, ptsAg, diff: ptsFor-ptsAg };
 }
+
+/* ⬇️ Choose the exact rows to use for Quick Analytics based on Team/Opp filters */
+function getQuickRows(){
+  const t = el('fTeam').value, o = el('fOpp').value;
+  const tSel = key(t), oSel = key(o);
+  if (t !== 'ALL'){
+    return SCOPE.filter(r => key(r.Tag) === tSel);      // perspective: Team
+  } else if (o !== 'ALL'){
+    return SCOPE.filter(r => key(r.Tag) === oSel);      // perspective: Opponent (when Team=ALL)
+  }
+  return SCOPE;                                         // neutral scope when no team/opponent picked
+}
+
 function byMode(rows){
   const g = groupBy(rows, r=>r.ModeN||'—');
   return Object.entries(g).map(([mode,list])=>{
@@ -596,7 +609,6 @@ function computeStandings(entries, modeFilter=null){
     (b.map_wins - a.map_wins)
   );
 }
-
 
 function renderStandings(){
   const overall = computeStandings(GAME_ENTRIES);
@@ -733,6 +745,9 @@ function renderAll(){
   setSeriesOptions(SCOPE);
   renderSeriesCard(el('fSeries').value);
 
+  // 👉 Use perspective-correct rows for Quick Analytics
+  const QA_ROWS = getQuickRows();
+
   const q = (function(rows){
     const games = rows.length;
     const w = rows.filter(r=>cleanWL(r['W/L'])==='W').length;
@@ -740,7 +755,7 @@ function renderAll(){
     const ptsFor = sum(rows,'Score');
     const ptsAg  = sum(rows,'Opp Score');
     return {games,wins:w,losses:l,winrate:games?(w/games):0,ptsFor,ptsAg,diff:ptsFor-ptsAg};
-  })(SCOPE);
+  })(QA_ROWS);
 
   renderTable('quickTbl', [{
     games:q.games, wins:q.wins, losses:q.losses, winrate:q.winrate, points_for:q.ptsFor, points_against:q.ptsAg, diff:q.diff
@@ -754,13 +769,14 @@ function renderAll(){
     {label:'Diff',key:'diff',right:true},
   ]);
 
-  const modes = byMode(SCOPE).map(r=>({mode:r.mode, games:r.games, wins:r.wins, losses:r.losses, winrate:r.winrate}));
+  // By Mode / By Map should also respect the same perspective
+  const modes = byMode(QA_ROWS).map(r=>({mode:r.mode, games:r.games, wins:r.wins, losses:r.losses, winrate:r.winrate}));
   renderTable('modeTbl', modes, [
     {label:'Mode',key:'mode'}, {label:'G',key:'games',right:true},
     {label:'W',key:'wins',right:true}, {label:'L',key:'losses',right:true}, {label:'Win %',key:'winrate',format:'pct',right:true}
   ], '—');
 
-  const maps = byMap(SCOPE).map(r=>({map:r.map, games:r.games, wins:r.wins, losses:r.losses, winrate:r.winrate}));
+  const maps = byMap(QA_ROWS).map(r=>({map:r.map, games:r.games, wins:r.wins, losses:r.losses, winrate:r.winrate}));
   renderTable('mapTbl', maps, [
     {label:'Map',key:'map'}, {label:'G',key:'games',right:true},
     {label:'W',key:'wins',right:true}, {label:'L',key:'losses',right:true}, {label:'Win %',key:'winrate',format:'pct',right:true}
