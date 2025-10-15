@@ -548,7 +548,13 @@ function renderSeriesCard(neutralKey){
 
 /* ===== Standings (series-based) ===== */
 function computeStandings(entries, modeFilter=null){
-  const rows = modeFilter ? entries.filter(e=>e.mode===modeFilter) : entries;
+  // filter to mode (if any)
+  const base = modeFilter ? entries.filter(e=>e.mode===modeFilter) : entries;
+
+  // 🔒 only keep teams that are in player_list.Tag
+  const rows = base.filter(e => ALLOWED_TAGS.has(key(e.team)));
+
+  // group by (series, team) to get series outcome per team
   const bySeriesTeam = groupBy(rows, e => `${e.seriesNeutral}|${e.team}`);
   const perSeriesOutcome = Object.values(bySeriesTeam).map(list=>{
     const team = list[0].team;
@@ -560,12 +566,14 @@ function computeStandings(entries, modeFilter=null){
     return { team, seriesW, seriesL, seriesP: played ? 1 : 0, mapsW, mapsL };
   });
 
+  // aggregate across all series for each team
   const agg = {};
   perSeriesOutcome.forEach(r=>{
     const A = (agg[r.team] ||= { team:r.team, seriesP:0, seriesW:0, seriesL:0, mapsW:0, mapsL:0 });
     A.seriesP += r.seriesP; A.seriesW += r.seriesW; A.seriesL += r.seriesL; A.mapsW += r.mapsW; A.mapsL += r.mapsL;
   });
 
+  // final rows w/ winrates
   const out = Object.values(agg).map(r=>{
     const mapP = r.mapsW + r.mapsL;
     return {
@@ -573,13 +581,14 @@ function computeStandings(entries, modeFilter=null){
       series_played:r.seriesP,
       series_wins:r.seriesW,
       series_losses:r.seriesL,
-      series_winrate: pct(r.seriesW, r.seriesP),
+      series_winrate: r.seriesP ? (r.seriesW / r.seriesP) : 0,
       map_wins:r.mapsW,
       map_losses:r.mapsL,
-      map_winrate: pct(r.mapsW, mapP)
+      map_winrate: mapP ? (r.mapsW / mapP) : 0
     };
   });
 
+  // sort by series winrate, then series wins, then map winrate, then map wins
   return out.sort((a,b)=>
     (b.series_winrate - a.series_winrate) ||
     (b.series_wins - a.series_wins) ||
@@ -587,6 +596,7 @@ function computeStandings(entries, modeFilter=null){
     (b.map_wins - a.map_wins)
   );
 }
+
 
 function renderStandings(){
   const overall = computeStandings(GAME_ENTRIES);
