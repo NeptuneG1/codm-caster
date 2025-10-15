@@ -59,6 +59,17 @@
   }
   .img-wrap img{max-width:100%;max-height:100%;object-fit:contain;display:block}
   .muted{color:var(--muted)}
+
+  /* Mode breakdown */
+  .mode-grid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:10px}
+  @media(min-width:700px){ .mode-grid{grid-template-columns:1fr 1fr 1fr} }
+  .mode-card{background:#0f1524;border:1px solid var(--line);border-radius:12px;padding:10px}
+  .mode-title{display:flex;align-items:center;gap:8px;margin:0 0 6px 0;font-weight:800}
+  .mode-title small{color:var(--muted);font-weight:600}
+  .mode-list{margin:0;padding-left:18px;line-height:1.35}
+  .mode-list li{margin:4px 0}
+  .mode-link{color:#dfe7f5;text-decoration:none;border-bottom:1px dotted transparent}
+  .mode-link:hover{color:#9fd2ff;border-bottom-color:#9fd2ff}
 </style>
 </head>
 <body>
@@ -73,7 +84,7 @@
 
 <div class="shell">
   <div class="grid">
-    <!-- Left: maps list -->
+    <!-- Left: maps list + mode breakdown -->
     <section class="panel">
       <h2>Maps</h2>
       <div class="search">
@@ -82,6 +93,10 @@
       </div>
       <div id="mapList" class="map-list"></div>
       <p class="muted" id="countNote" style="margin-top:8px"></p>
+
+      <!-- Map Pool by Mode -->
+      <h2 style="margin-top:12px">Map Pool by Mode</h2>
+      <div id="modeBreakdown" class="mode-grid"></div>
     </section>
 
     <!-- Right: viewer -->
@@ -102,7 +117,7 @@
 </div>
 
 <script>
-  // Source data (corrected spelling for Kurohana Metropolis)
+  /* === Source images === */
   const MAPS = [
     {name:'Coastal', url:'https://i.imgur.com/0lKdSM1.jpeg'},
     {name:'Crossfire', url:'https://i.imgur.com/nduE5eG.jpeg'},
@@ -119,6 +134,13 @@
     {name:'Combine', url:'https://i.imgur.com/b1iesHr.png'}
   ];
 
+  /* === Map pool breakdown by mode (clickable) === */
+  const MAPS_BY_MODE = {
+    'Hardpoint':        ['Summit','Hacienda','Apocalypse','Slums','Combine'],
+    'Search & Destroy': ['Tunisia','Firing Range','Kurohana Metropolis','Standoff','Coastal'],
+    'Control':          ['Raid','Takeoff','Crossfire']
+  };
+
   const mapList = document.getElementById('mapList');
   const titleEl = document.getElementById('title');
   const imgEl = document.getElementById('img');
@@ -127,9 +149,17 @@
   const q = document.getElementById('q');
   const clearBtn = document.getElementById('clearBtn');
   const countNote = document.getElementById('countNote');
+  const modeBreakdown = document.getElementById('modeBreakdown');
 
   let filtered = MAPS.slice();
   let activeIndex = -1;
+
+  function findMapIndexByName(name){
+    return filtered.findIndex(m => m.name.toLowerCase() === name.toLowerCase());
+  }
+  function findGlobalMap(name){
+    return MAPS.find(m => m.name.toLowerCase() === name.toLowerCase());
+  }
 
   function renderList(){
     mapList.innerHTML = '';
@@ -143,6 +173,54 @@
     });
     countNote.textContent = `${filtered.length} of ${MAPS.length} maps`;
     applyActiveStyle();
+  }
+
+  function renderBreakdown(){
+    modeBreakdown.innerHTML = '';
+    const meta = {
+      'Hardpoint': {icon:'⬇️', note:'FT250'},
+      'Search & Destroy': {icon:'💣', note:'FT7 (OT 20)'},
+      'Control': {icon:'🅰️🅱️', note:'FT3'}
+    };
+    Object.keys(MAPS_BY_MODE).forEach(mode=>{
+      const card = document.createElement('div');
+      card.className = 'mode-card';
+
+      const h = document.createElement('div');
+      h.className = 'mode-title';
+      h.innerHTML = `<span>${meta[mode].icon}</span> <span>${mode}</span> <small>• ${meta[mode].note}</small>`;
+      card.appendChild(h);
+
+      const ul = document.createElement('ul');
+      ul.className = 'mode-list';
+
+      MAPS_BY_MODE[mode].forEach(name=>{
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.href = '#';
+        a.className = 'mode-link';
+        a.textContent = name;
+        a.onclick = (e)=>{
+          e.preventDefault();
+          // ensure it's visible in the left list; if not (filtered out), clear filter
+          const global = findGlobalMap(name);
+          if (!global) return;
+          // If filter hides it, clear filter then re-render
+          if (!filtered.some(m => m.name === global.name)){
+            q.value = '';
+            filterList();
+          }
+          // select the item (lookup again after possible filter reset)
+          let idx = findMapIndexByName(name);
+          if (idx === -1){ renderList(); idx = findMapIndexByName(name); }
+          if (idx >= 0) selectIndex(idx);
+        };
+        li.appendChild(a);
+        ul.appendChild(li);
+      });
+      card.appendChild(ul);
+      modeBreakdown.appendChild(card);
+    });
   }
 
   function selectIndex(i){
@@ -191,6 +269,7 @@
 
   // First render
   renderList();
+  renderBreakdown();
   if (filtered.length) selectIndex(0);
 </script>
 </body>
