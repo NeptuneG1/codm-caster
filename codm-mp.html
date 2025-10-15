@@ -630,15 +630,19 @@ function renderStandings(){
 
 /* ===== Extra insights ===== */
 function renderBestTeams(){
-  const g = groupBy(SCOPE, r=>norm(r.Tag));
+  // Only consider rows where the TEAM is in player_list.Tag
+  const rowsSrc = SCOPE.filter(r => ALLOWED_TAGS.has(key(r.Tag)));
+
+  const g = groupBy(rowsSrc, r=>norm(r.Tag));
   const rows = Object.entries(g).map(([team,list])=>{
     const w = list.filter(r=>cleanWL(r['W/L'])==='W').length;
     const l = list.filter(r=>cleanWL(r['W/L'])==='L').length;
     const games = w+l;
-    return { team, games, wins:w, losses:l, winrate:pct(w,games) };
+    return { team, games, wins:w, losses:l, winrate: games ? (w/games) : 0 };
   }).filter(r=>r.games>=5)
     .sort((a,b)=> b.winrate-a.winrate || b.games-a.games)
     .slice(0,12);
+
   renderTable('bestTeamsTbl', rows, [
     {label:'Team',key:'team'},
     {label:'G',key:'games',right:true},
@@ -647,14 +651,23 @@ function renderBestTeams(){
     {label:'Win %',key:'winrate',format:'pct',right:true},
   ], '—');
 }
+
 function renderOpponents(){
-  const g = groupBy(SCOPE, r=>norm(r['Vs Opponent']));
+  // Only count games where the TEAM is allowed
+  const rowsSrc = SCOPE.filter(r => ALLOWED_TAGS.has(key(r.Tag)));
+
+  const g = groupBy(rowsSrc, r=>norm(r['Vs Opponent']));
   const rows = Object.entries(g).map(([opp,list])=>{
     const w = list.filter(r=>cleanWL(r['W/L'])==='W').length;
     const l = list.filter(r=>cleanWL(r['W/L'])==='L').length;
     const games = w+l;
-    return { opponent:opp||'—', games, wins:w, losses:l, winrate:pct(w,games) };
-  }).sort((a,b)=> b.games-a.games).slice(0,12);
+    return { opponent: opp||'—', games, wins:w, losses:l, winrate: games ? (w/games) : 0 };
+  })
+  // Show only opponents that are also in player_list.Tag
+  .filter(r => ALLOWED_TAGS.has(key(r.opponent)))
+  .sort((a,b)=> b.games-a.games)
+  .slice(0,12);
+
   renderTable('oppTbl', rows, [
     {label:'Opponent',key:'opponent'},
     {label:'G',key:'games',right:true},
@@ -663,28 +676,45 @@ function renderOpponents(){
     {label:'Win %',key:'winrate',format:'pct',right:true},
   ], '—');
 }
+
 function renderMatrix(){
-  const byMapAll = byMap(SCOPE);
+  // Only allowed teams’ games feed the matrix
+  const rowsSrc = SCOPE.filter(r => ALLOWED_TAGS.has(key(r.Tag)));
+
+  // Pick the top maps from allowed-only rows (keeps your current behavior)
+  const byMapAll = (function(rows){
+    const g = groupBy(rows, r=>norm(r.Map)||'—');
+    return Object.entries(g).map(([map,list])=>{
+      const games = list.length;
+      const wins  = list.filter(r=>cleanWL(r['W/L'])==='W').length;
+      return { map, games, winrate: games ? (wins/games) : 0 };
+    }).sort((a,b)=> b.winrate-a.winrate || b.games-a.games);
+  })(rowsSrc);
+
   const topMaps = byMapAll.slice(0,8).map(r=>r.map);
+
   const byModeMap = {}; MODE_ORDER.forEach(m=> byModeMap[m] = {});
-  SCOPE.forEach(r=>{
+  rowsSrc.forEach(r=>{
     const m = r.ModeN || '—'; if (!MODE_ORDER.includes(m)) return;
-    const map = norm(r.Map); if (!topMaps.includes(map)) return;
-    const cell = (byModeMap[m][map] ||= {games:0,wins:0});
+    const mp = norm(r.Map); if (!topMaps.includes(mp)) return;
+    const cell = (byModeMap[m][mp] ||= {games:0,wins:0});
     cell.games += 1;
     cell.wins  += cleanWL(r['W/L'])==='W' ? 1 : 0;
   });
+
   const rows = MODE_ORDER.map(m=>{
     const row = { mode:m };
     topMaps.forEach(mp=>{
       const cell = byModeMap[m][mp] || {games:0,wins:0};
-      row[mp] = cell.games ? ((cell.wins/cell.games*100).toFixed(1)+'% ('+cell.games+')') : '—';
+      row[mp] = cell.games ? `${(cell.wins/cell.games*100).toFixed(1)}% (${cell.games})` : '—';
     });
     return row;
   });
+
   const cols = [{label:'Mode',key:'mode'}].concat(topMaps.map(mp=>({label:mp,key:mp})));
   renderTable('matrixTbl', rows, cols, '—');
 }
+
 
 /* ===== Rows viewer ===== */
 function renderRows(){
