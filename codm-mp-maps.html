@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>COD:M — Map Layouts (Caster Reference)</title>
+
+<style>
+  :root{
+    --bg:#0d1014; --panel:#1b2130; --panel2:#121724;
+    --ink:#eef3fb; --muted:#b6c0ce; --line:#343c4b;
+    --brand:#ffe93b; --chip:#1d2a2e; --accent:#7fd2ff;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif}
+
+  /* Header */
+  header{position:sticky;top:0;z-index:10;background:linear-gradient(180deg,#131823 0%,#0d1014 100%);border-bottom:2px solid var(--brand)}
+  .head{max-width:1200px;margin:0 auto;padding:10px 14px;display:flex;align-items:center;gap:12px}
+  .logo{height:28px;aspect-ratio:auto;display:block}
+  h1{margin:0;font-size:1.05rem;letter-spacing:.2px}
+  .spacer{flex:1}
+  .btn{background:var(--brand);color:#0b0f14;border:0;border-radius:10px;padding:8px 12px;font-weight:800;cursor:pointer}
+  .btn.secondary{background:#171d2a;color:#dbe3f0;border:1px solid var(--line)}
+  a.btn{display:inline-flex;align-items:center;gap:8px;text-decoration:none}
+
+  /* Layout */
+  .shell{max-width:1200px;margin:16px auto;padding:0 12px}
+  .grid{display:grid;grid-template-columns:1fr;gap:14px}
+  @media(min-width:1000px){ .grid{grid-template-columns:320px 1fr} }
+
+  /* Panel */
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
+  .panel h2{margin:0 0 8px 0;font-size:1rem}
+
+  /* Map list */
+  .search{display:flex;gap:8px;margin-bottom:8px}
+  .search input{flex:1;background:#0f1421;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+  .map-list{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  @media(min-width:520px){ .map-list{grid-template-columns:1fr 1fr 1fr} }
+  @media(min-width:1000px){ .map-list{grid-template-columns:1fr 1fr} }
+  .map-btn{
+    background:#0f1524;border:1px solid var(--line);color:#dfe7f5;border-radius:12px;
+    padding:10px 10px; text-align:center; cursor:pointer; user-select:none;
+    transition:transform .05s ease, border-color .2s ease, background .2s ease;
+  }
+  .map-btn:hover{transform:translateY(-1px);border-color:#4b9bd6}
+  .map-btn.active{background:#152036;border-color:var(--accent);box-shadow:0 0 0 2px #152036, 0 0 0 4px rgba(127,210,255,.25) inset}
+
+  /* Viewer */
+  .viewer{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:10px}
+  .viewer-head{display:flex;align-items:center;gap:10px;margin:0 0 10px 0}
+  .viewer-title{font-weight:800}
+  .viewer-tools{margin-left:auto;display:flex;gap:8px}
+  .viewer-tools a{font-size:.9rem}
+  .img-wrap{
+    width:100%;height:72vh;min-height:360px;background:#0a0e18;border:1px solid var(--line);
+    border-radius:12px;display:flex;align-items:center;justify-content:center;overflow:auto;
+  }
+  .img-wrap img{max-width:100%;max-height:100%;object-fit:contain;display:block}
+  .muted{color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <div class="head">
+    <img src="https://i.imgur.com/K0TTjUC.png" alt="COD:M logo" class="logo" />
+    <h1>COD:M — Map Layouts (Caster Reference)</h1>
+    <div class="spacer"></div>
+    <a class="btn secondary" href="index.html" title="Back to Home">⟵ Back to Home</a>
+  </div>
+</header>
+
+<div class="shell">
+  <div class="grid">
+    <!-- Left: maps list -->
+    <section class="panel">
+      <h2>Maps</h2>
+      <div class="search">
+        <input id="q" type="search" placeholder="Filter maps…" />
+        <button class="btn secondary" id="clearBtn">Clear</button>
+      </div>
+      <div id="mapList" class="map-list"></div>
+      <p class="muted" id="countNote" style="margin-top:8px"></p>
+    </section>
+
+    <!-- Right: viewer -->
+    <section class="viewer">
+      <div class="viewer-head">
+        <div class="viewer-title" id="title">Select a map</div>
+        <div class="viewer-tools">
+          <a id="openLink" class="btn secondary" href="#" target="_blank" rel="noopener">Open image</a>
+          <a id="downloadLink" class="btn" href="#" download>Download</a>
+        </div>
+      </div>
+      <div class="img-wrap">
+        <img id="img" alt="Map layout preview" />
+      </div>
+      <p class="muted" style="margin-top:10px">Tip: Use ↑/↓ or ←/→ to switch maps after selecting one.</p>
+    </section>
+  </div>
+</div>
+
+<script>
+  // Source data (corrected spelling for Kurohana Metropolis)
+  const MAPS = [
+    {name:'Coastal', url:'https://i.imgur.com/0lKdSM1.jpeg'},
+    {name:'Crossfire', url:'https://i.imgur.com/nduE5eG.jpeg'},
+    {name:'Firing Range', url:'https://i.imgur.com/ykvx0bQ.jpeg'},
+    {name:'Kurohana Metropolis', url:'https://i.imgur.com/OQHUux4.jpeg'},
+    {name:'Raid', url:'https://i.imgur.com/AcJKkK6.jpeg'},
+    {name:'Standoff', url:'https://i.imgur.com/XUq5yFb.jpeg'},
+    {name:'Tunisia', url:'https://i.imgur.com/4ENnd97.jpeg'},
+    {name:'Apocalypse', url:'https://i.imgur.com/KeJKZ0b.jpeg'},
+    {name:'Hacienda', url:'https://i.imgur.com/PSOaBX4.jpeg'},
+    {name:'Slums', url:'https://i.imgur.com/yggvOug.jpeg'},
+    {name:'Summit', url:'https://i.imgur.com/TcR5g6u.jpeg'},
+    {name:'Takeoff', url:'https://i.imgur.com/zEuzP6E.jpeg'},
+    {name:'Combine', url:'https://i.imgur.com/b1iesHr.png'}
+  ];
+
+  const mapList = document.getElementById('mapList');
+  const titleEl = document.getElementById('title');
+  const imgEl = document.getElementById('img');
+  const openLink = document.getElementById('openLink');
+  const dlLink = document.getElementById('downloadLink');
+  const q = document.getElementById('q');
+  const clearBtn = document.getElementById('clearBtn');
+  const countNote = document.getElementById('countNote');
+
+  let filtered = MAPS.slice();
+  let activeIndex = -1;
+
+  function renderList(){
+    mapList.innerHTML = '';
+    filtered.forEach((m, i) => {
+      const b = document.createElement('button');
+      b.className = 'map-btn';
+      b.textContent = m.name;
+      b.setAttribute('data-index', i);
+      b.onclick = () => selectIndex(i);
+      mapList.appendChild(b);
+    });
+    countNote.textContent = `${filtered.length} of ${MAPS.length} maps`;
+    applyActiveStyle();
+  }
+
+  function selectIndex(i){
+    activeIndex = i;
+    const m = filtered[i];
+    if(!m) return;
+    titleEl.textContent = m.name;
+    imgEl.src = m.url;
+    imgEl.alt = `${m.name} map layout`;
+    openLink.href = m.url;
+    dlLink.href = m.url; // download attribute set on anchor
+    applyActiveStyle();
+  }
+
+  function applyActiveStyle(){
+    [...mapList.children].forEach((btn, i)=>{
+      btn.classList.toggle('active', i === activeIndex);
+    });
+  }
+
+  function filterList(){
+    const s = (q.value || '').trim().toLowerCase();
+    filtered = MAPS.filter(m => m.name.toLowerCase().includes(s));
+    activeIndex = Math.min(activeIndex, filtered.length-1);
+    renderList();
+    if (activeIndex >= 0) selectIndex(activeIndex);
+  }
+
+  // Keyboard nav
+  window.addEventListener('keydown', (e)=>{
+    if (filtered.length === 0) return;
+    if (['ArrowDown','ArrowRight'].includes(e.key)){
+      e.preventDefault();
+      selectIndex( (activeIndex+1+filtered.length)%filtered.length );
+    } else if (['ArrowUp','ArrowLeft'].includes(e.key)){
+      e.preventDefault();
+      selectIndex( (activeIndex-1+filtered.length)%filtered.length );
+    }
+  });
+
+  // Preload images (nice-to-have)
+  MAPS.forEach(m => { const im = new Image(); im.src = m.url; });
+
+  q.addEventListener('input', filterList);
+  clearBtn.addEventListener('click', ()=>{ q.value=''; filterList(); });
+
+  // First render
+  renderList();
+  if (filtered.length) selectIndex(0);
+</script>
+</body>
+</html>
