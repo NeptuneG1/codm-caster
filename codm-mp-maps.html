@@ -9,7 +9,7 @@
   :root{
     --bg:#0d1014; --panel:#1b2130; --panel2:#121724;
     --ink:#eef3fb; --muted:#b6c0ce; --line:#343c4b;
-    --brand:#ffe93b; --chip:#1d2a2e; --accent:#7fd2ff;
+    --brand:#ffe93b; --accent:#7fd2ff;
   }
   *{box-sizing:border-box}
   html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif}
@@ -27,18 +27,21 @@
   /* Layout */
   .shell{max-width:1200px;margin:16px auto;padding:0 12px}
   .grid{display:grid;grid-template-columns:1fr;gap:14px}
-  @media(min-width:1000px){ .grid{grid-template-columns:320px 1fr} }
+  @media(min-width:1000px){ .grid{grid-template-columns:360px 1fr} }
 
-  /* Panel */
+  /* Panels */
   .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
   .panel h2{margin:0 0 8px 0;font-size:1rem}
 
-  /* Map list */
-  .search{display:flex;gap:8px;margin-bottom:8px}
+  /* Search */
+  .search{display:flex;gap:8px;margin-bottom:10px}
   .search input{flex:1;background:#0f1421;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+
+  /* Buttons */
+  .mode-section{margin-bottom:10px}
+  .mode-title{margin:6px 0 8px 0;font-weight:800;color:#fff}
   .map-list{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   @media(min-width:520px){ .map-list{grid-template-columns:1fr 1fr 1fr} }
-  @media(min-width:1000px){ .map-list{grid-template-columns:1fr 1fr} }
   .map-btn{
     background:#0f1524;border:1px solid var(--line);color:#dfe7f5;border-radius:12px;
     padding:10px 10px; text-align:center; cursor:pointer; user-select:none;
@@ -59,17 +62,6 @@
   }
   .img-wrap img{max-width:100%;max-height:100%;object-fit:contain;display:block}
   .muted{color:var(--muted)}
-
-  /* Mode breakdown */
-  .mode-grid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:10px}
-  @media(min-width:700px){ .mode-grid{grid-template-columns:1fr 1fr 1fr} }
-  .mode-card{background:#0f1524;border:1px solid var(--line);border-radius:12px;padding:10px}
-  .mode-title{display:flex;align-items:center;gap:8px;margin:0 0 6px 0;font-weight:800}
-  .mode-title small{color:var(--muted);font-weight:600}
-  .mode-list{margin:0;padding-left:18px;line-height:1.35}
-  .mode-list li{margin:4px 0}
-  .mode-link{color:#dfe7f5;text-decoration:none;border-bottom:1px dotted transparent}
-  .mode-link:hover{color:#9fd2ff;border-bottom-color:#9fd2ff}
 </style>
 </head>
 <body>
@@ -84,19 +76,16 @@
 
 <div class="shell">
   <div class="grid">
-    <!-- Left: maps list + mode breakdown -->
+    <!-- Left: maps grouped by mode -->
     <section class="panel">
       <h2>Maps</h2>
       <div class="search">
         <input id="q" type="search" placeholder="Filter maps…" />
         <button class="btn secondary" id="clearBtn">Clear</button>
       </div>
-      <div id="mapList" class="map-list"></div>
-      <p class="muted" id="countNote" style="margin-top:8px"></p>
 
-      <!-- Map Pool by Mode -->
-      <h2 style="margin-top:12px">Map Pool by Mode</h2>
-      <div id="modeBreakdown" class="mode-grid"></div>
+      <div id="groups"></div>
+      <p class="muted" id="countNote" style="margin-top:8px"></p>
     </section>
 
     <!-- Right: viewer -->
@@ -134,14 +123,15 @@
     {name:'Combine', url:'https://i.imgur.com/b1iesHr.png'}
   ];
 
-  /* === Map pool breakdown by mode (clickable) === */
+  /* === Grouping by mode (buttons appear under each) === */
   const MAPS_BY_MODE = {
     'Hardpoint':        ['Summit','Hacienda','Apocalypse','Slums','Combine'],
     'Search & Destroy': ['Tunisia','Firing Range','Kurohana Metropolis','Standoff','Coastal'],
     'Control':          ['Raid','Takeoff','Crossfire']
   };
+  const MODE_ORDER = ['Hardpoint','Search & Destroy','Control'];
 
-  const mapList = document.getElementById('mapList');
+  const groupsEl = document.getElementById('groups');
   const titleEl = document.getElementById('title');
   const imgEl = document.getElementById('img');
   const openLink = document.getElementById('openLink');
@@ -149,128 +139,114 @@
   const q = document.getElementById('q');
   const clearBtn = document.getElementById('clearBtn');
   const countNote = document.getElementById('countNote');
-  const modeBreakdown = document.getElementById('modeBreakdown');
 
-  let filtered = MAPS.slice();
-  let activeIndex = -1;
+  let flatFiltered = [];      // flattened ordered list of visible map names
+  let activeName = '';        // currently selected map name
 
-  function findMapIndexByName(name){
-    return filtered.findIndex(m => m.name.toLowerCase() === name.toLowerCase());
-  }
   function findGlobalMap(name){
     return MAPS.find(m => m.name.toLowerCase() === name.toLowerCase());
   }
 
-  function renderList(){
-    mapList.innerHTML = '';
-    filtered.forEach((m, i) => {
-      const b = document.createElement('button');
-      b.className = 'map-btn';
-      b.textContent = m.name;
-      b.setAttribute('data-index', i);
-      b.onclick = () => selectIndex(i);
-      mapList.appendChild(b);
-    });
-    countNote.textContent = `${filtered.length} of ${MAPS.length} maps`;
-    applyActiveStyle();
-  }
+  function renderGroups(){
+    const term = (q.value||'').trim().toLowerCase();
+    flatFiltered = [];
+    groupsEl.innerHTML = '';
 
-  function renderBreakdown(){
-    modeBreakdown.innerHTML = '';
-    const meta = {
-      'Hardpoint': {icon:'⬇️', note:'FT250'},
-      'Search & Destroy': {icon:'💣', note:'FT7 (OT 20)'},
-      'Control': {icon:'🅰️🅱️', note:'FT3'}
-    };
-    Object.keys(MAPS_BY_MODE).forEach(mode=>{
-      const card = document.createElement('div');
-      card.className = 'mode-card';
+    MODE_ORDER.forEach(mode=>{
+      const names = MAPS_BY_MODE[mode]
+        .filter(n => n.toLowerCase().includes(term));
+
+      // Skip empty sections under current search
+      if (!names.length) return;
+
+      // Section
+      const sec = document.createElement('div');
+      sec.className = 'mode-section';
 
       const h = document.createElement('div');
       h.className = 'mode-title';
-      h.innerHTML = `<span>${meta[mode].icon}</span> <span>${mode}</span> <small>• ${meta[mode].note}</small>`;
-      card.appendChild(h);
+      h.textContent = mode;
+      sec.appendChild(h);
 
-      const ul = document.createElement('ul');
-      ul.className = 'mode-list';
+      const list = document.createElement('div');
+      list.className = 'map-list';
 
-      MAPS_BY_MODE[mode].forEach(name=>{
-        const li = document.createElement('li');
-        const a = document.createElement('a');
-        a.href = '#';
-        a.className = 'mode-link';
-        a.textContent = name;
-        a.onclick = (e)=>{
-          e.preventDefault();
-          // ensure it's visible in the left list; if not (filtered out), clear filter
-          const global = findGlobalMap(name);
-          if (!global) return;
-          // If filter hides it, clear filter then re-render
-          if (!filtered.some(m => m.name === global.name)){
-            q.value = '';
-            filterList();
-          }
-          // select the item (lookup again after possible filter reset)
-          let idx = findMapIndexByName(name);
-          if (idx === -1){ renderList(); idx = findMapIndexByName(name); }
-          if (idx >= 0) selectIndex(idx);
-        };
-        li.appendChild(a);
-        ul.appendChild(li);
+      names.forEach(n=>{
+        const m = findGlobalMap(n);
+        if (!m) return;
+        flatFiltered.push(m.name);
+
+        const b = document.createElement('button');
+        b.className = 'map-btn';
+        b.textContent = m.name;
+        b.dataset.name = m.name;
+        b.onclick = () => selectName(m.name);
+        list.appendChild(b);
       });
-      card.appendChild(ul);
-      modeBreakdown.appendChild(card);
+
+      sec.appendChild(list);
+      groupsEl.appendChild(sec);
     });
+
+    // Count
+    const total = Object.values(MAPS_BY_MODE).flat().length;
+    countNote.textContent = `${flatFiltered.length} of ${total} maps`;
+
+    applyActiveStyle();
+
+    // If current selection got filtered out, select first visible
+    if (flatFiltered.length && !flatFiltered.includes(activeName)){
+      selectName(flatFiltered[0]);
+    }
   }
 
-  function selectIndex(i){
-    activeIndex = i;
-    const m = filtered[i];
-    if(!m) return;
+  function selectName(name){
+    const m = findGlobalMap(name);
+    if (!m) return;
+    activeName = m.name;
     titleEl.textContent = m.name;
     imgEl.src = m.url;
     imgEl.alt = `${m.name} map layout`;
     openLink.href = m.url;
-    dlLink.href = m.url; // download attribute set on anchor
+    dlLink.href = m.url;
     applyActiveStyle();
   }
 
   function applyActiveStyle(){
-    [...mapList.children].forEach((btn, i)=>{
-      btn.classList.toggle('active', i === activeIndex);
+    // toggle active state on all visible buttons
+    groupsEl.querySelectorAll('.map-btn').forEach(btn=>{
+      btn.classList.toggle('active', btn.dataset.name === activeName);
     });
   }
 
   function filterList(){
-    const s = (q.value || '').trim().toLowerCase();
-    filtered = MAPS.filter(m => m.name.toLowerCase().includes(s));
-    activeIndex = Math.min(activeIndex, filtered.length-1);
-    renderList();
-    if (activeIndex >= 0) selectIndex(activeIndex);
+    renderGroups();
   }
 
-  // Keyboard nav
+  // Keyboard navigation across the flattened filtered order
   window.addEventListener('keydown', (e)=>{
-    if (filtered.length === 0) return;
+    if (!flatFiltered.length) return;
+    const idx = flatFiltered.indexOf(activeName);
     if (['ArrowDown','ArrowRight'].includes(e.key)){
       e.preventDefault();
-      selectIndex( (activeIndex+1+filtered.length)%filtered.length );
+      const next = (idx + 1 + flatFiltered.length) % flatFiltered.length;
+      selectName(flatFiltered[next]);
     } else if (['ArrowUp','ArrowLeft'].includes(e.key)){
       e.preventDefault();
-      selectIndex( (activeIndex-1+filtered.length)%filtered.length );
+      const prev = (idx - 1 + flatFiltered.length) % flatFiltered.length;
+      selectName(flatFiltered[prev]);
     }
   });
 
-  // Preload images (nice-to-have)
+  // Preload images
   MAPS.forEach(m => { const im = new Image(); im.src = m.url; });
 
   q.addEventListener('input', filterList);
   clearBtn.addEventListener('click', ()=>{ q.value=''; filterList(); });
 
-  // First render
-  renderList();
-  renderBreakdown();
-  if (filtered.length) selectIndex(0);
+  // Initial render
+  renderGroups();
+  if (flatFiltered.length) selectName(flatFiltered[0]);
 </script>
 </body>
 </html>
