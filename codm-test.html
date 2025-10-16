@@ -59,12 +59,12 @@
   .img-wrap{
     width:100%;height:72vh;min-height:360px;background:#0a0e18;border:1px solid var(--line);
     border-radius:12px;display:flex;align-items:center;justify-content:center;overflow:hidden;
-    touch-action:none; /* enables custom pinch/drag on mobile */
+    touch-action:none; /* custom pinch/drag on mobile */
     position:relative;cursor:grab;
   }
   .img-wrap.grabbing{cursor:grabbing}
   .img-wrap img{
-    max-width:none;max-height:none; /* we control fit via transform now */
+    max-width:none;max-height:none; /* we control fit via transform */
     user-select:none; -webkit-user-drag:none;
     will-change:transform;
     transform-origin:0 0;
@@ -92,6 +92,7 @@
         <input id="q" type="search" placeholder="Filter maps…" />
         <button class="btn secondary" id="clearBtn">Clear</button>
       </div>
+
       <div id="groups"></div>
       <p class="muted" id="countNote" style="margin-top:8px"></p>
     </section>
@@ -108,7 +109,7 @@
         </div>
       </div>
       <div class="img-wrap" id="viewer">
-        <img id="img" alt="Map layout preview" />
+        <img id="img" alt="Map layout preview" decoding="async" />
       </div>
       <p class="muted" style="margin-top:10px">
         Gestures: pinch to zoom, drag to pan, double-tap/click to zoom, wheel to zoom (desktop). Use ↑/↓ or ←/→ to switch maps.
@@ -182,8 +183,6 @@
 
     function bounds(){
       const {cw,ch,sw,sh} = dims();
-      // If image bigger than container: clamp edges to keep it covering the view
-      // If smaller: force center (min==max)
       const minX = (sw > cw) ? (cw - sw) : (cw - sw)/2;
       const maxX = (sw > cw) ? 0 : (cw - sw)/2;
       const minY = (sh > ch) ? (ch - sh) : (ch - sh)/2;
@@ -204,12 +203,12 @@
 
     function fitToContain(){
       const {cw,ch,iw,ih} = dims();
-      const s = Math.min(cw/iw, ch/ih) || 1;
-      state.minScale = s;        // ✅ minimum zoom is "fit"
+      const s = Math.min(cw/iw, ch/ih) || 1;   // ✅ full image visible
+      state.minScale = s;
       state.scale = s;
       const sw = iw * s, sh = ih * s;
-      state.x = (cw - sw)/2;
-      state.y = (ch - sh)/2;
+      state.x = (cw - sw)/2;                   // ✅ centered horizontally
+      state.y = (ch - sh)/2;                   // ✅ centered vertically
       setTransform();
     }
 
@@ -225,7 +224,6 @@
       const prev = state.scale;
       if (newScale === prev) return;
 
-      // keep focal point stable while zooming
       const dx = focal.x - state.x;
       const dy = focal.y - state.y;
       state.x = focal.x - dx * (newScale/prev);
@@ -234,13 +232,11 @@
       setTransform();
     }
 
-    // Pointer handling (single drag, two-finger pinch)
     container.addEventListener('pointerdown', (e)=>{
       container.setPointerCapture(e.pointerID || e.pointerId);
       state.pointers.set(e.pointerId, {x:e.clientX, y:e.clientY, prevX:e.clientX, prevY:e.clientY});
       container.classList.add('grabbing');
 
-      // double-tap / double-click zoom (toggles between minScale and ~2x)
       const now = Date.now();
       const p = pointInContainer(e);
       if (now - state.lastTap.t < 300 && Math.hypot(p.x-state.lastTap.x, p.y-state.lastTap.y) < 40){
@@ -259,24 +255,21 @@
 
       const pts = Array.from(state.pointers.values());
       if (pts.length === 1){
-        // drag
         const dx = pt.x - pt.prevX;
         const dy = pt.y - pt.prevY;
         pt.prevX = pt.x; pt.prevY = pt.y;
         state.x += dx; state.y += dy;
         setTransform();
       } else if (pts.length >= 2){
-        // pinch
         const [a,b] = pts;
         const dist = Math.hypot(b.x - a.x, b.y - a.y);
-        const mid = { x:(a.x+b.x)/2, y:(a.y+b.y)/2 };
-
         if (!state._pinch){
-          state._pinch = { dist, scale: state.scale, mid };
+          state._pinch = { dist, scale: state.scale, mid:{x:(a.x+b.x)/2,y:(a.y+b.y)/2} };
         } else {
           const ratio = dist / state._pinch.dist;
           const target = clampScale(state._pinch.scale * ratio);
-          const focal = pointInContainer({clientX: state._pinch.mid.x, clientY: state._pinch.mid.y});
+          const mid = state._pinch.mid;
+          const focal = pointInContainer({clientX: mid.x, clientY: mid.y});
           zoomAt(focal, target);
         }
       }
@@ -291,24 +284,34 @@
     container.addEventListener('pointercancel', endPointer);
     container.addEventListener('pointerleave', endPointer);
 
-    // Wheel zoom (desktop)
     container.addEventListener('wheel', (e)=>{
       e.preventDefault();
-      const delta = -Math.sign(e.deltaY) * 0.25; // step
+      const delta = -Math.sign(e.deltaY) * 0.25;
       const focal = pointInContainer(e);
       zoomAt(focal, state.scale * (1 + delta));
     }, {passive:false});
 
-    // Buttons
     zoomInBtn.addEventListener('click', ()=> zoomAt({x:container.clientWidth/2,y:container.clientHeight/2}, state.scale*1.25));
     zoomOutBtn.addEventListener('click',()=> zoomAt({x:container.clientWidth/2,y:container.clientHeight/2}, state.scale/1.25));
     resetBtn.addEventListener('click', fitToContain);
 
-    // Refit on image load / resize
     img.addEventListener('load', fitToContain);
     window.addEventListener('resize', fitToContain);
 
-    return { reset: fitToContain, zoomAt };
+    return {
+      reset: fitToContain,
+      setSrcAndFit: async (url) => {
+        // set and ensure decode so naturalWidth/height are ready (covers cache too)
+        img.src = url;
+        try { await img.decode(); } catch(_) { /* ignore, fallback below */ }
+        // if decode failed early, ensure we still fit after a tick
+        if (!img.naturalWidth) {
+          setTimeout(fitToContain, 0);
+        } else {
+          fitToContain();
+        }
+      }
+    };
   }
 
   /* -------- UI wiring (maps + viewer) -------- */
@@ -360,16 +363,14 @@
     }
   }
 
-  function selectName(name){
+  async function selectName(name){
     const m = findGlobalMap(name);
     if (!m) return;
     activeName = m.name;
     titleEl.textContent = m.name;
-    imgEl.src = m.url;
-    imgEl.alt = `${m.name} map layout`;
     dlLink.href = m.url;
     applyActiveStyle();
-    // pan/zoom resets to fit on image load
+    await pz.setSrcAndFit(m.url); // ✅ full image visible & centered on load
   }
 
   function applyActiveStyle(){
@@ -380,7 +381,6 @@
 
   function filterList(){ renderGroups(); }
 
-  // Keyboard navigation across the flattened filtered order
   window.addEventListener('keydown', (e)=>{
     if (!flatFiltered.length) return;
     const idx = flatFiltered.indexOf(activeName);
@@ -395,7 +395,7 @@
     }
   });
 
-  // Preload images (nice-to-have)
+  // Preload images (optional)
   MAPS.forEach(m => { const im = new Image(); im.src = m.url; });
 
   q.addEventListener('input', filterList);
@@ -407,4 +407,3 @@
 </script>
 </body>
 </html>
-
