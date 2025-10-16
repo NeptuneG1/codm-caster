@@ -46,6 +46,13 @@
   .compact th,.compact td{border-bottom:1px solid #3a4255;padding:6px 8px;vertical-align:middle}
   .right{text-align:right}
 
+  /* clickable rows */
+  .compact tbody tr.clickable{cursor:pointer}
+  .compact tbody tr.clickable:hover{background:#141a1f}
+
+  /* mini button */
+  .btn.xs{padding:4px 8px;border-radius:8px;font-size:.8rem}
+
   /* ===== Filter bar ===== */
   .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
   .chip{background:var(--chip);border:1px solid var(--line);color:#d2efe1;border-radius:999px;padding:6px 10px}
@@ -53,7 +60,7 @@
   .btn{background:var(--brand);color:#0c0e10;border:0;border-radius:10px;padding:8px 12px;font-weight:800;cursor:pointer}
   .btn.secondary{background:#1a2030;color:#d6dbe6;border:1px solid var(--line)}
 
-  /* ===== Series card (balanced lanes; mode above map, centered) ===== */
+  /* ===== Series card ===== */
   .series-card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden}
   .series-head{
     display:grid;grid-template-columns:1fr max-content 1fr;gap:8px;align-items:center;
@@ -81,7 +88,6 @@
   .cross{background:var(--bad)}
   .dim{opacity:.55}
 
-  /* CENTERED middle stack */
   .mode-stack{display:flex;flex-direction:column;line-height:1.15;justify-self:center;align-items:center;text-align:center}
   .mode-pill{font-size:.7rem;border:1px solid var(--line);padding:1px 6px;border-radius:999px;background:#111827;color:#e8ecf5;width:max-content;margin:0 auto}
   .map-title{font-size:.95rem;margin-top:2px;text-align:center}
@@ -202,6 +208,12 @@
           <div id="stand_ctrl"></div>
         </div>
       </div>
+    </details>
+
+    <!-- 🔽 Click-to-expand team matches panel -->
+    <details class="fold" id="teamMatchesBox" style="margin-top:10px">
+      <summary id="teamMatchesTitle">Team matches</summary>
+      <div id="teamMatches" style="margin-top:8px"></div>
     </details>
   </section>
 
@@ -375,19 +387,20 @@ function buildGameEntries(rows){
 
     const map = norm(rA.Map);
     const mode= norm(rA.ModeN);
+    const idx = n(rA.MATCHES); // 👈 keep map order
 
     if ((aScore + bScore) <= 0) return;
 
     out.push({
       tournament:tourn, seriesNeutral: seriesKeyNeutral(rA),
       stage, day, seriesNo: ser,
-      team: A, opp: B, mode, map,
+      team: A, opp: B, mode, map, mapIdx: idx,
       win: aScore>bScore ? 1:0, loss: aScore<bScore ? 1:0
     });
     out.push({
       tournament:tourn, seriesNeutral: seriesKeyNeutral(rA),
       stage, day, seriesNo: ser,
-      team: B, opp: A, mode, map,
+      team: B, opp: A, mode, map, mapIdx: idx,
       win: bScore>aScore ? 1:0, loss: bScore<aScore ? 1:0
     });
   });
@@ -543,17 +556,24 @@ function byMap(rows){
   }).sort((a,b)=> b.winrate-a.winrate || b.games-a.games);
 }
 
-/* ===== Render compact tables ===== */
-function renderTable(hostId, rows, cols, empty='No rows.'){
+/* ===== Render compact tables (clickable support) ===== */
+function renderTable(hostId, rows, cols, empty='No rows.', opts={}){
   const host = el(hostId);
   if (!rows.length){ host.innerHTML = `<div class="muted">${empty}</div>`; return; }
   const thead = `<thead><tr>${cols.map(c=>`<th class="${c.right?'right':''}">${c.label}</th>`).join('')}</tr></thead>`;
-  const tbody = `<tbody>${rows.map(r=>`<tr>${cols.map(c=>{
+  const tbodyHTML = rows.map(r=>`<tr>${cols.map(c=>{
     let v = r[c.key];
     if (c.format==='pct') v = (typeof v==='number') ? (v*100).toFixed(1)+'%' : '—';
     return `<td class="${c.right?'right':''}">${v ?? '—'}</td>`;
-  }).join('')}</tr>`).join('')}</tbody>`;
-  host.innerHTML = `<table>${thead}${tbody}</table>`;
+  }).join('')}</tr>`).join('');
+  host.innerHTML = `<table class="table"><thead>${thead}</thead><tbody>${tbodyHTML}</tbody></table>`;
+  const tbody = host.querySelector('tbody');
+  if (opts.onRowClick){
+    [...tbody.rows].forEach((tr,i)=>{
+      tr.classList.add('clickable');
+      tr.addEventListener('click', ()=> opts.onRowClick(rows[i]));
+    });
+  }
 }
 
 /* ===== Series viewer ===== */
@@ -606,13 +626,9 @@ function renderSeriesCard(neutralKey){
 
 /* ===== Standings (series-based) ===== */
 function computeStandings(entries, modeFilter=null){
-  // filter to mode (if any)
   const base = modeFilter ? entries.filter(e=>e.mode===modeFilter) : entries;
+  const rows = base.filter(e => ALLOWED_TAGS.has(key(e.team))); // only allowed teams
 
-  // only keep teams in player_list.Tag
-  const rows = base.filter(e => ALLOWED_TAGS.has(key(e.team)));
-
-  // group by (series, team) to get series outcome per team
   const bySeriesTeam = groupBy(rows, e => `${e.seriesNeutral}|${e.team}`);
   const perSeriesOutcome = Object.values(bySeriesTeam).map(list=>{
     const team = list[0].team;
@@ -624,14 +640,12 @@ function computeStandings(entries, modeFilter=null){
     return { team, seriesW, seriesL, seriesP: played ? 1 : 0, mapsW, mapsL };
   });
 
-  // aggregate across all series for each team
   const agg = {};
   perSeriesOutcome.forEach(r=>{
     const A = (agg[r.team] ||= { team:r.team, seriesP:0, seriesW:0, seriesL:0, mapsW:0, mapsL:0 });
     A.seriesP += r.seriesP; A.seriesW += r.seriesW; A.seriesL += r.seriesL; A.mapsW += r.mapsW; A.mapsL += r.mapsL;
   });
 
-  // final rows w/ winrates
   const out = Object.values(agg).map(r=>{
     const mapP = r.mapsW + r.mapsL;
     return {
@@ -646,7 +660,6 @@ function computeStandings(entries, modeFilter=null){
     };
   });
 
-  // sort by series winrate, then series wins, then map winrate, then map wins
   return out.sort((a,b)=>
     (b.series_winrate - a.series_winrate) ||
     (b.series_wins - a.series_wins) ||
@@ -655,8 +668,72 @@ function computeStandings(entries, modeFilter=null){
   );
 }
 
+/* ===== Team matches panel ===== */
+function scrollToMatches(){
+  const box = el('teamMatchesBox');
+  if (box) { box.open = true; box.scrollIntoView({behavior:'smooth', block:'start'}); }
+}
+function renderTeamMatchesPanel(team, modeFilter=null){
+  const host = el('teamMatches');
+  const title = el('teamMatchesTitle');
+  const E = filteredEntriesForStandings()
+            .filter(e => key(e.team)===key(team))
+            .filter(e => !modeFilter || key(e.mode)===key(modeFilter));
+
+  if (!E.length){
+    title.textContent = `Team matches — ${team}`;
+    host.innerHTML = `<div class="muted">No series in the current filter.</div>`;
+    scrollToMatches();
+    return;
+  }
+
+  const bySeries = groupBy(E, e => e.seriesNeutral);
+  const seriesList = Object.values(bySeries).sort((a,b)=>
+    String(a[0].tournament).localeCompare(String(b[0].tournament)) ||
+    String(a[0].stage).localeCompare(String(b[0].stage)) ||
+    (Number(a[0].day)||0) - (Number(b[0].day)||0) ||
+    (Number(a[0].seriesNo)||0) - (Number(b[0].seriesNo)||0)
+  );
+
+  title.textContent = `Team matches — ${team} ${modeFilter? '('+modeFilter+')':''} • ${seriesList.length} series`;
+
+  host.innerHTML = seriesList.map(list=>{
+    const s = list[0];
+    const mapsW = list.reduce((a,e)=>a+e.win,0);
+    const mapsL = list.reduce((a,e)=>a+e.loss,0);
+    const seriesKey = s.seriesNeutral;
+
+    const mapRows = list.slice().sort((x,y)=>(x.mapIdx||0)-(y.mapIdx||0))
+      .map(m=>`<tr>
+          <td class="right" style="width:36px">${m.mapIdx ?? ''}</td>
+          <td>${m.mode}</td>
+          <td>${m.map}</td>
+          <td class="right">${m.win? 'W':'L'}</td>
+        </tr>`).join('');
+
+    return `
+      <details class="fold" open>
+        <summary>
+          <strong>${team}</strong> vs ${s.opp} • ${s.tournament? s.tournament+' • ':''}${s.stage||'—'} • Day ${s.day||'—'} • Series ${s.seriesNo||'—'}
+          &nbsp; — &nbsp; <strong>${mapsW}:${mapsL}</strong>
+          <button class="btn xs secondary" style="margin-left:8px"
+            onclick="(function(){ const dd=el('fSeries'); if(dd){ dd.value='${seriesKey}'; renderSeriesCard(dd.value); window.scrollTo({top:0,behavior:'smooth'}); } })(); event.stopPropagation();">
+            View in Series Viewer
+          </button>
+        </summary>
+        <div class="compact" style="margin-top:8px">
+          <table>
+            <thead><tr><th class="right">#</th><th>Mode</th><th>Map</th><th class="right">Result</th></tr></thead>
+            <tbody>${mapRows}</tbody>
+          </table>
+        </div>
+      </details>`;
+  }).join('');
+
+  scrollToMatches();
+}
+
 function renderStandings(){
-  // 🔎 entries respect the current filters (tournament, team/opponent, mode, map, stage, day)
   const E = filteredEntriesForStandings();
 
   const overall = computeStandings(E);
@@ -669,9 +746,10 @@ function renderStandings(){
     {label:'MW',key:'map_wins',right:true},
     {label:'ML',key:'map_losses',right:true},
     {label:'M Win %',key:'map_winrate',format:'pct',right:true},
-  ], 'No series.');
+  ], 'No series.', {
+    onRowClick: (r)=> renderTeamMatchesPanel(r.team, null)
+  });
 
-  /* === Per Mode: MAP-ONLY tables (no series columns) === */
   const hp  = computeStandings(E, 'Hardpoint').map(r=>({...r, maps:r.map_wins+r.map_losses}));
   const snd = computeStandings(E, 'Search & Destroy').map(r=>({...r, maps:r.map_wins+r.map_losses}));
   const ctl = computeStandings(E, 'Control').map(r=>({...r, maps:r.map_wins+r.map_losses}));
@@ -683,16 +761,14 @@ function renderStandings(){
     {label:'ML',key:'map_losses',right:true},
     {label:'M %',key:'map_winrate',format:'pct',right:true},
   ];
-  renderTable('stand_hp',  hp.slice(0,30),  modeCols, '—');
-  renderTable('stand_snd', snd.slice(0,30), modeCols, '—');
-  renderTable('stand_ctrl',ctl.slice(0,30), modeCols, '—');
+  renderTable('stand_hp',  hp.slice(0,30),  modeCols, '—', { onRowClick:(r)=>renderTeamMatchesPanel(r.team,'Hardpoint') });
+  renderTable('stand_snd', snd.slice(0,30), modeCols, '—', { onRowClick:(r)=>renderTeamMatchesPanel(r.team,'Search & Destroy') });
+  renderTable('stand_ctrl',ctl.slice(0,30), modeCols, '—', { onRowClick:(r)=>renderTeamMatchesPanel(r.team,'Control') });
 }
 
 /* ===== Extra insights ===== */
 function renderBestTeams(){
-  // Only consider rows where the TEAM is in player_list.Tag
   const rowsSrc = SCOPE.filter(r => ALLOWED_TAGS.has(key(r.Tag)));
-
   const g = groupBy(rowsSrc, r=>norm(r.Tag));
   const rows = Object.entries(g).map(([team,list])=>{
     const w = list.filter(r=>cleanWL(r['W/L'])==='W').length;
@@ -713,9 +789,7 @@ function renderBestTeams(){
 }
 
 function renderOpponents(){
-  // Only count games where the TEAM is allowed
   const rowsSrc = SCOPE.filter(r => ALLOWED_TAGS.has(key(r.Tag)));
-
   const g = groupBy(rowsSrc, r=>norm(r['Vs Opponent']));
   const rows = Object.entries(g).map(([opp,list])=>{
     const w = list.filter(r=>cleanWL(r['W/L'])==='W').length;
@@ -723,7 +797,6 @@ function renderOpponents(){
     const games = w+l;
     return { opponent: opp||'—', games, wins:w, losses:l, winrate: games ? (w/games) : 0 };
   })
-  // Show only opponents that are also in player_list.Tag
   .filter(r => ALLOWED_TAGS.has(key(r.opponent)))
   .sort((a,b)=> b.games-a.games)
   .slice(0,12);
@@ -738,10 +811,7 @@ function renderOpponents(){
 }
 
 function renderMatrix(){
-  // Only allowed teams’ games feed the matrix
   const rowsSrc = SCOPE.filter(r => ALLOWED_TAGS.has(key(r.Tag)));
-
-  // Pick the top maps from allowed-only rows
   const byMapAll = (function(rows){
     const g = groupBy(rows, r=>norm(r.Map)||'—');
     return Object.entries(g).map(([map,list])=>{
@@ -752,7 +822,6 @@ function renderMatrix(){
   })(rowsSrc);
 
   const topMaps = byMapAll.slice(0,8).map(r=>r.map);
-
   const byModeMap = {}; MODE_ORDER.forEach(m=> byModeMap[m] = {});
   rowsSrc.forEach(r=>{
     const m = r.ModeN || '—'; if (!MODE_ORDER.includes(m)) return;
@@ -775,7 +844,6 @@ function renderMatrix(){
   renderTable('matrixTbl', rows, cols, '—');
 }
 
-
 /* ===== Rows viewer ===== */
 function renderRows(){
   const cols = [
@@ -793,9 +861,7 @@ function renderAll(){
   setSeriesOptions(SCOPE);
   renderSeriesCard(el('fSeries').value);
 
-  // Use perspective-correct rows for Quick Analytics
   const QA_ROWS = getQuickRows();
-
   const q = (function(rows){
     const games = rows.length;
     const w = rows.filter(r=>cleanWL(r['W/L'])==='W').length;
@@ -817,7 +883,6 @@ function renderAll(){
     {label:'Diff',key:'diff',right:true},
   ]);
 
-  // By Mode / By Map respect the same perspective
   const modes = byMode(QA_ROWS).map(r=>({mode:r.mode, games:r.games, wins:r.wins, losses:r.losses, winrate:r.winrate}));
   renderTable('modeTbl', modes, [
     {label:'Mode',key:'mode'}, {label:'G',key:'games',right:true},
@@ -830,9 +895,7 @@ function renderAll(){
     {label:'W',key:'wins',right:true}, {label:'L',key:'losses',right:true}, {label:'Win %',key:'winrate',format:'pct',right:true}
   ], '—');
 
-  // Now standings computed from filtered entries
   renderStandings();
-
   renderRows();
   renderBestTeams();
   renderOpponents();
@@ -851,10 +914,8 @@ el('fSeries').addEventListener('change', (e)=> renderSeriesCard(e.target.value))
 
 /* ===== Boot ===== */
 (async function init(){
-  // fetch allowed teams first
   ALLOWED_TAGS = await fetchAllowedTags();
 
-  // fetch matches
   const raw = await fetchAllMatches();
 
   // normalize + hard filter:
