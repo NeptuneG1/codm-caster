@@ -367,6 +367,7 @@ function seriesKeyNeutral(r){
 }
 
 /* ===== Build merged map-level entries (for correct series math) ===== */
+// UPDATED: include ownScore / oppScore so we can display per-map scores
 function buildGameEntries(rows){
   const valid = rows.filter(r=> cleanWL(r['W/L']) );
   const g = groupBy(valid, r=> `${seriesKeyNeutral(r)}|${n(r.MATCHES)}|${norm(r.Map)}|${norm(r.ModeN)}`);
@@ -387,25 +388,30 @@ function buildGameEntries(rows){
 
     const map = norm(rA.Map);
     const mode= norm(rA.ModeN);
-    const idx = n(rA.MATCHES); // 👈 keep map order
+    const idx = n(rA.MATCHES);
 
     if ((aScore + bScore) <= 0) return;
 
+    // perspective: A
     out.push({
       tournament:tourn, seriesNeutral: seriesKeyNeutral(rA),
       stage, day, seriesNo: ser,
       team: A, opp: B, mode, map, mapIdx: idx,
+      ownScore: aScore, oppScore: bScore,
       win: aScore>bScore ? 1:0, loss: aScore<bScore ? 1:0
     });
+    // perspective: B
     out.push({
       tournament:tourn, seriesNeutral: seriesKeyNeutral(rA),
       stage, day, seriesNo: ser,
       team: B, opp: A, mode, map, mapIdx: idx,
+      ownScore: bScore, oppScore: aScore,
       win: bScore>aScore ? 1:0, loss: bScore<aScore ? 1:0
     });
   });
   return out;
 }
+
 
 /* ===== Filters apply to ROWS (team/opponent symmetric) ===== */
 function applyFilters(){
@@ -673,6 +679,7 @@ function scrollToMatches(){
   const box = el('teamMatchesBox');
   if (box) { box.open = true; box.scrollIntoView({behavior:'smooth', block:'start'}); }
 }
+// UPDATED: add a Score column (ownScore–oppScore)
 function renderTeamMatchesPanel(team, modeFilter=null){
   const host = el('teamMatches');
   const title = el('teamMatchesTitle');
@@ -683,7 +690,7 @@ function renderTeamMatchesPanel(team, modeFilter=null){
   if (!E.length){
     title.textContent = `Team matches — ${team}`;
     host.innerHTML = `<div class="muted">No series in the current filter.</div>`;
-    scrollToMatches();
+    const box = el('teamMatchesBox'); if (box) { box.open = true; box.scrollIntoView({behavior:'smooth', block:'start'}); }
     return;
   }
 
@@ -708,6 +715,7 @@ function renderTeamMatchesPanel(team, modeFilter=null){
           <td class="right" style="width:36px">${m.mapIdx ?? ''}</td>
           <td>${m.mode}</td>
           <td>${m.map}</td>
+          <td class="right">${(m.ownScore ?? '')}–${(m.oppScore ?? '')}</td>
           <td class="right">${m.win? 'W':'L'}</td>
         </tr>`).join('');
 
@@ -723,15 +731,24 @@ function renderTeamMatchesPanel(team, modeFilter=null){
         </summary>
         <div class="compact" style="margin-top:8px">
           <table>
-            <thead><tr><th class="right">#</th><th>Mode</th><th>Map</th><th class="right">Result</th></tr></thead>
+            <thead>
+              <tr>
+                <th class="right">#</th>
+                <th>Mode</th>
+                <th>Map</th>
+                <th class="right">Score</th>
+                <th class="right">Result</th>
+              </tr>
+            </thead>
             <tbody>${mapRows}</tbody>
           </table>
         </div>
       </details>`;
   }).join('');
 
-  scrollToMatches();
+  const box = el('teamMatchesBox'); if (box) { box.open = true; box.scrollIntoView({behavior:'smooth', block:'start'}); }
 }
+
 
 function renderStandings(){
   const E = filteredEntriesForStandings();
