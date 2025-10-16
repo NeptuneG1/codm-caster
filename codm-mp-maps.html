@@ -40,8 +40,29 @@
   /* Buttons */
   .mode-section{margin-bottom:10px}
   .mode-title{margin:6px 0 8px 0;font-weight:800;color:#fff}
-  .map-list{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-  @media(min-width:520px){ .map-list{grid-template-columns:1fr 1fr 1fr} }
+
+  /* Map list — desktop: 1 column */
+  .map-list{
+    display:grid;
+    grid-template-columns: 1fr;   /* single column on desktop */
+    gap:8px;
+  }
+  
+  /* Mobile/tablet (your grid collapses under 1000px): spread out */
+  @media (max-width: 1000px){
+    .map-list{
+      grid-template-columns: repeat(3, minmax(120px, 1fr));
+    }
+  }
+  
+  /* Small phones: 2 columns */
+  @media (max-width: 600px){
+    .map-list{
+      grid-template-columns: repeat(2, minmax(120px, 1fr));
+    }
+  }
+
+  
   .map-btn{
     background:#0f1524;border:1px solid var(--line);color:#dfe7f5;border-radius:12px;
     padding:10px 10px; text-align:center; cursor:pointer; user-select:none;
