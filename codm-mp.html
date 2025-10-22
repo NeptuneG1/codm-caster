@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>COD:M — Team Comparison</title>
+<title>COD:M — Map Layouts</title>
 
 <style>
   :root{
     --bg:#0d1014; --panel:#1b2130; --panel2:#121724;
     --ink:#eef3fb; --muted:#b6c0ce; --line:#343c4b;
-    --brand:#ffe93b; --accent:#7fd2ff; --good:#71d083; --bad:#ff6b6b;
+    --brand:#ffe93b; --accent:#7fd2ff;
   }
   *{box-sizing:border-box}
   html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif}
@@ -32,57 +32,64 @@
   /* Panels */
   .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
   .panel h2{margin:0 0 8px 0;font-size:1rem}
+
+  /* Search */
+  .search{display:flex;gap:8px;margin-bottom:10px}
+  .search input{flex:1;background:#0f1421;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+
+  /* Buttons */
+  .mode-section{margin-bottom:10px}
+  .mode-title{margin:6px 0 8px 0;font-weight:800;color:#fff}
+
+  /* Map list — desktop: 1 column */
+  .map-list{
+    display:grid;
+    grid-template-columns: 1fr;   /* single column on desktop */
+    gap:8px;
+  }
+  
+  /* Mobile/tablet (your grid collapses under 1000px): spread out */
+  @media (max-width: 1000px){
+    .map-list{
+      grid-template-columns: repeat(3, minmax(80px, 1fr));
+    }
+  }
+  
+  /* Small phones: 2 columns */
+  @media (max-width: 600px){
+    .map-list{
+      grid-template-columns: repeat(2, minmax(120px, 1fr));
+    }
+  }
+
+  
+  .map-btn{
+    background:#0f1524;border:1px solid var(--line);color:#dfe7f5;border-radius:12px;
+    padding:10px 10px; text-align:center; cursor:pointer; user-select:none;
+    transition:transform .05s ease, border-color .2s ease, background .2s ease;
+  }
+  .map-btn:hover{transform:translateY(-1px);border-color:#4b9bd6}
+  .map-btn.active{background:#152036;border-color:var(--accent);box-shadow:0 0 0 2px #152036, 0 0 0 4px rgba(127,210,255,.25) inset}
+
+  /* Viewer */
+  .viewer{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:10px}
+  .viewer-head{display:flex;align-items:center;gap:10px;margin:0 0 10px 0}
+  .viewer-title{font-weight:800}
+  .viewer-tools{margin-left:auto;display:flex;gap:8px}
+  .viewer-tools a{font-size:.9rem}
+  .img-wrap{
+    width:100%;height:72vh;min-height:360px;background:#0a0e18;border:1px solid var(--line);
+    border-radius:12px;display:flex;align-items:center;justify-content:center;overflow:auto;
+  }
+  .img-wrap img{max-width:100%;max-height:100%;object-fit:contain;display:block}
   .muted{color:var(--muted)}
-
-  /* Filters */
-  .filters{display:flex;flex-direction:column;gap:10px}
-  .select-row{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
-  select, input[type="search"]{width:100%;background:#0f1421;color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
-  .swap{background:#20314b;border:1px solid var(--line);color:#dfe7f5;border-radius:10px;padding:8px 10px;cursor:pointer}
-
-  /* Comparison */
-  .viewer{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:12px}
-  .compare-head{display:grid;grid-template-columns:1fr 120px 1fr;gap:12px;align-items:stretch}
-  .team-card{background:#0f1524;border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;gap:10px;align-items:center}
-  .team-card .logo{height:44px;width:44px;border-radius:10px;border:1px solid var(--line);background:#0b0f14;display:flex;align-items:center;justify-content:center;font-weight:900}
-  .team-meta{min-width:0}
-  .team-name{font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .team-sub{font-size:.85rem;color:var(--muted)}
-  .versus{display:flex;flex-direction:column;align-items:center;justify-content:center;background:#141a2b;border:1px dashed var(--line);border-radius:12px}
-  .versus .big{font-size:1.6rem;font-weight:900}
-  .versus .small{font-size:.85rem;color:var(--muted)}
-
-  /* Stat tiles */
-  .tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
-  @media(min-width:800px){ .tiles{grid-template-columns:repeat(4, minmax(0,1fr));} }
-  .tile{background:#0f1524;border:1px solid var(--line);border-radius:12px;padding:10px}
-  .tile .k{font-size:.8rem;color:var(--muted)}
-  .tile .v{font-weight:900;font-size:1.1rem}
-
-  /* Mode rows */
-  .mode-grid{margin-top:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-  .mode-box{background:#10182a;border:1px solid var(--line);border-radius:12px;padding:10px}
-  .mode-title{font-weight:900;margin-bottom:6px}
-  .record{font-size:.95rem}
-
-  /* Map breakdown table */
-  table{width:100%;border-collapse:collapse}
-  .striped tbody tr:nth-child(odd){background:#0e1423}
-  th, td{padding:8px;border-bottom:1px solid var(--line);text-align:left}
-  th{font-size:.85rem;color:var(--muted);font-weight:700}
-  .badge{display:inline-block;min-width:24px;padding:2px 6px;border-radius:999px;background:#1a2338;border:1px solid var(--line);text-align:center;font-size:.8rem}
-  .good{color:var(--good)}
-  .bad{color:var(--bad)}
-
-  /* Footer note */
-  .note{font-size:.9rem;color:var(--muted)}
 </style>
 </head>
 <body>
 <header>
   <div class="head">
     <img src="https://i.imgur.com/K0TTjUC.png" alt="COD:M logo" class="logo" />
-    <h1>COD:M — Team Comparison</h1>
+    <h1>COD:M — Map Layouts</h1>
     <div class="spacer"></div>
     <a class="btn secondary" href="index.html" title="Back to Home">⟵ Home</a>
   </div>
@@ -90,353 +97,176 @@
 
 <div class="shell">
   <div class="grid">
-    <!-- Left: filters -->
+    <!-- Left: maps grouped by mode -->
     <section class="panel">
-      <h2>Filters</h2>
-      <div class="filters">
-        <div class="select-row">
-          <label class="muted">Team 1</label>
-          <button class="swap" id="swapBtn" title="Swap teams">⇄ Swap</button>
-        </div>
-        <select id="teamA"></select>
-
-        <label class="muted" style="margin-top:6px">Team 2</label>
-        <select id="teamB"></select>
-
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <button class="btn secondary" id="clearBtn">Clear</button>
-          <button class="btn" id="randomBtn" title="Pick two random teams">🎲 Random</button>
-        </div>
-
-        <div class="panel" style="background:#0f1524;border-color:#2a3242;padding:10px">
-          <div class="note">
-            Tip: Start by picking two teams. You'll see their head‑to‑head record, mode breakdowns, map trends, and a full match list at the bottom.
-          </div>
-        </div>
+      <h2>Maps</h2>
+      <div class="search">
+        <input id="q" type="search" placeholder="Filter maps…" />
+        <button class="btn secondary" id="clearBtn">Clear</button>
       </div>
+
+      <div id="groups"></div>
+      <p class="muted" id="countNote" style="margin-top:8px"></p>
     </section>
 
-    <!-- Right: comparison viewer -->
+    <!-- Right: viewer -->
     <section class="viewer">
-      <div id="emptyState" class="note">Select <b>Team 1</b> and <b>Team 2</b> to compare.</div>
-      <div id="compareWrap" style="display:none">
-        <!-- header cards -->
-        <div class="compare-head">
-          <div class="team-card" id="cardA">
-            <div class="logo" id="logoA">A</div>
-            <div class="team-meta">
-              <div class="team-name" id="nameA">—</div>
-              <div class="team-sub" id="subA">Region · Abbrev</div>
-            </div>
-          </div>
-          <div class="versus">
-            <div class="big" id="h2hScore">0–0</div>
-            <div class="small" id="h2hLabel">All modes</div>
-          </div>
-          <div class="team-card" id="cardB">
-            <div class="logo" id="logoB">B</div>
-            <div class="team-meta">
-              <div class="team-name" id="nameB">—</div>
-              <div class="team-sub" id="subB">Region · Abbrev</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- quick tiles -->
-        <div class="tiles" id="tiles"></div>
-
-        <!-- mode breakdown -->
-        <div class="mode-grid" id="modeGrid"></div>
-
-        <!-- map breakdown -->
-        <div class="panel" style="margin-top:12px">
-          <h2 style="margin-bottom:8px">Map Trends (Head‑to‑Head)</h2>
-          <div class="note" id="mapNote">Only maps these two teams played against each other are shown.</div>
-          <div style="overflow:auto">
-            <table class="striped" id="mapTable">
-              <thead>
-                <tr>
-                  <th>Map</th>
-                  <th id="thA">Team A Wins</th>
-                  <th id="thB">Team B Wins</th>
-                  <th>Total</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
+      <div class="viewer-head">
+        <div class="viewer-title" id="title">Select a map</div>
+        <div class="viewer-tools">
+          <a id="downloadLink" class="btn" href="#" download>Download</a>
         </div>
       </div>
+      <div class="img-wrap">
+        <img id="img" alt="Map layout preview" />
+      </div>
+      <p class="muted" style="margin-top:10px">Tip: Use ↑/↓ or ←/→ to switch maps after selecting one.</p>
     </section>
   </div>
-
-  <!-- Head-to-Head list at the very bottom -->
-  <section class="panel" style="margin-top:14px">
-    <h2>Past Head‑to‑Head Matches</h2>
-    <div class="note" id="h2hCount">—</div>
-    <div style="overflow:auto;margin-top:8px">
-      <table class="striped" id="h2hTable">
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Tournament / Stage</th>
-            <th>Mode</th>
-            <th>Map</th>
-            <th id="thA2">Team A</th>
-            <th id="thB2">Team B</th>
-            <th>Winner</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </div>
-  </section>
 </div>
 
 <script>
-  // === Demo Data (replace with your dataset) ================================
-  // Minimal team directory. id should match entries used inside MATCHES.
-  const TEAMS = [
-    { id:'RRQ', name:'RRQ Kazu', region:'SEA', abbrev:'RRQ', logo:'https://i.imgur.com/1mSkG2B.png' },
-    { id:'BLCK', name:'Blacklist International', region:'PH', abbrev:'BLCK', logo:'https://i.imgur.com/6CqY24H.png' },
-    { id:'ALFA', name:'Alpha Warriors', region:'MY', abbrev:'ALFA', logo:'' },
-    { id:'BRU', name:'Buriram United', region:'TH', abbrev:'BRU', logo:'https://i.imgur.com/3YqkJfH.png' },
-    { id:'PR', name:'Pandan Rebels', region:'SG', abbrev:'PR', logo:'' },
+  /* === Source images === */
+  const MAPS = [
+    {name:'Coastal', url:'https://i.imgur.com/2JRlrj5.png'},
+    {name:'Crossfire', url:'https://i.imgur.com/YYor9iP.png'},
+    {name:'Firing Range', url:'https://i.imgur.com/QWJg4Ai.png'},
+    {name:'Kurohana Metropolis', url:'https://i.imgur.com/eeYVgRp.png'},
+    {name:'Raid', url:'https://i.imgur.com/cGh1ku0.png'},
+    {name:'Standoff', url:'https://i.imgur.com/8gaEr2j.png'},
+    {name:'Tunisia', url:'https://i.imgur.com/D23jrcJ.png'},
+    {name:'Apocalypse', url:'https://i.imgur.com/djfhXIE.png'},
+    {name:'Hacienda', url:'https://i.imgur.com/aOWvPKU.png'},
+    {name:'Slums', url:'https://i.imgur.com/9y2NzWw.png'},
+    {name:'Summit', url:'https://i.imgur.com/yevs7pE.png'},
+    {name:'Takeoff', url:'https://i.imgur.com/OofTHfO.png'},
+    {name:'Combine', url:'https://i.imgur.com/DtBhN36.png'}
   ];
 
-  // Example historical matches — feel free to extend.
-  // For CODM league/B03: mode in {"Hardpoint","Search & Destroy","Control"}
-  // scoreA/scoreB: use actual points/rounds. winner can be computed if omitted.
-  const MATCHES = [
-    { date:'2025-09-18', tournament:'FFWS SEA Fall', stage:'Groups', mode:'Hardpoint', map:'Standoff', teamA:'RRQ', teamB:'BLCK', scoreA:250, scoreB:187 },
-    { date:'2025-09-18', tournament:'FFWS SEA Fall', stage:'Groups', mode:'Search & Destroy', map:'Raid', teamA:'RRQ', teamB:'BLCK', scoreA:6, scoreB:7 },
-    { date:'2025-09-18', tournament:'FFWS SEA Fall', stage:'Groups', mode:'Control', map:'Takeoff', teamA:'RRQ', teamB:'BLCK', scoreA:3, scoreB:2 },
+  /* === Grouping by mode (buttons appear under each) === */
+  const MAPS_BY_MODE = {
+    'Hardpoint':        ['Summit','Hacienda','Apocalypse','Slums','Combine'],
+    'Search & Destroy': ['Tunisia','Firing Range','Kurohana Metropolis','Standoff','Coastal'],
+    'Control':          ['Raid','Takeoff','Crossfire']
+  };
+  const MODE_ORDER = ['Hardpoint','Search & Destroy','Control'];
 
-    { date:'2025-10-05', tournament:'SEA Super Cup', stage:'Quarterfinal', mode:'Hardpoint', map:'Hacienda', teamA:'BLCK', teamB:'RRQ', scoreA:232, scoreB:250 },
-    { date:'2025-10-05', tournament:'SEA Super Cup', stage:'Quarterfinal', mode:'Search & Destroy', map:'Tunisia', teamA:'BLCK', teamB:'RRQ', scoreA:7, scoreB:4 },
-    { date:'2025-10-05', tournament:'SEA Super Cup', stage:'Quarterfinal', mode:'Control', map:'Crossfire', teamA:'BLCK', teamB:'RRQ', scoreA:1, scoreB:3 },
-
-    { date:'2025-08-02', tournament:'Open Masters', stage:'Semifinal', mode:'Hardpoint', map:'Apocalypse', teamA:'RRQ', teamB:'BLCK', scoreA:250, scoreB:241 },
-    { date:'2025-08-02', tournament:'Open Masters', stage:'Semifinal', mode:'Search & Destroy', map:'Kurohana Metropolis', teamA:'RRQ', teamB:'BLCK', scoreA:6, scoreB:7 },
-
-    // Non-H2H samples for variety (used if you expand to overall forms later)
-    { date:'2025-07-12', tournament:'Invitational', stage:'Groups', mode:'Hardpoint', map:'Slums', teamA:'RRQ', teamB:'ALFA', scoreA:250, scoreB:198 },
-    { date:'2025-07-12', tournament:'Invitational', stage:'Groups', mode:'Search & Destroy', map:'Summit', teamA:'RRQ', teamB:'ALFA', scoreA:7, scoreB:2 },
-    { date:'2025-07-15', tournament:'Invitational', stage:'Groups', mode:'Control', map:'Raid', teamA:'BRU', teamB:'BLCK', scoreA:2, scoreB:3 },
-  ];
-
-  const ALL_MODES = ['Hardpoint','Search & Destroy','Control'];
-
-  // === DOM refs =============================================================
-  const selA = document.getElementById('teamA');
-  const selB = document.getElementById('teamB');
-  const swapBtn = document.getElementById('swapBtn');
+  const groupsEl = document.getElementById('groups');
+  const titleEl = document.getElementById('title');
+  const imgEl = document.getElementById('img');
+  const openLink = document.getElementById('openLink');
+  const dlLink = document.getElementById('downloadLink');
+  const q = document.getElementById('q');
   const clearBtn = document.getElementById('clearBtn');
-  const randomBtn = document.getElementById('randomBtn');
+  const countNote = document.getElementById('countNote');
 
-  const emptyState = document.getElementById('emptyState');
-  const compareWrap = document.getElementById('compareWrap');
+  let flatFiltered = [];      // flattened ordered list of visible map names
+  let activeName = '';        // currently selected map name
 
-  const nameA = document.getElementById('nameA');
-  const nameB = document.getElementById('nameB');
-  const subA = document.getElementById('subA');
-  const subB = document.getElementById('subB');
-  const logoA = document.getElementById('logoA');
-  const logoB = document.getElementById('logoB');
-  const h2hScore = document.getElementById('h2hScore');
-  const h2hLabel = document.getElementById('h2hLabel');
-
-  const tiles = document.getElementById('tiles');
-  const modeGrid = document.getElementById('modeGrid');
-
-  const mapTable = document.getElementById('mapTable').querySelector('tbody');
-  const thA = document.getElementById('thA');
-  const thB = document.getElementById('thB');
-  const h2hTable = document.getElementById('h2hTable').querySelector('tbody');
-  const h2hCount = document.getElementById('h2hCount');
-  const thA2 = document.getElementById('thA2');
-  const thB2 = document.getElementById('thB2');
-
-  // === Helpers ==============================================================
-  function teamById(id){ return TEAMS.find(t => t.id === id); }
-  function fmtDate(iso){
-    const d = new Date(iso + 'T00:00:00');
-    return d.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'2-digit'});
-  }
-  function logoFallback(name){
-    const initials = name.split(/\s+/).map(w=>w[0]).join('').slice(0,3).toUpperCase();
-    return `<span>${initials}</span>`;
-  }
-  function computeWinner(mode, a, b){
-    if (a === b) return 0; // tie (unlikely in CODM)
-    return a > b ? 1 : 2; // 1=>A wins, 2=>B wins
+  function findGlobalMap(name){
+    return MAPS.find(m => m.name.toLowerCase() === name.toLowerCase());
   }
 
-  function pickRandomTwo(){
-    const ids = TEAMS.map(t=>t.id);
-    if (ids.length < 2) return;
-    const aIdx = Math.floor(Math.random()*ids.length);
-    let bIdx = Math.floor(Math.random()*ids.length);
-    while (bIdx === aIdx) bIdx = Math.floor(Math.random()*ids.length);
-    selA.value = ids[aIdx];
-    selB.value = ids[bIdx];
-    onSelect();
+  function renderGroups(){
+    const term = (q.value||'').trim().toLowerCase();
+    flatFiltered = [];
+    groupsEl.innerHTML = '';
+
+    MODE_ORDER.forEach(mode=>{
+      const names = MAPS_BY_MODE[mode]
+        .filter(n => n.toLowerCase().includes(term));
+
+      // Skip empty sections under current search
+      if (!names.length) return;
+
+      // Section
+      const sec = document.createElement('div');
+      sec.className = 'mode-section';
+
+      const h = document.createElement('div');
+      h.className = 'mode-title';
+      h.textContent = mode;
+      sec.appendChild(h);
+
+      const list = document.createElement('div');
+      list.className = 'map-list';
+
+      names.forEach(n=>{
+        const m = findGlobalMap(n);
+        if (!m) return;
+        flatFiltered.push(m.name);
+
+        const b = document.createElement('button');
+        b.className = 'map-btn';
+        b.textContent = m.name;
+        b.dataset.name = m.name;
+        b.onclick = () => selectName(m.name);
+        list.appendChild(b);
+      });
+
+      sec.appendChild(list);
+      groupsEl.appendChild(sec);
+    });
+
+    // Count
+    const total = Object.values(MAPS_BY_MODE).flat().length;
+    countNote.textContent = `${flatFiltered.length} of ${total} maps`;
+
+    applyActiveStyle();
+
+    // If current selection got filtered out, select first visible
+    if (flatFiltered.length && !flatFiltered.includes(activeName)){
+      selectName(flatFiltered[0]);
+    }
   }
 
-  // Build selects
-  (function initSelects(){
-    const opts = ['<option value="" disabled selected>— Select Team —</option>']
-      .concat(TEAMS.map(t=>`<option value="${t.id}">${t.name}</option>`));
-    selA.innerHTML = opts.join('');
-    selB.innerHTML = opts.join('');
-
-    // Try deep-linking via hash: #RRQ-vs-BLCK
-    if (location.hash.startsWith('#')){
-      const [a,b] = location.hash.slice(1).split('-vs-');
-      if (teamById(a) && teamById(b)){
-        selA.value = a; selB.value = b;
-      }
-    }
-
-    selA.addEventListener('change', onSelect);
-    selB.addEventListener('change', onSelect);
-    swapBtn.addEventListener('click', ()=>{ const a=selA.value; selA.value=selB.value; selB.value=a; onSelect(); });
-    clearBtn.addEventListener('click', ()=>{ selA.value=''; selB.value=''; onSelect(); });
-    randomBtn.addEventListener('click', pickRandomTwo);
-  })();
-
-  function onSelect(){
-    const aId = selA.value, bId = selB.value;
-    if (!aId || !bId || aId===bId){
-      emptyState.style.display = '';
-      compareWrap.style.display = 'none';
-      h2hTable.innerHTML = '';
-      h2hCount.textContent = 'Pick two different teams to see their history.';
-      location.hash = '';
-      return;
-    }
-    location.hash = `#${aId}-vs-${bId}`;
-
-    const A = teamById(aId), B = teamById(bId);
-    // Header cards
-    nameA.textContent = A.name; nameB.textContent = B.name;
-    subA.textContent = `${A.region || '—'} · ${A.abbrev || A.id}`;
-    subB.textContent = `${B.region || '—'} · ${B.abbrev || B.id}`;
-    logoA.innerHTML = A.logo ? `<img src="${A.logo}" alt="${A.name}" style="height:100%;width:100%;object-fit:cover;border-radius:9px">` : logoFallback(A.name);
-    logoB.innerHTML = B.logo ? `<img src="${B.logo}" alt="${B.name}" style="height:100%;width:100%;object-fit:cover;border-radius:9px">` : logoFallback(B.name);
-
-    // Head-to-head slice
-    const h2h = MATCHES.filter(m => (m.teamA===aId && m.teamB===bId) || (m.teamA===bId && m.teamB===aId));
-    h2h.sort((x,y)=> new Date(y.date) - new Date(x.date));
-
-    // Compute tallies
-    let aWins=0,bWins=0;
-    const byMode = Object.fromEntries(ALL_MODES.map(md => [md,{a:0,b:0,total:0}]));
-    const byMap = new Map(); // mapName -> {a,b,total}
-
-    for (const m of h2h){
-      const aFirst = (m.teamA === aId);
-      const res = computeWinner(m.mode, m.scoreA, m.scoreB);
-      let winA = 0, winB = 0;
-      if (res===1) { winA = aFirst?1:0; winB = aFirst?0:1; }
-      else if (res===2){ winA = aFirst?0:1; winB = aFirst?1:0; }
-
-      aWins += winA; bWins += winB;
-
-      if (!byMode[m.mode]) byMode[m.mode] = {a:0,b:0,total:0};
-      byMode[m.mode].a += winA; byMode[m.mode].b += winB; byMode[m.mode].total += 1;
-
-      if (!byMap.has(m.map)) byMap.set(m.map, {a:0,b:0,total:0});
-      const agg = byMap.get(m.map);
-      agg.a += winA; agg.b += winB; agg.total += 1;
-    }
-
-    // Render H2H header
-    h2hScore.textContent = `${aWins}\u2013${bWins}`;
-    h2hLabel.textContent = h2h.length ? `${h2h.length} match${h2h.length>1?'es':''}` : 'No history yet';
-
-    // Quick tiles (overall)
-    tiles.innerHTML = '';
-    tiles.appendChild(tile('Total Meetings', String(h2h.length)));
-    tiles.appendChild(tile(`${A.abbrev||A.id} Wins`, String(aWins)));
-    tiles.appendChild(tile(`${B.abbrev||B.id} Wins`, String(bWins)));
-    const pct = h2h.length ? Math.round((aWins / h2h.length)*100) : 0;
-    tiles.appendChild(tile(`${A.abbrev||A.id} Win%`, h2h.length? pct + '%' : '—'));
-
-    // Mode breakdown
-    modeGrid.innerHTML = '';
-    for (const md of ALL_MODES){
-      const r = byMode[md] || {a:0,b:0,total:0};
-      const box = document.createElement('div');
-      box.className = 'mode-box';
-      box.innerHTML = `
-        <div class="mode-title">${md}</div>
-        <div class="record"><b>${A.abbrev||A.id}</b> ${r.a} — ${r.b} <b>${B.abbrev||B.id}</b></div>
-        <div class="note">${r.total} meeting${r.total!==1?'s':''}</div>
-      `;
-      modeGrid.appendChild(box);
-    }
-
-    // Map table
-    thA.textContent = `${A.abbrev||A.id} Wins`;
-    thB.textContent = `${B.abbrev||B.id} Wins`;
-    mapTable.innerHTML = '';
-    const mapsSorted = Array.from(byMap.entries()).sort((a,b)=> b[1].total - a[1].total || a[0].localeCompare(b[0]));
-    if (!mapsSorted.length){
-      mapTable.innerHTML = `<tr><td colspan="4" class="note">No map history between these teams.</td></tr>`;
-    } else {
-      for (const [mapName, r] of mapsSorted){
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${mapName}</td>
-          <td><span class="badge">${r.a}</span></td>
-          <td><span class="badge">${r.b}</span></td>
-          <td>${r.total}</td>
-        `;
-        mapTable.appendChild(tr);
-      }
-    }
-
-    // H2H bottom table
-    thA2.textContent = A.name;
-    thB2.textContent = B.name;
-    h2hTable.innerHTML = '';
-    if (!h2h.length){
-      h2hCount.textContent = 'No head‑to‑head matches found.';
-      h2hTable.innerHTML = `<tr><td colspan="7" class="note">Nothing to show yet. Add matches to your dataset.</td></tr>`;
-    } else {
-      h2hCount.textContent = `${h2h.length} head‑to‑head match${h2h.length>1?'es':''} (latest first)`;
-      for (const m of h2h){
-        const aFirst = (m.teamA === A.id);
-        const res = computeWinner(m.mode, m.scoreA, m.scoreB);
-        const winner = res===0 ? 'Draw' : (res===1 ? (aFirst ? A.name : B.name) : (aFirst ? B.name : A.name));
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${fmtDate(m.date)}</td>
-          <td>${m.tournament}${m.stage?` — ${m.stage}`:''}</td>
-          <td>${m.mode}</td>
-          <td>${m.map}</td>
-          <td>${aFirst ? m.scoreA : m.scoreB}</td>
-          <td>${aFirst ? m.scoreB : m.scoreA}</td>
-          <td>${winner}</td>
-        `;
-        h2hTable.appendChild(row);
-      }
-    }
-
-    emptyState.style.display = 'none';
-    compareWrap.style.display = '';
+  function selectName(name){
+    const m = findGlobalMap(name);
+    if (!m) return;
+    activeName = m.name;
+    titleEl.textContent = m.name;
+    imgEl.src = m.url;
+    imgEl.alt = `${m.name} map layout`;
+    openLink.href = m.url;
+    dlLink.href = m.url;
+    applyActiveStyle();
   }
 
-  function tile(k,v){
-    const d = document.createElement('div');
-    d.className = 'tile';
-    d.innerHTML = `<div class="k">${k}</div><div class="v">${v}</div>`;
-    return d;
+  function applyActiveStyle(){
+    // toggle active state on all visible buttons
+    groupsEl.querySelectorAll('.map-btn').forEach(btn=>{
+      btn.classList.toggle('active', btn.dataset.name === activeName);
+    });
   }
 
-  // Initial state
-  onSelect();
+  function filterList(){
+    renderGroups();
+  }
+
+  // Keyboard navigation across the flattened filtered order
+  window.addEventListener('keydown', (e)=>{
+    if (!flatFiltered.length) return;
+    const idx = flatFiltered.indexOf(activeName);
+    if (['ArrowDown','ArrowRight'].includes(e.key)){
+      e.preventDefault();
+      const next = (idx + 1 + flatFiltered.length) % flatFiltered.length;
+      selectName(flatFiltered[next]);
+    } else if (['ArrowUp','ArrowLeft'].includes(e.key)){
+      e.preventDefault();
+      const prev = (idx - 1 + flatFiltered.length) % flatFiltered.length;
+      selectName(flatFiltered[prev]);
+    }
+  });
+
+  // Preload images
+  MAPS.forEach(m => { const im = new Image(); im.src = m.url; });
+
+  q.addEventListener('input', filterList);
+  clearBtn.addEventListener('click', ()=>{ q.value=''; filterList(); });
+
+  // Initial render
+  renderGroups();
+  if (flatFiltered.length) selectName(flatFiltered[0]);
 </script>
 </body>
 </html>
