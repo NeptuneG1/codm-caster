@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#0d1014"/>
 
 <style>
-  /* ===== Palette / base (consistent with your MP pages) ===== */
+  /* ===== Palette / base ===== */
   :root{
     --bg:#0d1014; --panel:#292d42; --panel2:#1e2432;
     --ink:#f3f6fa; --muted:#b8c0cc; --brand:#ffe93b; --brandText:#0b0d0e;
@@ -43,7 +43,8 @@
     max-width:1200px;margin:16px auto;padding:0 14px;
     display:grid;grid-template-columns:1fr;gap:14px;
   }
-  @media(min-width:850px){ .grid{grid-template-columns:1fr 1fr 1fr} }
+  @media(min-width:850px){ .grid{grid-template-columns:repeat(2,1fr)} }
+  @media(min-width:1200px){ .grid{grid-template-columns:repeat(4,1fr)} }
 
   .card{
     background:linear-gradient(180deg,var(--panel) 0%, var(--panel2) 100%);
@@ -88,13 +89,13 @@
 
 <section class="hero">
   <div class="title">Pick a dashboard</div>
-  <div class="sub">Multiplayer analytics, Battle Royale, and map insights — all in one place.</div>
+  <div class="sub">Multiplayer analytics, head-to-head tools, BR reference, and a split caster view.</div>
 </section>
 
 <section class="grid">
 
-  <!-- Multiplayer Analyzer -->
-  <a class="card" href="codm-mp.html" aria-label="Open Multiplayer Analyzer">
+  <!-- MP Analyzer -->
+  <a class="card" href="https://neptuneg1.github.io/codm-caster/codm-mp.html" aria-label="Open Multiplayer Analyzer">
     <div class="headrow">
       <div class="icon" aria-hidden="true">
         <!-- Crosshair / target -->
@@ -113,8 +114,29 @@
     </div>
   </a>
 
-  <!-- Battle Royale Dashboard -->
-  <a class="card" href="codm-br.html" aria-label="Open Battle Royale Dashboard">
+  <!-- MP Team Comparison -->
+  <a class="card" href="https://neptuneg1.github.io/codm-caster/mp-teamcomp.html" aria-label="Open MP Team Comparison">
+    <div class="headrow">
+      <div class="icon" aria-hidden="true">
+        <!-- VS arrows -->
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M4 8l4-4 4 4" stroke="#ffe93b" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M20 16l-4 4-4-4" stroke="#cfd6e6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <text x="12" y="13.5" text-anchor="middle" font-size="7" fill="#cfd6e6" font-family="Inter, Arial">VS</text>
+        </svg>
+      </div>
+      <div class="name">MP Team Comparison</div>
+    </div>
+    <div class="desc">Compare two teams by mode &amp; map, plus head-to-head series viewers.</div>
+    <div class="chips">
+      <span class="chip">H2H</span>
+      <span class="chip">Per-map</span>
+      <span class="chip">Per-mode</span>
+    </div>
+  </a>
+
+  <!-- BR Reference -->
+  <a class="card" href="https://neptuneg1.github.io/codm-caster/codm-br.html" aria-label="Open Battle Royale Reference">
     <div class="headrow">
       <div class="icon" aria-hidden="true">
         <!-- Parachute-ish -->
@@ -123,9 +145,9 @@
           <path d="M12 11v8M12 19l-3 3m3-3 3 3" stroke="#cfd6e6" stroke-width="1.4" stroke-linecap="round"/>
         </svg>
       </div>
-      <div class="name">Battle Royale</div>
+      <div class="name">BR Reference</div>
     </div>
-    <div class="desc">Placement trends, eliminations, rotations, and zone dynamics (BR insights).</div>
+    <div class="desc">Quick reference for BR: placements, eliminations, rotations, and zones.</div>
     <div class="chips">
       <span class="chip">Placements</span>
       <span class="chip">Elims</span>
@@ -133,43 +155,42 @@
     </div>
   </a>
 
-  <!-- MP Maps Explorer -->
-  <a class="card" href="codm-mp-maps.html" aria-label="Open MP Maps Explorer">
+  <!-- MP Split View -->
+  <a class="card" href="https://neptuneg1.github.io/codm-caster/codm-split.html" aria-label="Open MP Split View">
     <div class="headrow">
       <div class="icon" aria-hidden="true">
-        <!-- Grid / map -->
+        <!-- Split window -->
         <svg viewBox="0 0 24 24" fill="none">
-          <rect x="3" y="3" width="7" height="7" stroke="#ffe93b" stroke-width="1.4"/>
-          <rect x="14" y="3" width="7" height="7" stroke="#cfd6e6" stroke-width="1.2"/>
-          <rect x="3" y="14" width="7" height="7" stroke="#cfd6e6" stroke-width="1.2"/>
-          <rect x="14" y="14" width="7" height="7" stroke="#ffe93b" stroke-width="1.4"/>
+          <rect x="3" y="4" width="18" height="16" rx="2" stroke="#ffe93b" stroke-width="1.4"/>
+          <path d="M12 4v16" stroke="#cfd6e6" stroke-width="1.2"/>
         </svg>
       </div>
-      <div class="name">MP Maps Explorer</div>
+      <div class="name">MP Split View</div>
     </div>
-    <div class="desc">Map pool, winrates by spawn/mode, and per-map matchup breakdowns.</div>
+    <div class="desc">Side-by-side maps &amp; analyzer with a draggable splitter for casting.</div>
     <div class="chips">
-      <span class="chip">Map pool</span>
-      <span class="chip">Winrates</span>
-      <span class="chip">Matchups</span>
+      <span class="chip">2-pane</span>
+      <span class="chip">Resizable</span>
+      <span class="chip">Caster tool</span>
     </div>
   </a>
 
 </section>
 
 <footer>
-  <div>Pro tip: hit <span class="kbd">1</span>, <span class="kbd">2</span>, or <span class="kbd">3</span> to open the tiles.</div>
+  <div>Pro tip: hit <span class="kbd">1</span>, <span class="kbd">2</span>, <span class="kbd">3</span>, or <span class="kbd">4</span> to open a tile.</div>
 </footer>
 
 <script>
   // Keyboard shortcuts for quick navigation
   const links = [
-    'codm-mp.html',
-    'codm-br.html',
-    'codm-mp-maps.html'
+    'https://neptuneg1.github.io/codm-caster/codm-mp.html',        // 1
+    'https://neptuneg1.github.io/codm-caster/mp-teamcomp.html',    // 2
+    'https://neptuneg1.github.io/codm-caster/codm-br.html',        // 3
+    'https://neptuneg1.github.io/codm-caster/codm-split.html'      // 4
   ];
   addEventListener('keydown', (e)=>{
-    if (['1','2','3'].includes(e.key)){
+    if (['1','2','3','4'].includes(e.key)){
       const i = Number(e.key)-1;
       window.location.href = links[i];
     }
