@@ -34,8 +34,11 @@
   .btn.secondary{background:#1a2030;color:#d6dbe6;border:1px solid var(--line)}
 
   /* Comparison */
-  .cmp-grid{display:grid;grid-template-columns:1fr;gap:12px}
-  @media(min-width:1100px){ .cmp-grid{grid-template-columns:1fr 1fr} }
+  .cmp-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr; /* always two columns */
+    gap:12px;
+  }
   .card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px}
   .card h3{margin:0 0 6px 0}
   .kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
@@ -60,7 +63,6 @@
   .series-score{justify-self:center;font-weight:900;font-size:1.05rem;color:#fff;background:#101420;border:1px solid var(--line);border-radius:8px;padding:6px 10px}
   .series-meta{grid-column:1 / -1; font-size:.85rem;color:var(--muted)}
   .map-row{display:grid;grid-template-columns:220px 1fr 220px;gap:10px;padding:8px 12px;border-top:1px solid #2f3545;align-items:center}
-  @media(max-width:700px){ .map-row{grid-template-columns:160px 1fr 160px} }
   .map-row:nth-child(odd){background:#181e2a}
   .side{display:grid;gap:8px;align-items:center}
   .side-left{grid-template-columns:16px 1fr;justify-self:start}
