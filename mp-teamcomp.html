@@ -33,13 +33,16 @@
   .btn{background:var(--brand);color:#0c0e10;border:0;border-radius:10px;padding:8px 12px;font-weight:800;cursor:pointer}
   .btn.secondary{background:#1a2030;color:#d6dbe6;border:1px solid var(--line)}
 
-  /* Comparison */
+  /* Comparison — never stack, even on mobile */
   .cmp-grid{
     display:grid;
-    grid-template-columns:1fr 1fr; /* always two columns */
+    grid-template-columns:repeat(2, minmax(280px, 1fr)) !important; /* force two columns */
     gap:12px;
+    overflow-x:auto;                 /* allow sideways scroll when too narrow */
+    -webkit-overflow-scrolling:touch;
+    padding-bottom:6px;              /* room for scrollbar */
   }
-  .card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px}
+  .card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px;min-width:0}
   .card h3{margin:0 0 6px 0}
   .kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
   .tile{background:#141a1f;border:1px solid var(--line);border-radius:10px;padding:8px}
@@ -76,7 +79,7 @@
   .mode-stack{display:flex;flex-direction:column;line-height:1.15;justify-self:center;align-items:center;text-align:center}
   .mode-pill{font-size:.7rem;border:1px solid var(--line);padding:1px 6px;border-radius:999px;background:#111827;color:#e8ecf5;width:max-content;margin:0 auto}
   .map-title{font-size:.95rem;margin-top:2px;text-align:center}
-  .series-foot{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-top:1px solid var(--line);background:#1a2030;color:var(--muted);font-size:.85rem}
+  .series-foot{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-top:1px solid var(--line);background:#1a2030;color:#muted;font-size:.85rem}
 </style>
 </head>
 <body>
@@ -349,7 +352,6 @@ function renderComparison(){
 }
 
 function renderH2HAndSeries(a,b){
-  // series summary using GAME_ENTRIES (A perspective)
   const A = norm(a), B = norm(b);
   const rows = GAME_ENTRIES.filter(e => norm(e.team)===A && norm(e.opp)===B);
   const bySeries = groupBy(rows, e=>e.seriesNeutral);
@@ -382,7 +384,6 @@ function renderH2HAndSeries(a,b){
     {label:'Maps',key:'maps',right:true}
   ], '—');
 
-  // Render all series cards below
   const host = el('seriesHost'); host.innerHTML = '';
   if (!series.length){
     host.innerHTML = '<div class="muted">No series viewer to show.</div>';
