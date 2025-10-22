@@ -66,7 +66,8 @@
 </div>
 
 <div class="split" id="splitRoot">
-  <section class="pane" id="leftPane" style="flex-basis:50%">
+  <!-- Default to 33.3333% for left (1/3) -->
+  <section class="pane" id="leftPane" style="flex-basis:33.3333%">
     <div class="pane-head">
       <span class="title">Maps (caster helper)</span>
       <a class="btn secondary" style="margin-left:auto" href="https://neptuneg1.github.io/codm-caster/codm-mp-maps.html" target="_blank" rel="noopener">Open ↗</a>
@@ -75,6 +76,7 @@
     <iframe id="leftFrame" src="https://neptuneg1.github.io/codm-caster/codm-mp-maps.html" loading="lazy" title="CODM MP Maps"></iframe>
   </section>
   <div class="divider" id="divider" role="separator" aria-orientation="vertical" aria-label="Resize"></div>
+  <!-- Right takes remaining space (≈ 2/3) -->
   <section class="pane" id="rightPane" style="flex:1">
     <div class="pane-head">
       <span class="title">MP Analyzer (caster)</span>
@@ -94,13 +96,15 @@
   const leftFrame= document.getElementById('leftFrame');
   const rightFrame= document.getElementById('rightFrame');
 
-  // Restore last split
+  // Restore last split (default to 33.3333% if none saved)
   const saved = localStorage.getItem('split-left');
-  if (saved){ leftPane.style.flexBasis = saved + '%'; }
+  if (saved){
+    leftPane.style.flexBasis = saved + '%';
+  } // else the inline 33.3333% remains
 
   // Drag to resize
   let dragging = false;
-  function onPointerDown(e){ dragging = true; document.body.style.userSelect='none'; }
+  function onPointerDown(){ dragging = true; document.body.style.userSelect='none'; }
   function onPointerUp(){ dragging = false; document.body.style.userSelect=''; }
   function onPointerMove(e){
     if(!dragging) return;
@@ -115,14 +119,23 @@
   window.addEventListener('mouseup', onPointerUp);
 
   // Touch support
-  divider.addEventListener('touchstart', (e)=>{ dragging=true; }, {passive:true});
+  divider.addEventListener('touchstart', ()=>{ dragging=true; }, {passive:true});
   window.addEventListener('touchend', ()=>{ dragging=false; });
   window.addEventListener('touchmove', (e)=>{
-    if(!dragging) return; const t = e.touches[0]; if(!t) return; const rect = splitRoot.getBoundingClientRect(); const x = t.clientX - rect.left; const pct = Math.min(80, Math.max(20, (x/rect.width)*100)); leftPane.style.flexBasis = pct + '%'; localStorage.setItem('split-left', String(pct));
+    if(!dragging) return;
+    const t = e.touches[0]; if(!t) return;
+    const rect = splitRoot.getBoundingClientRect();
+    const x = t.clientX - rect.left;
+    const pct = Math.min(80, Math.max(20, (x/rect.width)*100));
+    leftPane.style.flexBasis = pct + '%';
+    localStorage.setItem('split-left', String(pct));
   }, {passive:true});
 
   // Buttons
-  document.getElementById('resetSplit').addEventListener('click', ()=>{ leftPane.style.flexBasis='50%'; localStorage.removeItem('split-left'); });
+  document.getElementById('resetSplit').addEventListener('click', ()=>{
+    leftPane.style.flexBasis='33.3333%'; // reset to 1/3
+    localStorage.removeItem('split-left');
+  });
   document.getElementById('reloadLeft').addEventListener('click', ()=>{ leftFrame.src = leftFrame.src; });
   document.getElementById('reloadRight').addEventListener('click', ()=>{ rightFrame.src = rightFrame.src; });
 })();
