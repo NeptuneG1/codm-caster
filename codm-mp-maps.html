@@ -26,8 +26,8 @@
 
   /* Layout */
   .shell{max-width:1200px;margin:16px auto;padding:0 12px}
-
-  /* On small screens: show viewer first, maps second */
+  
+  /* Mobile-first: viewer on top, maps below */
   .grid{
     display:grid;
     gap:14px;
@@ -36,13 +36,15 @@
       "viewer"
       "maps";
   }
-  /* On wide screens: maps left, viewer right (original layout) */
-  @media(min-width:1000px){
+  
+  /* ≥ 768px: switch back to maps left, viewer right */
+  @media (min-width:768px){
     .grid{
       grid-template-columns:360px 1fr;
       grid-template-areas:"maps viewer";
     }
   }
+  
   /* Assign areas */
   .panel{ grid-area: maps; }
   .viewer{ grid-area: viewer; }
