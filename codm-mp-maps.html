@@ -26,8 +26,26 @@
 
   /* Layout */
   .shell{max-width:1200px;margin:16px auto;padding:0 12px}
-  .grid{display:grid;grid-template-columns:1fr;gap:14px}
-  @media(min-width:1000px){ .grid{grid-template-columns:360px 1fr} }
+
+  /* On small screens: show viewer first, maps second */
+  .grid{
+    display:grid;
+    gap:14px;
+    grid-template-columns:1fr;
+    grid-template-areas:
+      "viewer"
+      "maps";
+  }
+  /* On wide screens: maps left, viewer right (original layout) */
+  @media(min-width:1000px){
+    .grid{
+      grid-template-columns:360px 1fr;
+      grid-template-areas:"maps viewer";
+    }
+  }
+  /* Assign areas */
+  .panel{ grid-area: maps; }
+  .viewer{ grid-area: viewer; }
 
   /* Panels */
   .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
@@ -47,22 +65,15 @@
     grid-template-columns: 1fr;   /* single column on desktop */
     gap:8px;
   }
-  
   /* Mobile/tablet (your grid collapses under 1000px): spread out */
   @media (max-width: 1000px){
-    .map-list{
-      grid-template-columns: repeat(3, minmax(80px, 1fr));
-    }
+    .map-list{ grid-template-columns: repeat(3, minmax(80px, 1fr)); }
   }
-  
   /* Small phones: 2 columns */
   @media (max-width: 600px){
-    .map-list{
-      grid-template-columns: repeat(2, minmax(120px, 1fr));
-    }
+    .map-list{ grid-template-columns: repeat(2, minmax(120px, 1fr)); }
   }
 
-  
   .map-btn{
     background:#0f1524;border:1px solid var(--line);color:#dfe7f5;border-radius:12px;
     padding:10px 10px; text-align:center; cursor:pointer; user-select:none;
@@ -97,7 +108,7 @@
 
 <div class="shell">
   <div class="grid">
-    <!-- Left: maps grouped by mode -->
+    <!-- Left: maps grouped by mode (moves below on small screens) -->
     <section class="panel">
       <h2>Maps</h2>
       <div class="search">
@@ -109,11 +120,12 @@
       <p class="muted" id="countNote" style="margin-top:8px"></p>
     </section>
 
-    <!-- Right: viewer -->
+    <!-- Right: viewer (shown first on small screens) -->
     <section class="viewer">
       <div class="viewer-head">
         <div class="viewer-title" id="title">Select a map</div>
         <div class="viewer-tools">
+          <a id="openLink" class="btn secondary" href="#" target="_blank" rel="noopener">Open</a>
           <a id="downloadLink" class="btn" href="#" download>Download</a>
         </div>
       </div>
@@ -227,7 +239,7 @@
     titleEl.textContent = m.name;
     imgEl.src = m.url;
     imgEl.alt = `${m.name} map layout`;
-    openLink.href = m.url;
+    if (openLink) openLink.href = m.url;
     dlLink.href = m.url;
     applyActiveStyle();
   }
