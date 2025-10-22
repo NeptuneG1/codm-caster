@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>COD:M — Split View</title>
+<meta name="theme-color" content="#0d1014"/>
+<style>
+  :root{
+    --bg:#0d1014; --panel:#292d42; --panel2:#1e2432; --ink:#f3f6fa; --muted:#b8c0cc;
+    --brand:#ffe93b; --line:#4c525d; --accent:#7fd2ff;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif}
+  a{color:var(--brand);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  header{position:sticky;top:0;z-index:50;background:linear-gradient(180deg,#141a23 0%,#0d1014 100%);border-bottom:2px solid var(--brand)}
+  .head{display:flex;align-items:center;gap:12px;max-width:1320px;margin:0 auto;padding:10px 14px}
+  .logo{width:36px;height:36px;border-radius:8px;object-fit:contain;background:#0d1014;border:1px solid #2a3144}
+  h1{margin:0;font-size:1.05rem;letter-spacing:.2px;color:var(--brand)}
+  .spacer{flex:1}
+  .btn{background:var(--brand);color:#0b0f14;border:0;border-radius:10px;padding:8px 12px;font-weight:800;cursor:pointer}
+  .btn.secondary{background:#1a2030;color:#d6dbe6;border:1px solid var(--line)}
+
+  .shell{max-width:1320px;margin:0 auto}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:8px 14px;color:var(--muted)}
+  .toolbar .btn{padding:6px 10px;border-radius:8px;font-size:.9rem}
+
+  /* Split */
+  .split{height:calc(100vh - 96px); /* header + toolbar */ display:flex;gap:0;border-top:1px solid var(--line)}
+  .pane{display:flex;flex-direction:column;min-width:240px;background:var(--panel);border-right:1px solid var(--line)}
+  .pane:last-child{border-right:none}
+  .pane-head{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#1a2030;border-bottom:1px solid var(--line);font-size:.9rem}
+  .pane-head .title{font-weight:800}
+  .pane iframe{flex:1;width:100%;border:0;background:#0b0f14}
+
+  .divider{width:6px;background:linear-gradient(180deg,#2a3246,#1a2030);cursor:col-resize}
+  .divider:hover{background:linear-gradient(180deg,#394460,#1a2030)}
+
+  /* Highlight when a pane is focused */
+  .pane:focus-within .pane-head{outline:2px solid var(--accent);outline-offset:-2px}
+
+  /* Mobile: stack panes */
+  @media(max-width:900px){
+    .split{flex-direction:column}
+    .pane{min-height:40vh;border-right:none;border-bottom:1px solid var(--line)}
+    .divider{height:6px;width:100%;cursor:row-resize}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="head">
+    <img src="https://i.imgur.com/K0TTjUC.png" alt="COD:M Logo" class="logo">
+    <h1>COD:M — Split View</h1>
+    <div class="spacer"></div>
+    <a href="index.html" class="btn secondary" title="Back to Home">← Home</a>
+  </div>
+</header>
+<div class="shell">
+  <div class="toolbar">
+    <button id="resetSplit" class="btn secondary">Reset Split</button>
+    <span>Drag the bar between panes to resize. On mobile the panes stack.</span>
+  </div>
+</div>
+
+<div class="split" id="splitRoot">
+  <section class="pane" id="leftPane" style="flex-basis:50%">
+    <div class="pane-head">
+      <span class="title">Maps (caster helper)</span>
+      <a class="btn secondary" style="margin-left:auto" href="https://neptuneg1.github.io/codm-caster/codm-mp-maps.html" target="_blank" rel="noopener">Open ↗</a>
+      <button class="btn" id="reloadLeft" title="Reload left">↻</button>
+    </div>
+    <iframe id="leftFrame" src="https://neptuneg1.github.io/codm-caster/codm-mp-maps.html" loading="lazy" title="CODM MP Maps"></iframe>
+  </section>
+  <div class="divider" id="divider" role="separator" aria-orientation="vertical" aria-label="Resize"></div>
+  <section class="pane" id="rightPane" style="flex:1">
+    <div class="pane-head">
+      <span class="title">MP Analyzer (caster)</span>
+      <a class="btn secondary" style="margin-left:auto" href="https://neptuneg1.github.io/codm-caster/codm-mp.html" target="_blank" rel="noopener">Open ↗</a>
+      <button class="btn" id="reloadRight" title="Reload right">↻</button>
+    </div>
+    <iframe id="rightFrame" src="https://neptuneg1.github.io/codm-caster/codm-mp.html" loading="lazy" title="CODM MP"></iframe>
+  </section>
+</div>
+
+<script>
+(function(){
+  const leftPane = document.getElementById('leftPane');
+  const rightPane = document.getElementById('rightPane');
+  const divider  = document.getElementById('divider');
+  const splitRoot= document.getElementById('splitRoot');
+  const leftFrame= document.getElementById('leftFrame');
+  const rightFrame= document.getElementById('rightFrame');
+
+  // Restore last split
+  const saved = localStorage.getItem('split-left');
+  if (saved){ leftPane.style.flexBasis = saved + '%'; }
+
+  // Drag to resize
+  let dragging = false;
+  function onPointerDown(e){ dragging = true; document.body.style.userSelect='none'; }
+  function onPointerUp(){ dragging = false; document.body.style.userSelect=''; }
+  function onPointerMove(e){
+    if(!dragging) return;
+    const rect = splitRoot.getBoundingClientRect();
+    const x = e.clientX - rect.left; // inside container
+    const pct = Math.min(80, Math.max(20, (x/rect.width)*100));
+    leftPane.style.flexBasis = pct + '%';
+    localStorage.setItem('split-left', String(pct));
+  }
+  divider.addEventListener('mousedown', onPointerDown);
+  window.addEventListener('mousemove', onPointerMove);
+  window.addEventListener('mouseup', onPointerUp);
+
+  // Touch support
+  divider.addEventListener('touchstart', (e)=>{ dragging=true; }, {passive:true});
+  window.addEventListener('touchend', ()=>{ dragging=false; });
+  window.addEventListener('touchmove', (e)=>{
+    if(!dragging) return; const t = e.touches[0]; if(!t) return; const rect = splitRoot.getBoundingClientRect(); const x = t.clientX - rect.left; const pct = Math.min(80, Math.max(20, (x/rect.width)*100)); leftPane.style.flexBasis = pct + '%'; localStorage.setItem('split-left', String(pct));
+  }, {passive:true});
+
+  // Buttons
+  document.getElementById('resetSplit').addEventListener('click', ()=>{ leftPane.style.flexBasis='50%'; localStorage.removeItem('split-left'); });
+  document.getElementById('reloadLeft').addEventListener('click', ()=>{ leftFrame.src = leftFrame.src; });
+  document.getElementById('reloadRight').addEventListener('click', ()=>{ rightFrame.src = rightFrame.src; });
+})();
+</script>
+</body>
+</html>
