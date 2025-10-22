@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>COD:M — Team Comparison + Series Viewer</title>
+<title>COD:M — Team Comparison</title>
 <meta name="theme-color" content="#0d1014"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -79,7 +79,7 @@
   .mode-stack{display:flex;flex-direction:column;line-height:1.15;justify-self:center;align-items:center;text-align:center}
   .mode-pill{font-size:.7rem;border:1px solid var(--line);padding:1px 6px;border-radius:999px;background:#111827;color:#e8ecf5;width:max-content;margin:0 auto}
   .map-title{font-size:.95rem;margin-top:2px;text-align:center}
-  .series-foot{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-top:1px solid var(--line);background:#1a2030;color:#muted;font-size:.85rem}
+  .series-foot{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-top:1px solid var(--line);background:#1a2030;color:var(--muted);font-size:.85rem}
 </style>
 </head>
 <body>
@@ -238,7 +238,8 @@ function listAllowedTeamsPresent(rowsBase=ALL){
       if (ALLOWED_TAGS.has(k) && !present.has(k)) present.set(k, norm(name));
     });
   });
-  return Array.from(present.values());
+  // ⬇️ Sort A→Z, case-insensitive
+  return Array.from(present.values()).sort((a,b)=>a.localeCompare(b, undefined, {sensitivity:'base'}));
 }
 function renderTable(hostId, rows, cols, empty='No rows.'){
   const host = el(hostId);
@@ -442,7 +443,7 @@ function renderSeriesCardHTML(list, A, B){
 
   GAME_ENTRIES = buildGameEntries(ALL);
 
-  // Build team selects
+  // Build team selects (sorted A→Z)
   const teams = listAllowedTeamsPresent(ALL);
   setOptions(el('cmpTeamA'), teams);
   setOptions(el('cmpTeamB'), teams);
