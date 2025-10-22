@@ -11,7 +11,7 @@
   :root{
     --bg:#0d1014; --panel:#292d42; --panel2:#1e2432; --ink:#f3f6fa; --muted:#b8c0cc;
     --brand:#ffe93b; --brandText:#0b0d0e; --line:#4c525d; --chip:#213830;
-    --good:#62e887; --bad:#ff6b6b;
+    --good:#62e887; --bad:#ff6b6b; --accent:#7fd2ff;
   }
   *{box-sizing:border-box}
   html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif}
@@ -53,6 +53,7 @@
 
   /* Series card */
   .series-card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-top:10px}
+  .series-card.highlight{box-shadow:0 0 0 2px var(--accent) inset}
   .series-head{display:grid;grid-template-columns:1fr max-content 1fr;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line);background:#1a2030}
   .team-name{font-weight:900;justify-self:start}
   .opp-name{font-weight:900;justify-self:end}
@@ -131,7 +132,7 @@
 
   <!-- H2H SUMMARY TABLE -->
   <section class="block compact" id="h2hBlock">
-    <h2>Head‑to‑Head Matches</h2>
+    <h2>Head-to-Head Matches</h2>
     <div class="muted" id="h2hMeta">Pick two teams above to see their history.</div>
     <div id="h2hTbl"></div>
   </section>
@@ -159,7 +160,14 @@ const groupBy = (arr, keyFn) => arr.reduce((m,r)=>{ const k = keyFn(r); (m[k]=m[
 const distinct = (rows,key) => Array.from(new Set(rows.map(r=>r[key]).filter(Boolean)));
 const cleanWL = v => { const s = norm(v).toUpperCase(); return s==='W' || s==='L' ? s : ''; };
 const MODE_ORDER = ['Hardpoint','Search & Destroy','Control'];
-function normalizeMode(m){ const s = norm(m).toLowerCase(); if (!s) return ''; if (s.includes('hardpoint')) return 'Hardpoint'; if (s.includes('search') || s.includes('snd')) return 'Search & Destroy'; if (s.includes('control')) return 'Control'; return norm(m); }
+function normalizeMode(m){
+  const s = norm(m).toLowerCase();
+  if (!s) return '';
+  if (s.includes('hardpoint')) return 'Hardpoint';
+  if (s.includes('search') || s.includes('snd')) return 'Search & Destroy';
+  if (s.includes('control')) return 'Control';
+  return norm(m);
+}
 
 /* ===== Allowed maps/teams ===== */
 const ALLOWED_MAPS = new Set(['Summit','Hacienda','Apocalypse','Slums','Combine','Tunisia','Firing Range','Kurohana Metropolis','Standoff','Coastal','Raid','Takeoff','Crossfire','Arsenal'].map(key));
@@ -214,13 +222,74 @@ function buildGameEntries(rows){
 }
 
 /* ===== UI helpers ===== */
-function setOptions(sel, values){ sel.innerHTML = `<option value="">— Select —</option>` + values.map(v=>`<option value="${v}">${v}</option>`).join(''); }
-function listAllowedTeamsPresent(rowsBase=ALL){ const present = new Map(); rowsBase.forEach(r=>{ [r.Tag, r['Vs Opponent']].forEach(name=>{ const k = key(name); if (ALLOWED_TAGS.has(k) && !present.has(k)) present.set(k, norm(name)); }); }); return Array.from(present.values()); }
-function renderTable(hostId, rows, cols, empty='No rows.'){ const host = el(hostId); if (!rows.length){ host.innerHTML = `<div class="muted">${empty}</div>`; return; } const thead = `<thead><tr>${cols.map(c=>`<th class="${c.right?'right':''}">${c.label}</th>`).join('')}</tr></thead>`; const tbodyHTML = rows.map(r=>`<tr>${cols.map(c=>{ let v = r[c.key]; if (c.format==='pct') v = (typeof v==='number') ? (v*100).toFixed(1)+'%' : '—'; return `<td class="${c.right?'right':''}">${v ?? '—'}</td>`; }).join('')}</tr>`).join(''); host.innerHTML = `<table class="table"><thead>${thead}</thead><tbody>${tbodyHTML}</tbody></table>`; const tbody = host.querySelector('tbody'); if (hostId==='h2hTbl'){ [...tbody.rows].forEach((tr,i)=>{ tr.classList.add('clickable'); tr.addEventListener('click', ()=>{ const k = rows[i].seriesKey; const elCard = document.querySelector(`[data-series="${CSS.escape(k)}"]`); if (elCard){ elCard.scrollIntoView({behavior:'smooth',block:'start'}); elCard.classList.add('highlight'); setTimeout(()=>elCard.classList.remove('highlight'), 1000); } }); }); } }
+function setOptions(sel, values){
+  sel.innerHTML = `<option value="">— Select —</option>` + values.map(v=>`<option value="${v}">${v}</option>`).join('');
+}
+function listAllowedTeamsPresent(rowsBase=ALL){
+  const present = new Map(); // lower -> original casing
+  rowsBase.forEach(r=>{
+    [r.Tag, r['Vs Opponent']].forEach(name=>{
+      const k = key(name);
+      if (ALLOWED_TAGS.has(k) && !present.has(k)) present.set(k, norm(name));
+    });
+  });
+  return Array.from(present.values());
+}
+function renderTable(hostId, rows, cols, empty='No rows.'){
+  const host = el(hostId);
+  if (!rows.length){ host.innerHTML = `<div class="muted">${empty}</div>`; return; }
+  const thead = `<thead><tr>${cols.map(c=>`<th class="${c.right?'right':''}">${c.label}</th>`).join('')}</tr></thead>`;
+  const tbodyHTML = rows.map(r=>`<tr>${cols.map(c=>{
+    let v = r[c.key];
+    if (c.format==='pct') v = (typeof v==='number') ? (v*100).toFixed(1)+'%' : '—';
+    return `<td class="${c.right?'right':''}">${v ?? '—'}</td>`;
+  }).join('')}</tr>`).join('');
+  host.innerHTML = `<table class="table"><thead>${thead}</thead><tbody>${tbodyHTML}</tbody></table>`;
+  const tbody = host.querySelector('tbody');
+  if (hostId==='h2hTbl'){
+    [...tbody.rows].forEach((tr,i)=>{
+      tr.classList.add('clickable');
+      tr.addEventListener('click', ()=>{
+        const k = rows[i].seriesKey;
+        const elCard = document.querySelector(`[data-series="${CSS.escape(k)}"]`);
+        if (elCard){
+          elCard.scrollIntoView({behavior:'smooth',block:'start'});
+          elCard.classList.add('highlight');
+          setTimeout(()=>elCard.classList.remove('highlight'), 1000);
+        }
+      });
+    });
+  }
+}
 
-function quickStats(rows){ const games = rows.length; const w = rows.filter(r=>cleanWL(r['W/L'])==='W').length; const l = rows.filter(r=>cleanWL(r['W/L'])==='L').length; const ptsFor = sum(rows,'Score'); const ptsAg  = sum(rows,'Opp Score'); return { games, wins:w, losses:l, winrate: games ? (w/games) : 0, ptsFor, ptsAg, diff: ptsFor-ptsAg }; }
-function byMode(rows){ const g = groupBy(rows, r=>r.ModeN||'—'); return Object.entries(g).map(([mode,list])=>{ const qs = quickStats(list); return { mode, games:qs.games, wins:qs.wins, losses:qs.losses, winrate:qs.winrate }; }).sort((a,b)=> { const ai = MODE_ORDER.indexOf(a.mode), bi = MODE_ORDER.indexOf(b.mode); return (ai-bi) || (b.winrate-a.winrate) || (b.games-a.games); }); }
-function renderTeamMode(hostId, rows){ const list = byMode(rows).map(r=>({mode:r.mode, games:r.games, wins:r.wins, losses:r.losses, winrate:r.winrate})); renderTable(hostId, list, [ {label:'Mode',key:'mode'}, {label:'G',key:'games',right:true}, {label:'W',key:'wins',right:true}, {label:'L',key:'losses',right:true}, {label:'Win %',key:'winrate',format:'pct',right:true} ], '—'); }
+function quickStats(rows){
+  const games = rows.length;
+  const w = rows.filter(r=>cleanWL(r['W/L'])==='W').length;
+  const l = rows.filter(r=>cleanWL(r['W/L'])==='L').length;
+  const ptsFor = sum(rows,'Score');
+  const ptsAg  = sum(rows,'Opp Score');
+  return { games, wins:w, losses:l, winrate: games ? (w/games) : 0, ptsFor, ptsAg, diff: ptsFor-ptsAg };
+}
+function byMode(rows){
+  const g = groupBy(rows, r=>r.ModeN||'—');
+  return Object.entries(g).map(([mode,list])=>{
+    const qs = quickStats(list);
+    return { mode, games:qs.games, wins:qs.wins, losses:qs.losses, winrate:qs.winrate };
+  }).sort((a,b)=> {
+    const ai = MODE_ORDER.indexOf(a.mode), bi = MODE_ORDER.indexOf(b.mode);
+    return (ai-bi) || (b.winrate-a.winrate) || (b.games-a.games);
+  });
+}
+function renderTeamMode(hostId, rows){
+  const list = byMode(rows).map(r=>({mode:r.mode, games:r.games, wins:r.wins, losses:r.losses, winrate:r.winrate}));
+  renderTable(hostId, list, [
+    {label:'Mode',key:'mode'},
+    {label:'G',key:'games',right:true},
+    {label:'W',key:'wins',right:true},
+    {label:'L',key:'losses',right:true},
+    {label:'Win %',key:'winrate',format:'pct',right:true}
+  ], '—');
+}
 function byMap(rows){
   const g = groupBy(rows, r=>norm(r.Map)||'—');
   return Object.entries(g).map(([map,list])=>{
@@ -229,22 +298,50 @@ function byMap(rows){
   })
   // Sort by Win% (desc), then games (desc), then map name A→Z
   .sort((a,b)=> (b.winrate - a.winrate) || (b.games - a.games) || a.map.localeCompare(b.map));
-}; }).sort((a,b)=> b.games-a.games || b.winrate-a.winrate || a.map.localeCompare(b.map)); }
-function renderTeamMap(hostId, rows){ const list = byMap(rows).map(r=>({map:r.map, games:r.games, wins:r.wins, losses:r.losses, winrate:r.winrate})); renderTable(hostId, list, [ {label:'Map',key:'map'}, {label:'G',key:'games',right:true}, {label:'W',key:'wins',right:true}, {label:'L',key:'losses',right:true}, {label:'Win %',key:'winrate',format:'pct',right:true} ], '—'); }
-function renderKV(hostId, kv){ el(hostId).innerHTML = kv.map(x=>`<div class="tile"><div class="k">${x.k}</div><div class="v">${x.v}</div></div>`).join(''); }
-function teamQuick(rows){ const s = quickStats(rows); return [ {k:'Games',v:s.games}, {k:'Wins',v:s.wins}, {k:'Losses',v:s.losses}, {k:'Win %',v: (s.winrate*100).toFixed(1)+'%'}, {k:'Pts For',v:s.ptsFor}, {k:'Pts Ag',v:s.ptsAg}, {k:'Diff',v:s.diff} ]; }
+}
+function renderTeamMap(hostId, rows){
+  const list = byMap(rows).map(r=>({map:r.map, games:r.games, wins:r.wins, losses:r.losses, winrate:r.winrate}));
+  renderTable(hostId, list, [
+    {label:'Map',key:'map'},
+    {label:'G',key:'games',right:true},
+    {label:'W',key:'wins',right:true},
+    {label:'L',key:'losses',right:true},
+    {label:'Win %',key:'winrate',format:'pct',right:true}
+  ], '—');
+}
+function renderKV(hostId, kv){
+  el(hostId).innerHTML = kv.map(x=>`<div class="tile"><div class="k">${x.k}</div><div class="v">${x.v}</div></div>`).join('');
+}
+function teamQuick(rows){
+  const s = quickStats(rows);
+  return [
+    {k:'Games',v:s.games},
+    {k:'Wins',v:s.wins},
+    {k:'Losses',v:s.losses},
+    {k:'Win %',v: (s.winrate*100).toFixed(1)+'%'},
+    {k:'Pts For',v:s.ptsFor},
+    {k:'Pts Ag',v:s.ptsAg},
+    {k:'Diff',v:s.diff}
+  ];
+}
 
 /* ===== Comparison ===== */
 function renderComparison(){
   const a = el('cmpTeamA').value, b = el('cmpTeamB').value;
   if (!a || !b || key(a)===key(b)){
-    el('cmpWrap').style.display = 'none'; el('cmpEmpty').style.display = ''; el('h2hTbl').innerHTML = ''; el('h2hMeta').textContent = 'Pick two teams above to see their history.'; el('seriesHost').innerHTML=''; return;
+    el('cmpWrap').style.display = 'none';
+    el('cmpEmpty').style.display = '';
+    el('h2hTbl').innerHTML = '';
+    el('h2hMeta').textContent = 'Pick two teams above to see their history.';
+    el('seriesHost').innerHTML='';
+    return;
   }
   el('cmpNameA').textContent = a; el('cmpNameB').textContent = b;
   const aRows = ALL.filter(r=> key(r.Tag)===key(a) && cleanWL(r['W/L']));
   const bRows = ALL.filter(r=> key(r.Tag)===key(b) && cleanWL(r['W/L']));
   renderKV('cmpTilesA', teamQuick(aRows)); renderKV('cmpTilesB', teamQuick(bRows));
-  renderTeamMode('cmpModeA', aRows); renderTeamMode('cmpModeB', bRows); renderTeamMap('cmpMapA', aRows); renderTeamMap('cmpMapB', bRows);
+  renderTeamMode('cmpModeA', aRows); renderTeamMode('cmpModeB', bRows);
+  renderTeamMap('cmpMapA', aRows);   renderTeamMap('cmpMapB', bRows);
   el('cmpEmpty').style.display = 'none'; el('cmpWrap').style.display = '';
   renderH2HAndSeries(a,b);
 }
@@ -254,18 +351,50 @@ function renderH2HAndSeries(a,b){
   const A = norm(a), B = norm(b);
   const rows = GAME_ENTRIES.filter(e => norm(e.team)===A && norm(e.opp)===B);
   const bySeries = groupBy(rows, e=>e.seriesNeutral);
-  const series = Object.values(bySeries).map(list=>{ const s = list[0]; const aW = list.reduce((t,e)=>t+e.win,0); const aL = list.reduce((t,e)=>t+e.loss,0); return { tournament:s.tournament, stage:s.stage, day:s.day, series:s.seriesNo, aWins:aW, bWins:aL, maps:list.length, seriesKey:s.seriesNeutral }; }).sort((x,y)=> (String(y.tournament).localeCompare(String(x.tournament))) || (String(y.stage).localeCompare(String(x.stage))) || ((+y.day||0)-(+x.day||0)) || ((+y.series||0)-(+x.series||0)) );
-  el('h2hMeta').textContent = series.length ? `${series.length} series between ${a} and ${b} (latest first)` : `No head‑to‑head series between ${a} and ${b}`;
-  renderTable('h2hTbl', series, [ {label:'Tournament',key:'tournament'}, {label:'Stage',key:'stage'}, {label:'Day',key:'day',right:true}, {label:'Series',key:'series',right:true}, {label:`${a} MW`,key:'aWins',right:true}, {label:`${b} MW`,key:'bWins',right:true}, {label:'Maps',key:'maps',right:true} ], '—');
+  const series = Object.values(bySeries).map(list=>{
+    const s = list[0];
+    const aW = list.reduce((t,e)=>t+e.win,0);
+    const aL = list.reduce((t,e)=>t+e.loss,0);
+    return {
+      tournament:s.tournament, stage:s.stage, day:s.day, series:s.seriesNo,
+      aWins:aW, bWins:aL, maps:list.length, seriesKey:s.seriesNeutral
+    };
+  }).sort((x,y)=>
+    (String(y.tournament).localeCompare(String(x.tournament))) ||
+    (String(y.stage).localeCompare(String(x.stage))) ||
+    ((+y.day||0)-(+x.day||0)) ||
+    ((+y.series||0)-(+x.series||0))
+  );
+
+  el('h2hMeta').textContent = series.length
+    ? `${series.length} series between ${a} and ${b} (latest first)`
+    : `No head-to-head series between ${a} and ${b}`;
+
+  renderTable('h2hTbl', series, [
+    {label:'Tournament',key:'tournament'},
+    {label:'Stage',key:'stage'},
+    {label:'Day',key:'day',right:true},
+    {label:'Series',key:'series',right:true},
+    {label:`${a} MW`,key:'aWins',right:true},
+    {label:`${b} MW`,key:'bWins',right:true},
+    {label:'Maps',key:'maps',right:true}
+  ], '—');
+
   // Render all series cards below
   const host = el('seriesHost'); host.innerHTML = '';
-  if (!series.length){ host.innerHTML = '<div class="muted">No series viewer to show.</div>'; return; }
+  if (!series.length){
+    host.innerHTML = '<div class="muted">No series viewer to show.</div>';
+    return;
+  }
   host.innerHTML = series.map(s=> renderSeriesCardHTML(rows.filter(e=> e.seriesNeutral===s.seriesKey), A, B)).join('');
 }
 
 function renderSeriesCardHTML(list, A, B){
-  const played = list.length; const aWins = list.reduce((t,e)=>t+e.win,0); const bWins = list.reduce((t,e)=>t+e.loss,0);
-  const s0 = list[0] || {}; const head = `
+  const played = list.length;
+  const aWins = list.reduce((t,e)=>t+e.win,0);
+  const bWins = list.reduce((t,e)=>t+e.loss,0);
+  const s0 = list[0] || {};
+  const head = `
     <div class="series-head">
       <div class="team-name">${A}</div>
       <div class="series-score">${aWins} : ${bWins} <span class="muted" style="font-weight:600"> (Bo${played})</span></div>
@@ -273,7 +402,13 @@ function renderSeriesCardHTML(list, A, B){
       <div class="series-meta">${s0.tournament? (s0.tournament+' • ') : ''}${s0.stage||'—'} • Day ${s0.day||'—'} • Series ${s0.seriesNo||'—'}</div>
     </div>`;
   const rowsSorted = list.slice().sort((x,y)=>(x.mapIdx||0)-(y.mapIdx||0));
-  const body = rowsSorted.map(l=>{ const aWin = !!l.win; const left  = `<div class="side side-left ${aWin?'':'dim'}"><span class="${aWin?'tick':'cross'}"></span><div class="scoreL">${l.ownScore}</div></div>`; const mid   = `<div class="mode-stack"><span class="mode-pill">${l.mode||'—'}</span><div class="map-title">${l.map||'—'}</div></div>`; const right = `<div class="side side-right ${aWin?'dim':''}"><div class="scoreR">${l.oppScore}</div><span class="${aWin?'cross':'tick'}"></span></div>`; return `<div class="map-row">${left}${mid}${right}</div>`; }).join('');
+  const body = rowsSorted.map(l=>{
+    const aWin = !!l.win;
+    const left  = `<div class="side side-left ${aWin?'':'dim'}"><span class="${aWin?'tick':'cross'}"></span><div class="scoreL">${l.ownScore}</div></div>`;
+    const mid   = `<div class="mode-stack"><span class="mode-pill">${l.mode||'—'}</span><div class="map-title">${l.map||'—'}</div></div>`;
+    const right = `<div class="side side-right ${aWin?'dim':''}"><div class="scoreR">${l.oppScore}</div><span class="${aWin?'cross':'tick'}"></span></div>`;
+    return `<div class="map-row">${left}${mid}${right}</div>`;
+  }).join('');
   const foot = `<div class="series-foot"><span>Maps played: ${played}</span><span>&nbsp;</span></div>`;
   return `<div class="series-card" data-series="${s0.seriesNeutral}">${head}${body}${foot}</div>`;
 }
@@ -282,14 +417,39 @@ function renderSeriesCardHTML(list, A, B){
 (async function init(){
   ALLOWED_TAGS = await fetchAllowedTags();
   const raw = await fetchAllMatches();
-  ALL = raw.map(r=>({ ...r, Score: n(r.Score), ['Opp Score']: n(r['Opp Score']), MATCHES: n(r.MATCHES), ModeN: normalizeMode(r.Mode), ['W/L']: cleanWL(r['W/L']), Tournament: norm(r.Tournament), Tag: norm(r.Tag), ['Vs Opponent']: norm(r['Vs Opponent']), Map: norm(r.Map) })).filter(r => (isAllowedTeam(r.Tag) || isAllowedTeam(r['Vs Opponent'])) && isAllowedMap(r.Map));
+
+  // normalize + hard filter:
+  // - include row if EITHER side is in player_list.Tag
+  // - maps limited to ALLOWED_MAPS
+  ALL = raw.map(r=>({
+      ...r,
+      Score: n(r.Score),
+      ['Opp Score']: n(r['Opp Score']),
+      MATCHES: n(r.MATCHES),
+      ModeN: normalizeMode(r.Mode),
+      ['W/L']: cleanWL(r['W/L']),
+      Tournament: norm(r.Tournament),
+      Tag: norm(r.Tag),
+      ['Vs Opponent']: norm(r['Vs Opponent']),
+      Map: norm(r.Map)
+  })).filter(r =>
+      (isAllowedTeam(r.Tag) || isAllowedTeam(r['Vs Opponent'])) &&
+      isAllowedMap(r.Map)
+  );
+
   GAME_ENTRIES = buildGameEntries(ALL);
+
   // Build team selects
   const teams = listAllowedTeamsPresent(ALL);
-  setOptions(el('cmpTeamA'), teams); setOptions(el('cmpTeamB'), teams);
+  setOptions(el('cmpTeamA'), teams);
+  setOptions(el('cmpTeamB'), teams);
+
   // Wire
-  el('cmpSwap').addEventListener('click', ()=>{ const a=el('cmpTeamA'), b=el('cmpTeamB'); const v=a.value; a.value=b.value; b.value=v; renderComparison(); });
-  el('cmpTeamA').addEventListener('change', renderComparison); el('cmpTeamB').addEventListener('change', renderComparison);
+  el('cmpSwap').addEventListener('click', ()=>{
+    const a=el('cmpTeamA'), b=el('cmpTeamB'); const v=a.value; a.value=b.value; b.value=v; renderComparison();
+  });
+  el('cmpTeamA').addEventListener('change', renderComparison);
+  el('cmpTeamB').addEventListener('change', renderComparison);
 })();
 </script>
 </body>
