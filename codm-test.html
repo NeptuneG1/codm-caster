@@ -104,18 +104,26 @@
     <div id="cmpWrap" class="cmp-grid" style="display:none">
       <div class="card">
         <h3 id="cmpNameA">Team A</h3>
-        <div class="kv" id="cmpTilesA"></div>
-        <div class="compact" style="margin-top:8px">
+        <div class=\"kv\" id=\"cmpTilesA\"></div>
+        <div class=\"compact\" style=\"margin-top:8px\">
           <h3>By Mode</h3>
-          <div id="cmpModeA"></div>
+          <div id=\"cmpModeA\"></div>
+        </div>
+        <div class=\"compact\" style=\"margin-top:8px\">
+          <h3>By Map</h3>
+          <div id=\"cmpMapA\"></div>
         </div>
       </div>
       <div class="card">
         <h3 id="cmpNameB">Team B</h3>
-        <div class="kv" id="cmpTilesB"></div>
-        <div class="compact" style="margin-top:8px">
+        <div class=\"kv\" id=\"cmpTilesB\"></div>
+        <div class=\"compact\" style=\"margin-top:8px\">
           <h3>By Mode</h3>
-          <div id="cmpModeB"></div>
+          <div id=\"cmpModeB\"></div>
+        </div>
+        <div class=\"compact\" style=\"margin-top:8px\">
+          <h3>By Map</h3>
+          <div id=\"cmpMapB\"></div>
         </div>
       </div>
     </div>
@@ -213,6 +221,8 @@ function renderTable(hostId, rows, cols, empty='No rows.'){ const host = el(host
 function quickStats(rows){ const games = rows.length; const w = rows.filter(r=>cleanWL(r['W/L'])==='W').length; const l = rows.filter(r=>cleanWL(r['W/L'])==='L').length; const ptsFor = sum(rows,'Score'); const ptsAg  = sum(rows,'Opp Score'); return { games, wins:w, losses:l, winrate: games ? (w/games) : 0, ptsFor, ptsAg, diff: ptsFor-ptsAg }; }
 function byMode(rows){ const g = groupBy(rows, r=>r.ModeN||'—'); return Object.entries(g).map(([mode,list])=>{ const qs = quickStats(list); return { mode, games:qs.games, wins:qs.wins, losses:qs.losses, winrate:qs.winrate }; }).sort((a,b)=> { const ai = MODE_ORDER.indexOf(a.mode), bi = MODE_ORDER.indexOf(b.mode); return (ai-bi) || (b.winrate-a.winrate) || (b.games-a.games); }); }
 function renderTeamMode(hostId, rows){ const list = byMode(rows).map(r=>({mode:r.mode, games:r.games, wins:r.wins, losses:r.losses, winrate:r.winrate})); renderTable(hostId, list, [ {label:'Mode',key:'mode'}, {label:'G',key:'games',right:true}, {label:'W',key:'wins',right:true}, {label:'L',key:'losses',right:true}, {label:'Win %',key:'winrate',format:'pct',right:true} ], '—'); }
+function byMap(rows){ const g = groupBy(rows, r=>norm(r.Map)||'—'); return Object.entries(g).map(([map,list])=>{ const qs = quickStats(list); return { map, games:qs.games, wins:qs.wins, losses:qs.losses, winrate:qs.winrate }; }).sort((a,b)=> b.games-a.games || b.winrate-a.winrate || a.map.localeCompare(b.map)); }
+function renderTeamMap(hostId, rows){ const list = byMap(rows).map(r=>({map:r.map, games:r.games, wins:r.wins, losses:r.losses, winrate:r.winrate})); renderTable(hostId, list, [ {label:'Map',key:'map'}, {label:'G',key:'games',right:true}, {label:'W',key:'wins',right:true}, {label:'L',key:'losses',right:true}, {label:'Win %',key:'winrate',format:'pct',right:true} ], '—'); }
 function renderKV(hostId, kv){ el(hostId).innerHTML = kv.map(x=>`<div class="tile"><div class="k">${x.k}</div><div class="v">${x.v}</div></div>`).join(''); }
 function teamQuick(rows){ const s = quickStats(rows); return [ {k:'Games',v:s.games}, {k:'Wins',v:s.wins}, {k:'Losses',v:s.losses}, {k:'Win %',v: (s.winrate*100).toFixed(1)+'%'}, {k:'Pts For',v:s.ptsFor}, {k:'Pts Ag',v:s.ptsAg}, {k:'Diff',v:s.diff} ]; }
 
@@ -226,7 +236,7 @@ function renderComparison(){
   const aRows = ALL.filter(r=> key(r.Tag)===key(a) && cleanWL(r['W/L']));
   const bRows = ALL.filter(r=> key(r.Tag)===key(b) && cleanWL(r['W/L']));
   renderKV('cmpTilesA', teamQuick(aRows)); renderKV('cmpTilesB', teamQuick(bRows));
-  renderTeamMode('cmpModeA', aRows); renderTeamMode('cmpModeB', bRows);
+  renderTeamMode('cmpModeA', aRows); renderTeamMode('cmpModeB', bRows); renderTeamMap('cmpMapA', aRows); renderTeamMap('cmpMapB', bRows);
   el('cmpEmpty').style.display = 'none'; el('cmpWrap').style.display = '';
   renderH2HAndSeries(a,b);
 }
