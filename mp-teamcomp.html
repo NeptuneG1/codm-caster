@@ -166,10 +166,9 @@ const norm= v => (v==null ? '' : String(v)).trim();
 const key = v => norm(v).toLowerCase();
 const sum = (arr, k) => arr.reduce((a,r)=>a+n(r[k]),0);
 const groupBy = (arr, keyFn) => arr.reduce((m,r)=>{ const k = keyFn(r); (m[k]=m[k]||[]).push(r); return m; },{});
-const distinct = (rows,key) => Array.from(new Set(rows.map(r=>r[key]).filter(Boolean)));
 const cleanWL = v => { const s = norm(v).toUpperCase(); return s==='W' || s==='L' ? s : ''; };
 
-/* Mode normalization and labels */
+/* Mode normalization + short labels */
 const MODE_ORDER = ['Hardpoint','Search & Destroy','Control']; // canonical order
 const MODE_SHORT = {'Hardpoint':'HP','Search & Destroy':'SND','Control':'CTRL'};
 function normalizeMode(m){
@@ -185,11 +184,22 @@ function shortMode(m){
   return MODE_SHORT[canon] || canon || '—';
 }
 
-/* ===== Allowed maps/teams ===== */
-const ALLOWED_MAP_NAMES = [
-  'Apocalypse','Arsenal','Coastal','Combine','Crossfire','Firing Range',
-  'Hacienda','Kurohana Metropolis','Raid','Slums','Standoff','Summit','Takeoff','Tunisia'
-];
+/* ===== Allowed maps + per-mode pools (from your reference) ===== */
+const MAPS_BY_MODE = {
+  'Hardpoint': [
+    'Apocalypse', 'Combine', 'Hacienda', 'Slums', 'Summit'
+  ],
+  'Search & Destroy': [
+    'Coastal', 'Firing Range', 'Kurohana Metropolis', 'Standoff', 'Tunisia'
+  ],
+  'Control': [
+    'Crossfire', 'Raid', 'Takeoff'
+  ]
+};
+// Allowed set = union of all referenced maps
+const ALLOWED_MAP_NAMES = Array.from(new Set(
+  Object.values(MAPS_BY_MODE).flat()
+)).sort((a,b)=>a.localeCompare(b));
 const ALLOWED_MAPS = new Set(ALLOWED_MAP_NAMES.map(key));
 const MAP_LABEL_BY_KEY = Object.fromEntries(ALLOWED_MAP_NAMES.map(nm=>[key(nm), nm]));
 function canonicalMapLabel(m){ return MAP_LABEL_BY_KEY[key(m)] || norm(m); }
@@ -201,7 +211,6 @@ function isAllowedTeam(t){ return !ALLOWED_TAGS.size ? true : ALLOWED_TAGS.has(k
 /* ===== Data ===== */
 let ALL = [];          // normalized rows
 let GAME_ENTRIES = []; // merged map-level entries, both perspectives
-let APPLICABLE_MAPS_BY_MODE = {}; // computed from data: which maps actually appear per mode
 
 /* ===== Fetch ===== */
 async function fetchAllMatches(){
@@ -245,30 +254,12 @@ function buildGameEntries(rows){
   return out;
 }
 
-/* Which maps are applicable per mode (from data) */
-function computeApplicableMapsByMode(baseRows=ALL){
-  const pools = {};
-  MODE_ORDER.forEach(m => pools[m] = new Set());
-  baseRows.forEach(r=>{
-    const m = r.ModeN;
-    const mp = canonicalMapLabel(r.Map);
-    if (!MODE_ORDER.includes(m)) return;
-    if (!isAllowedMap(mp)) return;
-    pools[m].add(canonicalMapLabel(mp));
-  });
-  const out = {};
-  MODE_ORDER.forEach(m=>{
-    out[m] = Array.from(pools[m]).sort((a,b)=>a.localeCompare(b));
-  });
-  return out;
-}
-
 /* ===== UI helpers ===== */
 function setOptions(sel, values){
   sel.innerHTML = `<option value="">— Select —</option>` + values.map(v=>`<option value="${v}">${v}</option>`).join('');
 }
 function listAllowedTeamsPresent(rowsBase=ALL){
-  const present = new Map(); // lower -> original casing
+  const present = new Map();
   rowsBase.forEach(r=>{
     [r.Tag, r['Vs Opponent']].forEach(name=>{
       const k = key(name);
@@ -335,7 +326,7 @@ function renderTeamMode(hostId, rows){
   ], '—');
 }
 
-/* Grouped By Map per mode with collapsibles (ONLY applicable maps for that mode, A→Z) */
+/* By Map per mode — ONLY maps applicable to that mode (from MAPS_BY_MODE), A→Z */
 function renderTeamMapGrouped(hostId, rows){
   const host = el(hostId);
   const byModeObj = groupBy(rows, r=>r.ModeN || '—');
@@ -362,10 +353,9 @@ function renderTeamMapGrouped(hostId, rows){
   }
 
   function rowsForMode(list, modeCanon){
-    // applicable map pool for this mode (from dataset), else empty
-    const pool = (APPLICABLE_MAPS_BY_MODE[modeCanon] || []).slice();
-    if (!pool.length) return []; // nothing applicable for this mode
-    // Build one row per applicable map, A→Z
+    // pool from your reference, alphabetically
+    const pool = (MAPS_BY_MODE[modeCanon] || []).slice().sort((a,b)=>a.localeCompare(b));
+    if (!pool.length) return [];
     return pool.map(mp=>{
       const played = list.filter(r=> key(r.Map)===key(mp));
       const games = played.length;
@@ -391,7 +381,7 @@ function renderTeamMapGrouped(hostId, rows){
   host.innerHTML = html || `<div class="muted">—</div>`;
 }
 
-/* KV tiles (requested four only) */
+/* KV tiles (minimal) */
 function renderKV(hostId, kv){
   el(hostId).innerHTML = kv.map(x=>`<div class="tile"><div class="k">${x.k}</div><div class="v">${x.v}</div></div>`).join('');
 }
@@ -508,7 +498,7 @@ function renderSeriesCardHTML(list, A, B){
 
   // normalize + hard filter:
   // - include row if EITHER side is in player_list.Tag
-  // - maps limited to ALLOWED_MAPS
+  // - maps limited to ALLOWED_MAPS (union of your per-mode lists)
   ALL = raw.map(r=>({
       ...r,
       Score: n(r.Score),
@@ -526,9 +516,6 @@ function renderSeriesCardHTML(list, A, B){
   );
 
   GAME_ENTRIES = buildGameEntries(ALL);
-
-  // Compute applicable map pools per mode (from dataset)
-  APPLICABLE_MAPS_BY_MODE = computeApplicableMapsByMode(ALL);
 
   // Build team selects (sorted A→Z)
   const teams = listAllowedTeamsPresent(ALL);
