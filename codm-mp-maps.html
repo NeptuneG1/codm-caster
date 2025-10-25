@@ -86,17 +86,30 @@
   .viewer{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:10px}
   .viewer-head{display:flex;align-items:center;gap:10px;margin:0 0 10px 0}
   .viewer-title{font-weight:800}
-  .viewer-tools{margin-left:auto;display:flex;gap:8px;align-items:center}
+  .viewer-tools{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .viewer-tools .btn{padding:6px 10px}
   .viewer-tools .meter{min-width:52px;text-align:center;font-variant-numeric:tabular-nums}
+
+  /* Tool toggle (Pan / Zoom) */
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .seg button{
+    background:#161b28;color:#e5ecfa;border:0;padding:6px 10px;cursor:pointer;
+  }
+  .seg button+button{border-left:1px solid var(--line)}
+  .seg button[aria-pressed="true"]{background:#23304a;color:#fff;box-shadow:inset 0 0 0 1px #3e4b65}
 
   .img-wrap{
     width:100%;height:72vh;min-height:360px;background:#0a0e18;border:1px solid var(--line);
     border-radius:12px;display:flex;align-items:flex-start;justify-content:center; /* TOP aligned, horizontally centered */
-    overflow:auto; cursor:grab;
+    overflow:auto;
   }
-  .img-wrap.grabbing{cursor:grabbing}
-  .zoom-stage{display:inline-block; width:auto; height:auto;}
+  /* cursors switch per mode */
+  .img-wrap.mode-pan{cursor:grab}
+  .img-wrap.mode-pan.grabbing{cursor:grabbing}
+  .img-wrap.mode-zoom{cursor:zoom-in}
+  .img-wrap.mode-zoom.alt{cursor:zoom-out}
+
+  .zoom-stage{display:inline-block;width:auto;height:auto;}
   .zoom-stage img{width:100%;height:100%;object-fit:contain;display:block}
 
   .muted{color:var(--muted)}
@@ -131,21 +144,29 @@
       <div class="viewer-head">
         <div class="viewer-title" id="title">Select a map</div>
         <div class="viewer-tools">
+          <!-- Pan / Zoom toggle -->
+          <div class="seg" role="group" aria-label="Tool">
+            <button id="toolPan"  aria-pressed="true"  title="Pan tool (P)">Pan</button>
+            <button id="toolZoom" aria-pressed="false" title="Zoom tool (Z). Alt/Right-click = zoom out">Zoom</button>
+          </div>
+
+          <!-- Zoom controls -->
           <button class="btn secondary" id="zoomOut" title="Zoom out (Ctrl/⌘ -)">−</button>
           <button class="btn secondary meter" id="zoomMeter" title="Reset zoom (Ctrl/⌘ 0)">100%</button>
           <button class="btn secondary" id="zoomIn" title="Zoom in (Ctrl/⌘ +)">+</button>
+
           <a id="openLink" class="btn secondary" href="#" target="_blank" rel="noopener">Open</a>
           <a id="downloadLink" class="btn" href="#" download>Download</a>
         </div>
       </div>
-      <div class="img-wrap" id="wrap">
+      <div class="img-wrap mode-pan" id="wrap">
         <div id="stage" class="zoom-stage">
           <img id="img" alt="Map layout preview" />
         </div>
       </div>
       <p class="muted" style="margin-top:10px">
-        Tip: Use ↑/↓ or ←/→ to switch maps after selecting one. Hold <b>Ctrl/⌘</b> and scroll to zoom,
-        or drag to pan when zoomed.
+        Default view shows the map from <b>top</b>. Use the <b>Pan</b> or <b>Zoom</b> tools:
+        <br>• <b>Pan</b>: drag to move. &nbsp;• <b>Zoom</b>: click to zoom in, <b>Alt</b>/<b>Right-click</b> to zoom out. &nbsp;• Ctrl/⌘ + scroll also zooms.
       </p>
     </section>
   </div>
@@ -177,34 +198,55 @@
   };
   const MODE_ORDER = ['Hardpoint','Search & Destroy','Control'];
 
-  const groupsEl = document.getElementById('groups');
-  const titleEl = document.getElementById('title');
+  const groupsEl   = document.getElementById('groups');
+  const titleEl    = document.getElementById('title');
+  const wrap       = document.getElementById('wrap');
+  const stage      = document.getElementById('stage');
+  const imgEl      = document.getElementById('img');
 
-  const wrap = document.getElementById('wrap');
-  const stage = document.getElementById('stage');
-  const imgEl = document.getElementById('img');
-
-  const openLink = document.getElementById('openLink');
-  const dlLink = document.getElementById('downloadLink');
-  const q = document.getElementById('q');
-  const clearBtn = document.getElementById('clearBtn');
-  const countNote = document.getElementById('countNote');
+  const openLink   = document.getElementById('openLink');
+  const dlLink     = document.getElementById('downloadLink');
+  const q          = document.getElementById('q');
+  const clearBtn   = document.getElementById('clearBtn');
+  const countNote  = document.getElementById('countNote');
 
   const zoomOutBtn = document.getElementById('zoomOut');
   const zoomInBtn  = document.getElementById('zoomIn');
   const zoomMeter  = document.getElementById('zoomMeter');
 
-  let flatFiltered = [];      // flattened ordered list of visible map names
-  let activeName = '';        // currently selected map name
+  const toolPanBtn  = document.getElementById('toolPan');
+  const toolZoomBtn = document.getElementById('toolZoom');
+
+  let flatFiltered = []; // flattened ordered list of visible map names
+  let activeName = '';   // currently selected map name
+
+  // Tool mode: 'pan' | 'zoom'
+  let toolMode = 'pan';
 
   // Zoom state
-  let baseW = 0, baseH = 0;  // fitted size at 100%
+  let baseW = 0, baseH = 0;  // fitted size at 100% (default placement)
   let zoom = 1;
   const Z_MIN = 1;
   const Z_MAX = 6;
   const Z_STEP = 0.2;
 
   function clamp(v, a, b){ return Math.min(Math.max(v, a), b); }
+
+  function setTool(mode){
+    toolMode = mode;
+    toolPanBtn.setAttribute('aria-pressed', mode==='pan');
+    toolZoomBtn.setAttribute('aria-pressed', mode==='zoom');
+    wrap.classList.toggle('mode-pan',  mode==='pan');
+    wrap.classList.toggle('mode-zoom', mode==='zoom');
+  }
+
+  // Cursor update for zoom-out hint when Alt is held
+  document.addEventListener('keydown', (e)=>{
+    if (toolMode==='zoom' && (e.key==='Alt')) wrap.classList.add('alt');
+  });
+  document.addEventListener('keyup', (e)=>{
+    if (e.key==='Alt') wrap.classList.remove('alt');
+  });
 
   function findGlobalMap(name){
     return MAPS.find(m => m.name.toLowerCase() === name.toLowerCase());
@@ -216,9 +258,7 @@
     groupsEl.innerHTML = '';
 
     MODE_ORDER.forEach(mode=>{
-      const names = MAPS_BY_MODE[mode]
-        .filter(n => n.toLowerCase().includes(term));
-
+      const names = MAPS_BY_MODE[mode].filter(n => n.toLowerCase().includes(term));
       if (!names.length) return;
 
       const sec = document.createElement('div');
@@ -277,15 +317,13 @@
     });
   }
 
-  function filterList(){ renderGroups(); }
-
   /* === Zoom mechanics === */
   function setZoom(nextZoom, anchor = 'center', clientX = null, clientY = null){
     const prev = zoom;
     zoom = clamp(nextZoom, Z_MIN, Z_MAX);
     if (!baseW || !baseH) return;
 
-    // anchor point in content coords
+    // anchor (in viewer coords)
     const wrapRect = wrap.getBoundingClientRect();
     const ax = (anchor === 'pointer' && clientX != null) ? (clientX - wrapRect.left) : wrap.clientWidth/2;
     const ay = (anchor === 'pointer' && clientY != null) ? (clientY - wrapRect.top)  : wrap.clientHeight/2;
@@ -297,7 +335,7 @@
     stage.style.width  = (baseW * zoom) + 'px';
     stage.style.height = (baseH * zoom) + 'px';
 
-    // keep the same anchor point under the cursor/center
+    // keep same anchor under cursor/center
     const scale = zoom / prev;
     wrap.scrollLeft = (contentX * scale) - ax;
     wrap.scrollTop  = (contentY * scale) - ay;
@@ -306,7 +344,7 @@
   }
 
   function resetZoomToFit(){
-    // let the image auto-fit to measure the "default placement"
+    // allow natural fit first
     stage.style.width = stage.style.height = '';
     imgEl.style.width = imgEl.style.height = '';
     imgEl.style.maxWidth = '100%';
@@ -317,11 +355,9 @@
       baseW = r.width;
       baseH = r.height;
 
-      // lock stage to the fitted size (100% = default)
       stage.style.width  = baseW + 'px';
       stage.style.height = baseH + 'px';
-
-      imgEl.style.width = '100%';
+      imgEl.style.width  = '100%';
       imgEl.style.height = '100%';
 
       zoom = 1;
@@ -345,11 +381,11 @@
     }
   }, {passive:false});
 
-  // Drag to pan
+  // ===== Pan (when tool = pan)
   (function enablePanning(){
     let dragging = false, sx=0, sy=0, sl=0, st=0;
     wrap.addEventListener('mousedown', (e)=>{
-      if (e.button!==0) return;
+      if (toolMode!=='pan' || e.button!==0) return;
       dragging = true;
       wrap.classList.add('grabbing');
       sx = e.clientX; sy = e.clientY; sl = wrap.scrollLeft; st = wrap.scrollTop;
@@ -366,16 +402,47 @@
     });
   })();
 
+  // ===== Zoom clicks (when tool = zoom)
+  // Left-click / tap: zoom in at pointer. Right-click or Alt: zoom out.
+  wrap.addEventListener('mousedown', (e)=>{
+    if (toolMode!=='zoom') return;
+    // ignore middle button
+    if (e.button===1) return;
+
+    const isZoomOut = (e.button===2) || e.altKey;
+    e.preventDefault();
+    setZoom(zoom * (isZoomOut ? 1/1.25 : 1.25), 'pointer', e.clientX, e.clientY);
+  });
+
+  // Double-click to zoom in; Shift+double-click to zoom out
+  wrap.addEventListener('dblclick', (e)=>{
+    if (toolMode!=='zoom') return;
+    e.preventDefault();
+    const isOut = e.shiftKey || e.altKey;
+    setZoom(zoom * (isOut ? 1/1.5 : 1.5), 'pointer', e.clientX, e.clientY);
+  });
+
+  // Use right-click for zoom-out in Zoom mode — prevent context menu
+  wrap.addEventListener('contextmenu', (e)=>{
+    if (toolMode==='zoom') e.preventDefault();
+  });
+
   // Zoom buttons
-  zoomInBtn.addEventListener('click', ()=> setZoom(zoom + 0.2, 'center'));
-  zoomOutBtn.addEventListener('click', ()=> setZoom(zoom - 0.2, 'center'));
+  zoomInBtn.addEventListener('click', ()=> setZoom(zoom + Z_STEP, 'center'));
+  zoomOutBtn.addEventListener('click', ()=> setZoom(zoom - Z_STEP, 'center'));
   zoomMeter.addEventListener('click', resetZoomToFit);
 
-  // Keyboard shortcuts (zoom)
+  // Keyboard shortcuts
   window.addEventListener('keydown', (e)=>{
+    // Tool quick toggles
+    if (!e.ctrlKey && !e.metaKey){
+      if (e.key==='p' || e.key==='P'){ setTool('pan'); }
+      if (e.key==='z' || e.key==='Z'){ setTool('zoom'); }
+    }
+    // Zooming
     if (e.ctrlKey || e.metaKey){
-      if (e.key === '+' || e.key === '=' ){ e.preventDefault(); setZoom(zoom + 0.2, 'center'); }
-      if (e.key === '-' ){ e.preventDefault(); setZoom(zoom - 0.2, 'center'); }
+      if (e.key === '+' || e.key === '=' ){ e.preventDefault(); setZoom(zoom + Z_STEP, 'center'); }
+      if (e.key === '-' ){ e.preventDefault(); setZoom(zoom - Z_STEP, 'center'); }
       if (e.key === '0' ){ e.preventDefault(); resetZoomToFit(); }
     }
   });
@@ -396,6 +463,10 @@
     }
   });
 
+  // Tool toggle wiring
+  toolPanBtn.addEventListener('click', ()=> setTool('pan'));
+  toolZoomBtn.addEventListener('click', ()=> setTool('zoom'));
+
   // Preload images
   MAPS.forEach(m => { const im = new Image(); im.src = m.url; });
 
@@ -406,6 +477,7 @@
   // Initial render
   renderGroups();
   if (flatFiltered.length) selectName(flatFiltered[0]);
+  setTool('pan'); // default tool
 </script>
 </body>
 </html>
