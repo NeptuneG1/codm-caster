@@ -175,10 +175,31 @@
     </div>
   </a>
 
+  <!-- Map Viewer (NEW) -->
+  <a class="card" href="https://neptuneg1.github.io/codm-caster/codm-mp-maps.html" aria-label="Open Map Viewer">
+    <div class="headrow">
+      <div class="icon" aria-hidden="true">
+        <!-- Folded map icon -->
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2V6z" stroke="#ffe93b" stroke-width="1.4" stroke-linejoin="round"/>
+          <path d="M9 4v14M15 6v14" stroke="#cfd6e6" stroke-width="1.2"/>
+          <circle cx="14.5" cy="10.5" r="1.6" fill="#cfd6e6"/>
+        </svg>
+      </div>
+      <div class="name">Map Viewer</div>
+    </div>
+    <div class="desc">Pan &amp; zoom map layouts grouped by mode with quick switching.</div>
+    <div class="chips">
+      <span class="chip">Pan &amp; Zoom</span>
+      <span class="chip">Layouts</span>
+      <span class="chip">HP / SND / CTRL</span>
+    </div>
+  </a>
+
 </section>
 
 <footer>
-  <div>Pro tip: hit <span class="kbd">1</span>, <span class="kbd">2</span>, <span class="kbd">3</span>, or <span class="kbd">4</span> to open a tile.</div>
+  <div>Pro tip: hit <span class="kbd">1</span>, <span class="kbd">2</span>, <span class="kbd">3</span>, <span class="kbd">4</span>, or <span class="kbd">5</span> to open a tile.</div>
 </footer>
 
 <script>
@@ -187,10 +208,11 @@
     'https://neptuneg1.github.io/codm-caster/codm-mp.html',        // 1
     'https://neptuneg1.github.io/codm-caster/mp-teamcomp.html',    // 2
     'https://neptuneg1.github.io/codm-caster/codm-br.html',        // 3
-    'https://neptuneg1.github.io/codm-caster/codm-split.html'      // 4
+    'https://neptuneg1.github.io/codm-caster/codm-split.html',     // 4
+    'https://neptuneg1.github.io/codm-caster/codm-mp-maps.html'    // 5
   ];
   addEventListener('keydown', (e)=>{
-    if (['1','2','3','4'].includes(e.key)){
+    if (['1','2','3','4','5'].includes(e.key)){
       const i = Number(e.key)-1;
       window.location.href = links[i];
     }
