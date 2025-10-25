@@ -176,6 +176,7 @@
           </div>
           <div>
             <h3>By Map</h3>
+            <!-- grouped + collapsible per mode -->
             <div id="mapTbl"></div>
           </div>
         </div>
@@ -196,15 +197,15 @@
       <summary>Per Mode standings (map-only)</summary>
       <div class="grid3" style="margin-top:8px">
         <div>
-          <h3>Hardpoint</h3>
+          <h3>HP</h3>
           <div id="stand_hp"></div>
         </div>
         <div>
-          <h3>Search &amp; Destroy</h3>
+          <h3>SND</h3>
           <div id="stand_snd"></div>
         </div>
         <div>
-          <h3>Control</h3>
+          <h3>CTRL</h3>
           <div id="stand_ctrl"></div>
         </div>
       </div>
@@ -263,7 +264,8 @@ const cleanWL = v => { const s = norm(v).toUpperCase(); return s==='W' || s==='L
 const pct = (a,b) => b ? (a/b) : 0;
 
 /* Mode normalization and ordering */
-const MODE_ORDER = ['Hardpoint','Search & Destroy','Control'];
+const MODE_ORDER = ['Hardpoint','Search & Destroy','Control']; // internal
+const MODE_SHORT = {'Hardpoint':'HP','Search & Destroy':'SND','Control':'CTRL'};
 function normalizeMode(m){
   const s = norm(m).toLowerCase();
   if (!s) return '';
@@ -271,6 +273,10 @@ function normalizeMode(m){
   if (s.includes('search') || s.includes('snd')) return 'Search & Destroy';
   if (s.includes('control')) return 'Control';
   return norm(m);
+}
+function shortMode(m){
+  const canon = normalizeMode(m);
+  return MODE_SHORT[canon] || canon || '—';
 }
 
 /* ===== Allowed maps and teams ===== */
@@ -331,6 +337,16 @@ function setOptions(sel, values, labelAll='All'){
   sel.value = (prev && (prev==='ALL' || values.includes(prev))) ? prev : 'ALL';
 }
 
+/* Special setter for Mode: value=canonical, text=short label */
+function setModeOptions(sel, values){
+  const prev = sel.value || 'ALL';
+  const present = new Set(values);
+  const ordered = MODE_ORDER.filter(m=>present.has(m));
+  sel.innerHTML = `<option value="ALL">All modes</option>` +
+    ordered.map(m=>`<option value="${m}">${shortMode(m)}</option>`).join('');
+  sel.value = (prev && (prev==='ALL' || ordered.includes(prev))) ? prev : 'ALL';
+}
+
 /* build display list of allowed teams present in data (preserve casing seen in data) */
 function listAllowedTeamsPresent(){
   const present = new Map(); // lower -> original casing
@@ -350,7 +366,7 @@ function populateDropdowns(){
   setOptions(el('fTeam'), allowedTeamList,  'All teams');
   setOptions(el('fOpp'),  allowedTeamList,  'All opponents');
 
-  setOptions(el('fMode'),  Array.from(new Set(ALL.map(r=>r.ModeN).filter(Boolean))), 'All modes');
+  setModeOptions(el('fMode'), Array.from(new Set(ALL.map(r=>r.ModeN).filter(Boolean))));
   // only allowed maps present in ALL
   setOptions(el('fMap'),   Array.from(new Set(ALL.map(r=>r.Map).filter(m=>isAllowedMap(m)))),  'All maps');
   setOptions(el('fStage'), distinct(ALL,'Stage'),'All stages');
@@ -367,7 +383,6 @@ function seriesKeyNeutral(r){
 }
 
 /* ===== Build merged map-level entries (for correct series math) ===== */
-// UPDATED: include ownScore / oppScore so we can display per-map scores
 function buildGameEntries(rows){
   const valid = rows.filter(r=> cleanWL(r['W/L']) );
   const g = groupBy(valid, r=> `${seriesKeyNeutral(r)}|${n(r.MATCHES)}|${norm(r.Map)}|${norm(r.ModeN)}`);
@@ -462,7 +477,6 @@ function applyFilters(){
 }
 
 /* ===== Apply current filters to GAME_ENTRIES for standings ===== */
-/* Note: we intentionally ignore WL for series math integrity. */
 function filteredEntriesForStandings(){
   const F = {
     tourn:el('fTourn').value,
@@ -472,7 +486,6 @@ function filteredEntriesForStandings(){
     map:  el('fMap').value,
     stage:el('fStage').value,
     day:  el('fDay').value,
-    // fWL, fSearch intentionally not applied here
   };
   let E = GAME_ENTRIES.slice();
 
@@ -562,7 +575,7 @@ function byMap(rows){
   }).sort((a,b)=> b.winrate-a.winrate || b.games-a.games);
 }
 
-/* ===== Render compact tables (clickable support) ===== */
+/* ===== Render compact tables ===== */
 function renderTable(hostId, rows, cols, empty='No rows.', opts={}){
   const host = el(hostId);
   if (!rows.length){ host.innerHTML = `<div class="muted">${empty}</div>`; return; }
@@ -580,6 +593,19 @@ function renderTable(hostId, rows, cols, empty='No rows.', opts={}){
       tr.addEventListener('click', ()=> opts.onRowClick(rows[i]));
     });
   }
+}
+/* Small helper to build a table as HTML string (for grouped collapsibles) */
+function tableHTML(rows, cols){
+  if (!rows.length) return `<div class="muted">—</div>`;
+  const thead = `<thead><tr>${cols.map(c=>`<th class="${c.right?'right':''}">${c.label}</th>`).join('')}</tr></thead>`;
+  const body = rows.map(r=>`<tr>${
+    cols.map(c=>{
+      let v = r[c.key];
+      if (c.format==='pct') v = (typeof v==='number') ? (v*100).toFixed(1)+'%' : '—';
+      return `<td class="${c.right?'right':''}">${v ?? '—'}</td>`;
+    }).join('')
+  }</tr>`).join('');
+  return `<table class="table"><thead>${thead}</thead><tbody>${body}</tbody></table>`;
 }
 
 /* ===== Series viewer ===== */
@@ -621,7 +647,7 @@ function renderSeriesCard(neutralKey){
   const body = lines.map(l=>{
     const aWin = l.aScore>l.bScore;
     const left  = `<div class="side side-left ${aWin?'':'dim'}"><span class="${aWin?'tick':'cross'}"></span><div class="scoreL">${l.aScore}</div></div>`;
-    const mid   = `<div class="mode-stack"><span class="mode-pill">${l.mode||'—'}</span><div class="map-title">${l.map||'—'}</div></div>`;
+    const mid   = `<div class="mode-stack"><span class="mode-pill">${shortMode(l.mode)||'—'}</span><div class="map-title">${l.map||'—'}</div></div>`;
     const right = `<div class="side side-right ${aWin?'dim':''}"><div class="scoreR">${l.bScore}</div><span class="${aWin?'cross':'tick'}"></span></div>`;
     return `<div class="map-row">${left}${mid}${right}</div>`;
   }).join('');
@@ -679,7 +705,6 @@ function scrollToMatches(){
   const box = el('teamMatchesBox');
   if (box) { box.open = true; box.scrollIntoView({behavior:'smooth', block:'start'}); }
 }
-// UPDATED: add a Score column (ownScore–oppScore)
 function renderTeamMatchesPanel(team, modeFilter=null){
   const host = el('teamMatches');
   const title = el('teamMatchesTitle');
@@ -702,7 +727,7 @@ function renderTeamMatchesPanel(team, modeFilter=null){
     (Number(a[0].seriesNo)||0) - (Number(b[0].seriesNo)||0)
   );
 
-  title.textContent = `Team matches — ${team} ${modeFilter? '('+modeFilter+')':''} • ${seriesList.length} series`;
+  title.textContent = `Team matches — ${team} ${modeFilter? '('+shortMode(modeFilter)+')':''} • ${seriesList.length} series`;
 
   host.innerHTML = seriesList.map(list=>{
     const s = list[0];
@@ -713,7 +738,7 @@ function renderTeamMatchesPanel(team, modeFilter=null){
     const mapRows = list.slice().sort((x,y)=>(x.mapIdx||0)-(y.mapIdx||0))
       .map(m=>`<tr>
           <td class="right" style="width:36px">${m.mapIdx ?? ''}</td>
-          <td>${m.mode}</td>
+          <td>${shortMode(m.mode)}</td>
           <td>${m.map}</td>
           <td class="right">${(m.ownScore ?? '')}–${(m.oppScore ?? '')}</td>
           <td class="right">${m.win? 'W':'L'}</td>
@@ -827,6 +852,43 @@ function renderOpponents(){
   ], '—');
 }
 
+/* Grouped “By Map” (collapsible per mode) */
+function renderByMapGrouped(rows){
+  const byModeObj = groupBy(rows, r=>r.ModeN || '—');
+  const host = el('mapTbl');
+
+  const cols = [
+    {label:'Map',key:'map'},
+    {label:'G',key:'games',right:true},
+    {label:'W',key:'wins',right:true},
+    {label:'L',key:'losses',right:true},
+    {label:'Win %',key:'winrate',format:'pct',right:true},
+  ];
+
+  function mapsFor(list){
+    const g = groupBy(list, r=>norm(r.Map)||'—');
+    return Object.entries(g).map(([map,ll])=>{
+      const qs = quickStats(ll);
+      return { map, games:qs.games, wins:qs.wins, losses:qs.losses, winrate:qs.winrate };
+    }).sort((a,b)=> b.winrate-a.winrate || b.games-a.games);
+  }
+
+  const html = MODE_ORDER.map(m=>{
+    const list = byModeObj[m] || [];
+    const rowsM = mapsFor(list);
+    if (!rowsM.length) return '';
+    return `
+      <details class="fold" open>
+        <summary><strong>${shortMode(m)}</strong></summary>
+        <div class="compact" style="margin-top:8px">
+          ${tableHTML(rowsM, cols)}
+        </div>
+      </details>`;
+  }).join('');
+
+  host.innerHTML = html || `<div class="muted">—</div>`;
+}
+
 function renderMatrix(){
   const rowsSrc = SCOPE.filter(r => ALLOWED_TAGS.has(key(r.Tag)));
   const byMapAll = (function(rows){
@@ -849,7 +911,7 @@ function renderMatrix(){
   });
 
   const rows = MODE_ORDER.map(m=>{
-    const row = { mode:m };
+    const row = { mode: shortMode(m) };
     topMaps.forEach(mp=>{
       const cell = byModeMap[m][mp] || {games:0,wins:0};
       row[mp] = cell.games ? `${(cell.wins/cell.games*100).toFixed(1)}% (${cell.games})` : '—';
@@ -863,14 +925,18 @@ function renderMatrix(){
 
 /* ===== Rows viewer ===== */
 function renderRows(){
+  const rowsShort = SCOPE.map(r=>({
+    ...r,
+    ModeS: shortMode(r.ModeN)
+  }));
   const cols = [
     {label:'ID',key:'id'}, {label:'Tournament',key:'Tournament'},
     {label:'Team',key:'Tag'}, {label:'Opponent',key:'Vs Opponent'},
     {label:'Stage',key:'Stage'}, {label:'Day',key:'Day'}, {label:'Series',key:'Series'},
-    {label:'Mode',key:'ModeN'}, {label:'Map',key:'Map'}, {label:'W/L',key:'W/L'},
+    {label:'Mode',key:'ModeS'}, {label:'Map',key:'Map'}, {label:'W/L',key:'W/L'},
     {label:'Score',key:'Score',right:true}, {label:'Opp',key:'Opp Score',right:true},
   ];
-  renderTable('rowsTbl', SCOPE, cols, 'No rows in scope.');
+  renderTable('rowsTbl', rowsShort, cols, 'No rows in scope.');
 }
 
 /* ===== Main render ===== */
@@ -888,29 +954,24 @@ function renderAll(){
     return {games,wins:w,losses:l,winrate:games?(w/games):0,ptsFor,ptsAg,diff:ptsFor-ptsAg};
   })(QA_ROWS);
 
+  /* Quick Analytics — removed Pts For / Pts Ag / Diff */
   renderTable('quickTbl', [{
-    games:q.games, wins:q.wins, losses:q.losses, winrate:q.winrate, points_for:q.ptsFor, points_against:q.ptsAg, diff:q.diff
+    games:q.games, wins:q.wins, losses:q.losses, winrate:q.winrate
   }], [
     {label:'Games',key:'games',right:true},
     {label:'Wins',key:'wins',right:true},
     {label:'Losses',key:'losses',right:true},
     {label:'Win %',key:'winrate',format:'pct',right:true},
-    {label:'Pts For',key:'points_for',right:true},
-    {label:'Pts Ag',key:'points_against',right:true},
-    {label:'Diff',key:'diff',right:true},
   ]);
 
-  const modes = byMode(QA_ROWS).map(r=>({mode:r.mode, games:r.games, wins:r.wins, losses:r.losses, winrate:r.winrate}));
+  const modes = byMode(QA_ROWS).map(r=>({mode:shortMode(r.mode), games:r.games, wins:r.wins, losses:r.losses, winrate:r.winrate}));
   renderTable('modeTbl', modes, [
     {label:'Mode',key:'mode'}, {label:'G',key:'games',right:true},
     {label:'W',key:'wins',right:true}, {label:'L',key:'losses',right:true}, {label:'Win %',key:'winrate',format:'pct',right:true}
   ], '—');
 
-  const maps = byMap(QA_ROWS).map(r=>({map:r.map, games:r.games, wins:r.wins, losses:r.losses, winrate:r.winrate}));
-  renderTable('mapTbl', maps, [
-    {label:'Map',key:'map'}, {label:'G',key:'games',right:true},
-    {label:'W',key:'wins',right:true}, {label:'L',key:'losses',right:true}, {label:'Win %',key:'winrate',format:'pct',right:true}
-  ], '—');
+  /* Grouped “By Map” per mode with collapsibles */
+  renderByMapGrouped(QA_ROWS);
 
   renderStandings();
   renderRows();
@@ -937,6 +998,7 @@ el('fSeries').addEventListener('change', (e)=> renderSeriesCard(e.target.value))
 
   // normalize + hard filter:
   // - include row if EITHER side is in player_list.Tag
+  
   // - maps limited to ALLOWED_MAPS
   ALL = raw.map(r=>({
       ...r,
