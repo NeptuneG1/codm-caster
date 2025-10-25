@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>COD:M — Map Layouts</title>
+<title>COD:M — Map Layouts (Pan & Zoom)</title>
 
 <style>
   :root{
@@ -36,7 +36,6 @@
       "viewer"
       "maps";
   }
-  
   /* ≥ 768px: maps left, viewer right */
   @media (min-width:768px){
     .grid{
@@ -44,8 +43,6 @@
       grid-template-areas:"maps viewer";
     }
   }
-  
-  /* Areas */
   .panel{ grid-area: maps; }
   .viewer{ grid-area: viewer; }
 
@@ -73,7 +70,6 @@
   @media (max-width: 600px){
     .map-list{ grid-template-columns: repeat(2, minmax(120px, 1fr)); }
   }
-
   .map-btn{
     background:#0f1524;border:1px solid var(--line);color:#dfe7f5;border-radius:12px;
     padding:10px 10px; text-align:center; cursor:pointer; user-select:none;
@@ -90,27 +86,29 @@
   .viewer-tools .btn{padding:6px 10px}
   .viewer-tools .meter{min-width:52px;text-align:center;font-variant-numeric:tabular-nums}
 
-  /* Tool toggle (Pan / Zoom) */
-  .seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
-  .seg button{
-    background:#161b28;color:#e5ecfa;border:0;padding:6px 10px;cursor:pointer;
-  }
-  .seg button+button{border-left:1px solid var(--line)}
-  .seg button[aria-pressed="true"]{background:#23304a;color:#fff;box-shadow:inset 0 0 0 1px #3e4b65}
-
+  /* Pan+Zoom Stage */
   .img-wrap{
-    width:100%;height:72vh;min-height:360px;background:#0a0e18;border:1px solid var(--line);
-    border-radius:12px;display:flex;align-items:flex-start;justify-content:center; /* TOP aligned, horizontally centered */
-    overflow:auto;
+    position:relative;
+    width:100%;
+    height:72vh;               /* responsive viewer height */
+    min-height:360px;
+    background:#0a0e18;
+    border:1px solid var(--line);
+    border-radius:12px;
+    overflow:hidden;           /* ensure whole image visible at default, no scrollbars */
+    touch-action:none;         /* allow custom pinch/drag gestures */
+    user-select:none;
   }
-  /* cursors switch per mode */
-  .img-wrap.mode-pan{cursor:grab}
-  .img-wrap.mode-pan.grabbing{cursor:grabbing}
-  .img-wrap.mode-zoom{cursor:zoom-in}
-  .img-wrap.mode-zoom.alt{cursor:zoom-out}
-
-  .zoom-stage{display:inline-block;width:auto;height:auto;}
-  .zoom-stage img{width:100%;height:100%;object-fit:contain;display:block}
+  #stage{
+    position:absolute;         /* we position it via left/top offsets */
+    will-change:transform,width,height;
+  }
+  #stage img{
+    width:100%; height:100%;   /* image fills the stage rectangle */
+    object-fit:contain;        /* preserves aspect ratio */
+    display:block;
+    pointer-events:none;       /* so dragging grabs the stage */
+  }
 
   .muted{color:var(--muted)}
 </style>
@@ -144,29 +142,18 @@
       <div class="viewer-head">
         <div class="viewer-title" id="title">Select a map</div>
         <div class="viewer-tools">
-          <!-- Pan / Zoom toggle -->
-          <div class="seg" role="group" aria-label="Tool">
-            <button id="toolPan"  aria-pressed="true"  title="Pan tool (P)">Pan</button>
-            <button id="toolZoom" aria-pressed="false" title="Zoom tool (Z). Alt/Right-click = zoom out">Zoom</button>
-          </div>
-
-          <!-- Zoom controls -->
           <button class="btn secondary" id="zoomOut" title="Zoom out (Ctrl/⌘ -)">−</button>
-          <button class="btn secondary meter" id="zoomMeter" title="Reset zoom (Ctrl/⌘ 0)">100%</button>
+          <button class="btn secondary meter" id="zoomMeter" title="Reset view (Ctrl/⌘ 0)">100%</button>
           <button class="btn secondary" id="zoomIn" title="Zoom in (Ctrl/⌘ +)">+</button>
-
           <a id="openLink" class="btn secondary" href="#" target="_blank" rel="noopener">Open</a>
           <a id="downloadLink" class="btn" href="#" download>Download</a>
         </div>
       </div>
-      <div class="img-wrap mode-pan" id="wrap">
-        <div id="stage" class="zoom-stage">
-          <img id="img" alt="Map layout preview" />
-        </div>
+      <div class="img-wrap" id="wrap">
+        <div id="stage"><img id="img" alt="Map layout preview" /></div>
       </div>
       <p class="muted" style="margin-top:10px">
-        Default view shows the map from <b>top</b>. Use the <b>Pan</b> or <b>Zoom</b> tools:
-        <br>• <b>Pan</b>: drag to move. &nbsp;• <b>Zoom</b>: click to zoom in, <b>Alt</b>/<b>Right-click</b> to zoom out. &nbsp;• Ctrl/⌘ + scroll also zooms.
+        Default shows the entire image (no scroll). Drag to <b>pan</b> when zoomed. Use <b>+</b>/<b>−</b>, Ctrl/⌘ + scroll, or pinch to <b>zoom</b>.
       </p>
     </section>
   </div>
@@ -214,44 +201,228 @@
   const zoomInBtn  = document.getElementById('zoomIn');
   const zoomMeter  = document.getElementById('zoomMeter');
 
-  const toolPanBtn  = document.getElementById('toolPan');
-  const toolZoomBtn = document.getElementById('toolZoom');
+  let flatFiltered = []; // visible ordered map names
+  let activeName = '';   // current selection
 
-  let flatFiltered = []; // flattened ordered list of visible map names
-  let activeName = '';   // currently selected map name
+  // --- Pan & Zoom state ---
+  let naturalW = 0, naturalH = 0;   // image intrinsic dimensions
+  let baseScale = 1;                // scale to fit (default view)
+  let zoom = 1;                     // user zoom multiplier (>=1)
+  let offsetX = 0, offsetY = 0;     // stage offsets (px) relative to wrap
+  const Z_MIN = 1, Z_MAX = 6, Z_STEP = 0.2;
 
-  // Tool mode: 'pan' | 'zoom'
-  let toolMode = 'pan';
+  const clamp = (v,a,b)=> Math.min(Math.max(v,a),b);
+  const effScale = ()=> baseScale * zoom;
 
-  // Zoom state
-  let baseW = 0, baseH = 0;  // fitted size at 100% (default placement)
-  let zoom = 1;
-  const Z_MIN = 1;
-  const Z_MAX = 6;
-  const Z_STEP = 0.2;
+  function updateZoomMeter(){ zoomMeter.textContent = Math.round(effScale()/baseScale*100) + '%'; }
 
-  function clamp(v, a, b){ return Math.min(Math.max(v, a), b); }
-
-  function setTool(mode){
-    toolMode = mode;
-    toolPanBtn.setAttribute('aria-pressed', mode==='pan');
-    toolZoomBtn.setAttribute('aria-pressed', mode==='zoom');
-    wrap.classList.toggle('mode-pan',  mode==='pan');
-    wrap.classList.toggle('mode-zoom', mode==='zoom');
+  function setStage(){
+    const s = effScale();
+    const w = naturalW * s, h = naturalH * s;
+    stage.style.width  = w + 'px';
+    stage.style.height = h + 'px';
+    stage.style.transform = `translate(${offsetX}px, ${offsetY}px)`;
   }
 
-  // Cursor update for zoom-out hint when Alt is held
-  document.addEventListener('keydown', (e)=>{
-    if (toolMode==='zoom' && (e.key==='Alt')) wrap.classList.add('alt');
-  });
-  document.addEventListener('keyup', (e)=>{
-    if (e.key==='Alt') wrap.classList.remove('alt');
+  function centerStage(){
+    const s = effScale();
+    const w = naturalW * s, h = naturalH * s;
+    offsetX = Math.round((wrap.clientWidth  - w)/2);
+    offsetY = Math.round((wrap.clientHeight - h)/2);
+  }
+
+  function clampOffsets(){
+    const s = effScale();
+    const w = naturalW * s, h = naturalH * s;
+
+    // If content smaller than container, keep centered (no panning)
+    if (w <= wrap.clientWidth){
+      offsetX = Math.round((wrap.clientWidth - w)/2);
+    } else {
+      const minX = wrap.clientWidth - w, maxX = 0;
+      offsetX = clamp(offsetX, minX, maxX);
+    }
+    if (h <= wrap.clientHeight){
+      offsetY = Math.round((wrap.clientHeight - h)/2);
+    } else {
+      const minY = wrap.clientHeight - h, maxY = 0;
+      offsetY = clamp(offsetY, minY, maxY);
+    }
+  }
+
+  function fitToView(){
+    if (!naturalW || !naturalH) return;
+    baseScale = Math.min(
+      wrap.clientWidth  / naturalW,
+      wrap.clientHeight / naturalH
+    );
+    zoom = 1;                // default view
+    centerStage();           // fully visible, centered
+    setStage();
+    updateZoomMeter();
+  }
+
+  function zoomAtFactor(factor, anchorX, anchorY){
+    const prevS = effScale();
+    const cx = (anchorX - offsetX) / prevS;
+    const cy = (anchorY - offsetY) / prevS;
+
+    zoom = clamp(zoom * factor, Z_MIN, Z_MAX);
+
+    const nextS = effScale();
+    offsetX = anchorX - cx * nextS;
+    offsetY = anchorY - cy * nextS;
+
+    clampOffsets();
+    setStage();
+    updateZoomMeter();
+  }
+
+  function zoomStep(dir, anchorX = wrap.clientWidth/2, anchorY = wrap.clientHeight/2){
+    const factor = dir > 0 ? (1+Z_STEP) : 1/(1+Z_STEP);
+    zoomAtFactor(factor, anchorX, anchorY);
+  }
+
+  // Refit on resize while preserving visual center/zoom
+  function handleResize(){
+    if (!naturalW || !naturalH) return;
+    const prevS = effScale();
+    const centerX = wrap.clientWidth/2, centerY = wrap.clientHeight/2;
+    const cx = (centerX - offsetX) / prevS;
+    const cy = (centerY - offsetY) / prevS;
+
+    // recompute base to fit new container
+    baseScale = Math.min(
+      wrap.clientWidth  / naturalW,
+      wrap.clientHeight / naturalH
+    );
+    // keep the *effective* scale as close as possible (zoom becomes prevS/base)
+    zoom = clamp(prevS / baseScale, Z_MIN, Z_MAX);
+
+    const nextS = effScale();
+    offsetX = centerX - cx * nextS;
+    offsetY = centerY - cy * nextS;
+
+    clampOffsets();
+    setStage();
+    updateZoomMeter();
+  }
+  window.addEventListener('resize', ()=> requestAnimationFrame(handleResize));
+
+  // --- Panning (mouse / touch one-finger) ---
+  (function panGesture(){
+    let dragging = false, sx=0, sy=0, ox=0, oy=0;
+
+    const start = (x,y)=>{
+      dragging = true; sx=x; sy=y; ox=offsetX; oy=offsetY;
+    };
+    const move = (x,y)=>{
+      if (!dragging) return;
+      offsetX = ox + (x - sx);
+      offsetY = oy + (y - sy);
+      clampOffsets();
+      setStage();
+    };
+    const end = ()=> { dragging = false; };
+
+    // Mouse
+    wrap.addEventListener('mousedown', (e)=>{
+      // allow panning even at zoom=1 (no movement will occur due to clamp)
+      if (e.button!==0) return;
+      e.preventDefault(); start(e.clientX, e.clientY);
+    });
+    window.addEventListener('mousemove', (e)=> move(e.clientX, e.clientY));
+    window.addEventListener('mouseup', end);
+
+    // Touch (one finger)
+    let touchId = null;
+    wrap.addEventListener('touchstart', (e)=>{
+      if (e.touches.length===1){
+        const t = e.touches[0]; touchId = t.identifier; start(t.clientX, t.clientY);
+      }
+    }, {passive:true});
+    wrap.addEventListener('touchmove', (e)=>{
+      if (touchId==null) return;
+      const t = [...e.touches].find(t=>t.identifier===touchId);
+      if (t) move(t.clientX, t.clientY);
+    }, {passive:true});
+    wrap.addEventListener('touchend', ()=>{ touchId=null; end(); }, {passive:true});
+    wrap.addEventListener('touchcancel', ()=>{ touchId=null; end(); }, {passive:true});
+  })();
+
+  // --- Pinch Zoom (two fingers) ---
+  (function pinchZoom(){
+    let p1=null, p2=null;
+
+    function dist(a,b){ const dx=a.clientX-b.clientX, dy=a.clientY-b.clientY; return Math.hypot(dx,dy); }
+    function mid(a,b){ return {x:(a.clientX+b.clientX)/2, y:(a.clientY+b.clientY)/2}; }
+
+    wrap.addEventListener('touchstart', (e)=>{
+      if (e.touches.length===2){
+        p1 = e.touches[0]; p2 = e.touches[1];
+        // store initial pinch state
+        wrap.dataset.pinchD = dist(p1,p2);
+        const m = mid(p1,p2);
+        wrap.dataset.pinchX = m.x; wrap.dataset.pinchY = m.y;
+      }
+    }, {passive:true});
+
+    wrap.addEventListener('touchmove', (e)=>{
+      if (e.touches.length!==2 || p1==null || p2==null) return;
+      const n1 = e.touches[0], n2 = e.touches[1];
+      const d0 = parseFloat(wrap.dataset.pinchD || '0') || 0;
+      if (!d0) return;
+      const d1 = dist(n1,n2);
+      const m = mid(n1,n2);
+      const ax = parseFloat(wrap.dataset.pinchX || m.x);
+      const ay = parseFloat(wrap.dataset.pinchY || m.y);
+      const factor = d1 / d0;
+      // apply *relative* factor but also update the baseline so continuous pinch feels natural
+      zoomAtFactor(factor, ax, ay);
+      // reset baseline for smooth incremental scaling
+      wrap.dataset.pinchD = d1;
+      wrap.dataset.pinchX = m.x; wrap.dataset.pinchY = m.y;
+    }, {passive:true});
+
+    wrap.addEventListener('touchend', ()=>{
+      p1=p2=null;
+      delete wrap.dataset.pinchD;
+      delete wrap.dataset.pinchX;
+      delete wrap.dataset.pinchY;
+    }, {passive:true});
+    wrap.addEventListener('touchcancel', ()=>{
+      p1=p2=null;
+      delete wrap.dataset.pinchD;
+      delete wrap.dataset.pinchX;
+      delete wrap.dataset.pinchY;
+    }, {passive:true});
+  })();
+
+  // Wheel zoom (Ctrl/⌘ + wheel keeps page scroll normal; pinch on trackpads maps to this too)
+  wrap.addEventListener('wheel', (e)=>{
+    if (e.ctrlKey || e.metaKey){
+      e.preventDefault();
+      const factor = e.deltaY < 0 ? 1.1 : 1/1.1;
+      zoomAtFactor(factor, e.clientX, e.clientY);
+    }
+  }, {passive:false});
+
+  // Buttons + keyboard zoom
+  zoomInBtn.addEventListener('click', ()=> zoomStep(+1));
+  zoomOutBtn.addEventListener('click',()=> zoomStep(-1));
+  zoomMeter.addEventListener('click', ()=> fitToView());
+  window.addEventListener('keydown', (e)=>{
+    if (e.ctrlKey || e.metaKey){
+      if (e.key==='+' || e.key==='='){ e.preventDefault(); zoomStep(+1); }
+      if (e.key==='-'){ e.preventDefault(); zoomStep(-1); }
+      if (e.key==='0'){ e.preventDefault(); fitToView(); }
+    }
   });
 
+  // --- Map list rendering ---
   function findGlobalMap(name){
     return MAPS.find(m => m.name.toLowerCase() === name.toLowerCase());
   }
-
   function renderGroups(){
     const term = (q.value||'').trim().toLowerCase();
     flatFiltered = [];
@@ -293,10 +464,15 @@
     countNote.textContent = `${flatFiltered.length} of ${total} maps`;
 
     applyActiveStyle();
-
     if (flatFiltered.length && !flatFiltered.includes(activeName)){
       selectName(flatFiltered[0]);
     }
+  }
+
+  function applyActiveStyle(){
+    groupsEl.querySelectorAll('.map-btn').forEach(btn=>{
+      btn.classList.toggle('active', btn.dataset.name === activeName);
+    });
   }
 
   function selectName(name){
@@ -306,151 +482,25 @@
     titleEl.textContent = m.name;
     imgEl.src = m.url;
     imgEl.alt = `${m.name} map layout`;
-    if (openLink) openLink.href = m.url;
-    dlLink.href = m.url;
+    openLink.href = m.url;
+    downloadLink.href = m.url;
     applyActiveStyle();
   }
 
-  function applyActiveStyle(){
-    groupsEl.querySelectorAll('.map-btn').forEach(btn=>{
-      btn.classList.toggle('active', btn.dataset.name === activeName);
-    });
-  }
-
-  /* === Zoom mechanics === */
-  function setZoom(nextZoom, anchor = 'center', clientX = null, clientY = null){
-    const prev = zoom;
-    zoom = clamp(nextZoom, Z_MIN, Z_MAX);
-    if (!baseW || !baseH) return;
-
-    // anchor (in viewer coords)
-    const wrapRect = wrap.getBoundingClientRect();
-    const ax = (anchor === 'pointer' && clientX != null) ? (clientX - wrapRect.left) : wrap.clientWidth/2;
-    const ay = (anchor === 'pointer' && clientY != null) ? (clientY - wrapRect.top)  : wrap.clientHeight/2;
-
-    const contentX = wrap.scrollLeft + ax;
-    const contentY = wrap.scrollTop  + ay;
-
-    // resize the stage so scrollbars reflect size
-    stage.style.width  = (baseW * zoom) + 'px';
-    stage.style.height = (baseH * zoom) + 'px';
-
-    // keep same anchor under cursor/center
-    const scale = zoom / prev;
-    wrap.scrollLeft = (contentX * scale) - ax;
-    wrap.scrollTop  = (contentY * scale) - ay;
-
-    zoomMeter.textContent = Math.round(zoom * 100) + '%';
-  }
-
-  function resetZoomToFit(){
-    // allow natural fit first
-    stage.style.width = stage.style.height = '';
-    imgEl.style.width = imgEl.style.height = '';
-    imgEl.style.maxWidth = '100%';
-    imgEl.style.maxHeight = '100%';
-
+  // When image loads, capture intrinsic size then fit to view
+  imgEl.addEventListener('load', ()=>{
+    // Sometimes naturalWidth/Height may be 0 at first layout — retry on next frame
     requestAnimationFrame(()=>{
-      const r = imgEl.getBoundingClientRect();
-      baseW = r.width;
-      baseH = r.height;
-
-      stage.style.width  = baseW + 'px';
-      stage.style.height = baseH + 'px';
-      imgEl.style.width  = '100%';
-      imgEl.style.height = '100%';
-
-      zoom = 1;
-      zoomMeter.textContent = '100%';
-
-      // Default view: TOP aligned, horizontally centered
-      wrap.scrollTop  = 0;
-      wrap.scrollLeft = Math.max(0, (stage.scrollWidth - wrap.clientWidth)/2);
+      naturalW = imgEl.naturalWidth || imgEl.width;
+      naturalH = imgEl.naturalHeight || imgEl.height;
+      fitToView();
     });
-  }
-
-  // image load => compute base fit size and reset zoom
-  imgEl.addEventListener('load', resetZoomToFit);
-
-  // Wheel zoom (Ctrl/⌘ + wheel)
-  wrap.addEventListener('wheel', (e)=>{
-    if (e.ctrlKey || e.metaKey){
-      e.preventDefault();
-      const k = e.deltaY < 0 ? 1.1 : (1/1.1);
-      setZoom(zoom * k, 'pointer', e.clientX, e.clientY);
-    }
-  }, {passive:false});
-
-  // ===== Pan (when tool = pan)
-  (function enablePanning(){
-    let dragging = false, sx=0, sy=0, sl=0, st=0;
-    wrap.addEventListener('mousedown', (e)=>{
-      if (toolMode!=='pan' || e.button!==0) return;
-      dragging = true;
-      wrap.classList.add('grabbing');
-      sx = e.clientX; sy = e.clientY; sl = wrap.scrollLeft; st = wrap.scrollTop;
-      e.preventDefault();
-    });
-    window.addEventListener('mousemove', (e)=>{
-      if (!dragging) return;
-      wrap.scrollLeft = sl - (e.clientX - sx);
-      wrap.scrollTop  = st - (e.clientY - sy);
-    });
-    window.addEventListener('mouseup', ()=>{
-      dragging = false;
-      wrap.classList.remove('grabbing');
-    });
-  })();
-
-  // ===== Zoom clicks (when tool = zoom)
-  // Left-click / tap: zoom in at pointer. Right-click or Alt: zoom out.
-  wrap.addEventListener('mousedown', (e)=>{
-    if (toolMode!=='zoom') return;
-    // ignore middle button
-    if (e.button===1) return;
-
-    const isZoomOut = (e.button===2) || e.altKey;
-    e.preventDefault();
-    setZoom(zoom * (isZoomOut ? 1/1.25 : 1.25), 'pointer', e.clientX, e.clientY);
   });
 
-  // Double-click to zoom in; Shift+double-click to zoom out
-  wrap.addEventListener('dblclick', (e)=>{
-    if (toolMode!=='zoom') return;
-    e.preventDefault();
-    const isOut = e.shiftKey || e.altKey;
-    setZoom(zoom * (isOut ? 1/1.5 : 1.5), 'pointer', e.clientX, e.clientY);
-  });
-
-  // Use right-click for zoom-out in Zoom mode — prevent context menu
-  wrap.addEventListener('contextmenu', (e)=>{
-    if (toolMode==='zoom') e.preventDefault();
-  });
-
-  // Zoom buttons
-  zoomInBtn.addEventListener('click', ()=> setZoom(zoom + Z_STEP, 'center'));
-  zoomOutBtn.addEventListener('click', ()=> setZoom(zoom - Z_STEP, 'center'));
-  zoomMeter.addEventListener('click', resetZoomToFit);
-
-  // Keyboard shortcuts
-  window.addEventListener('keydown', (e)=>{
-    // Tool quick toggles
-    if (!e.ctrlKey && !e.metaKey){
-      if (e.key==='p' || e.key==='P'){ setTool('pan'); }
-      if (e.key==='z' || e.key==='Z'){ setTool('zoom'); }
-    }
-    // Zooming
-    if (e.ctrlKey || e.metaKey){
-      if (e.key === '+' || e.key === '=' ){ e.preventDefault(); setZoom(zoom + Z_STEP, 'center'); }
-      if (e.key === '-' ){ e.preventDefault(); setZoom(zoom - Z_STEP, 'center'); }
-      if (e.key === '0' ){ e.preventDefault(); resetZoomToFit(); }
-    }
-  });
-
-  // Keyboard navigation across the flattened filtered order
+  // Keyboard navigation across filtered order
   window.addEventListener('keydown', (e)=>{
     if (!flatFiltered.length) return;
-    if (e.ctrlKey || e.metaKey) return; // let zoom shortcuts handle above
+    if (e.ctrlKey || e.metaKey) return; // let zoom shortcuts handle
     const idx = flatFiltered.indexOf(activeName);
     if (['ArrowDown','ArrowRight'].includes(e.key)){
       e.preventDefault();
@@ -463,11 +513,7 @@
     }
   });
 
-  // Tool toggle wiring
-  toolPanBtn.addEventListener('click', ()=> setTool('pan'));
-  toolZoomBtn.addEventListener('click', ()=> setTool('zoom'));
-
-  // Preload images
+  // Preload (best-effort)
   MAPS.forEach(m => { const im = new Image(); im.src = m.url; });
 
   // Search wiring
@@ -477,7 +523,6 @@
   // Initial render
   renderGroups();
   if (flatFiltered.length) selectName(flatFiltered[0]);
-  setTool('pan'); // default tool
 </script>
 </body>
 </html>
