@@ -36,7 +36,7 @@
   /* Comparison — never stack, even on mobile */
   .cmp-grid{
     display:grid;
-    grid-template-columns:repeat(2, minmax(280px, 1fr)) !important; /* force two columns */
+    grid-template-columns:repeat(2, minmax(280px, 1fr)) !important;
     gap:12px;
     overflow-x:auto;
     -webkit-overflow-scrolling:touch;
@@ -186,7 +186,11 @@ function shortMode(m){
 }
 
 /* ===== Allowed maps/teams ===== */
-const ALLOWED_MAPS = new Set(['Summit','Hacienda','Apocalypse','Slums','Combine','Tunisia','Firing Range','Kurohana Metropolis','Standoff','Coastal','Raid','Takeoff','Crossfire','Arsenal'].map(key));
+const ALLOWED_MAP_NAMES = [
+  'Apocalypse','Arsenal','Coastal','Combine','Crossfire','Firing Range',
+  'Hacienda','Kurohana Metropolis','Raid','Slums','Standoff','Summit','Takeoff','Tunisia'
+];
+const ALLOWED_MAPS = new Set(ALLOWED_MAP_NAMES.map(key));
 let ALLOWED_TAGS = new Set();
 function isAllowedMap(m){ return ALLOWED_MAPS.has(key(m)); }
 function isAllowedTeam(t){ return !ALLOWED_TAGS.size ? true : ALLOWED_TAGS.has(key(t)); }
@@ -309,15 +313,7 @@ function renderTeamMode(hostId, rows){
   ], '—');
 }
 
-/* By Map base util */
-function byMap(rows){
-  const g = groupBy(rows, r=>norm(r.Map)||'—');
-  return Object.entries(g).map(([map,list])=>{
-    const qs = quickStats(list);
-    return { map, games:qs.games, wins:qs.wins, losses:qs.losses, winrate:qs.winrate };
-  }).sort((a,b)=> (b.winrate - a.winrate) || (b.games - a.games) || a.map.localeCompare(b.map));
-}
-/* Grouped By Map per mode with collapsibles */
+/* Grouped By Map per mode with collapsibles (show ALL maps, A→Z) */
 function renderTeamMapGrouped(hostId, rows){
   const host = el(hostId);
   const byModeObj = groupBy(rows, r=>r.ModeN || '—');
@@ -331,7 +327,6 @@ function renderTeamMapGrouped(hostId, rows){
   ];
 
   function tableHTML(list){
-    if (!list.length) return `<div class="muted">—</div>`;
     const thead = `<thead><tr>${cols.map(c=>`<th class="${c.right?'right':''}">${c.label}</th>`).join('')}</tr></thead>`;
     const body = list.map(r=>`<tr>${
       cols.map(c=>{
@@ -343,10 +338,21 @@ function renderTeamMapGrouped(hostId, rows){
     return `<table class="table"><thead>${thead}</thead><tbody>${body}</tbody></table>`;
   }
 
+  function rowsForMode(list){
+    // Build one row per allowed map, alphabetically
+    const mapsAlpha = ALLOWED_MAP_NAMES.slice().sort((a,b)=>a.localeCompare(b));
+    return mapsAlpha.map(mp=>{
+      const played = list.filter(r=> key(r.Map)===key(mp));
+      const games = played.length;
+      const wins  = played.filter(r=> cleanWL(r['W/L'])==='W').length;
+      const losses= games - wins;
+      return { map: mp, games, wins, losses, winrate: games ? (wins/games) : null };
+    });
+  }
+
   const html = MODE_ORDER.map(m=>{
-    const listM = (byModeObj[m] || []);
-    if (!listM.length) return '';
-    const rowsM = byMap(listM);
+    const listM = byModeObj[m] || [];
+    const rowsM = rowsForMode(listM);
     return `
       <details class="fold" open>
         <summary><strong>${shortMode(m)}</strong></summary>
@@ -359,7 +365,7 @@ function renderTeamMapGrouped(hostId, rows){
   host.innerHTML = html || `<div class="muted">—</div>`;
 }
 
-/* KV tiles (remove Pts For / Pts Ag / Diff) */
+/* KV tiles (only the requested four) */
 function renderKV(hostId, kv){
   el(hostId).innerHTML = kv.map(x=>`<div class="tile"><div class="k">${x.k}</div><div class="v">${x.v}</div></div>`).join('');
 }
