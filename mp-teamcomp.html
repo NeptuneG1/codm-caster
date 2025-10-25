@@ -3,17 +3,15 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>COD:M — MP Analyzer</title>
+<title>COD:M — Team Comparison</title>
 <meta name="theme-color" content="#0d1014"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
-  /* ===== Palette / base ===== */
   :root{
-    --bg:#0d1014; --panel:#292d42; --panel2:#1e2432;
-    --ink:#f3f6fa; --muted:#b8c0cc; --brand:#ffe93b; --brandText:#0b0d0e;
-    --brand2:#ffffff; --line:#4c525d; --chip:#213830;
-    --good:#62e887; --bad:#ff6b6b; --warn:#ffe93b;
+    --bg:#0d1014; --panel:#292d42; --panel2:#1e2432; --ink:#f3f6fa; --muted:#b8c0cc;
+    --brand:#ffe93b; --brandText:#0b0d0e; --line:#4c525d; --chip:#213830;
+    --good:#62e887; --bad:#ff6b6b; --accent:#7fd2ff;
   }
   *{box-sizing:border-box}
   html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif}
@@ -21,63 +19,54 @@
   a:hover{text-decoration:underline}
   header{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,#141a23 0%,#0d1014 100%);border-bottom:2px solid var(--brand)}
   .head{display:flex;align-items:center;gap:14px;max-width:1240px;margin:0 auto;padding:12px 14px}
-  /* logo */
-  .logo{
-    width:36px;height:36px;border-radius:8px;object-fit:contain;
-    background:#0d1014;border:1px solid #2a3144;box-shadow:0 6px 16px rgba(0,0,0,.35)
-  }
+  .logo{width:36px;height:36px;border-radius:8px;object-fit:contain;background:#0d1014;border:1px solid #2a3144;box-shadow:0 6px 16px rgba(0,0,0,.35)}
   h1{margin:0;font-size:1.1rem;letter-spacing:.4px;color:var(--brand)}
   .shell{max-width:1240px;margin:18px auto;padding:0 12px}
   .block{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
-  .block h2{margin:0 0 8px 0;color:var(--brand2)}
+  .block h2{margin:0 0 8px 0;color:#fff}
   .muted{color:var(--muted)}
-  .grid2{display:grid;grid-template-columns:1fr;gap:14px}
-  @media(min-width:1100px){ .grid2{grid-template-columns:1fr 1fr} }
-  .grid3{display:grid;grid-template-columns:1fr;gap:12px}
-  @media(min-width:900px){ .grid3{grid-template-columns:1fr 1fr} }
-  @media(min-width:1200px){ .grid3{grid-template-columns:1fr 1fr 1fr} }
-  h3{margin:8px 0;color:#fff;font-size:1rem}
 
-  .push{ margin-left:auto }
-
-  /* ===== Compact tables ===== */
-  .compact table{width:100%;border-collapse:collapse;font-size:.84rem;line-height:1.15}
-  .compact thead th{background:#141a1f;position:sticky;top:0;z-index:1}
-  .compact th,.compact td{border-bottom:1px solid #3a4255;padding:6px 8px;vertical-align:middle}
-  .right{text-align:right}
-
-  /* clickable rows */
-  .compact tbody tr.clickable{cursor:pointer}
-  .compact tbody tr.clickable:hover{background:#141a1f}
-
-  /* mini button */
-  .btn.xs{padding:4px 8px;border-radius:8px;font-size:.8rem}
-
-  /* ===== Filter bar ===== */
+  /* Controls */
   .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
   .chip{background:var(--chip);border:1px solid var(--line);color:#d2efe1;border-radius:999px;padding:6px 10px}
-  .controls input,.controls select{background:#151b26;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:.9rem}
+  .controls select{background:#151b26;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:.9rem}
   .btn{background:var(--brand);color:#0c0e10;border:0;border-radius:10px;padding:8px 12px;font-weight:800;cursor:pointer}
   .btn.secondary{background:#1a2030;color:#d6dbe6;border:1px solid var(--line)}
 
-  /* ===== Series card ===== */
-  .series-card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden}
-  .series-head{
-    display:grid;grid-template-columns:1fr max-content 1fr;gap:8px;align-items:center;
-    padding:10px 12px;border-bottom:1px solid var(--line);background:#1a2030
+  /* Comparison — never stack, even on mobile */
+  .cmp-grid{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(280px, 1fr)) !important; /* force two columns */
+    gap:12px;
+    overflow-x:auto;                 /* allow sideways scroll when too narrow */
+    -webkit-overflow-scrolling:touch;
+    padding-bottom:6px;              /* room for scrollbar */
   }
+  .card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px;min-width:0}
+  .card h3{margin:0 0 6px 0}
+  .kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .tile{background:#141a1f;border:1px solid var(--line);border-radius:10px;padding:8px}
+  .k{font-size:.78rem;color:var(--muted)}
+  .v{font-weight:900}
+
+  /* Compact tables */
+  .compact table{width:100%;border-collapse:collapse;font-size:.84rem;line-height:1.15}
+  .compact thead th{background:#141a1f}
+  .compact th,.compact td{border-bottom:1px solid #3a4255;padding:6px 8px;vertical-align:middle}
+  .right{text-align:right}
+  .compact tbody tr.clickable{cursor:pointer}
+  .compact tbody tr.clickable:hover{background:#141a1f}
+
+  /* Series card */
+  .series-card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-top:10px}
+  .series-card.highlight{box-shadow:0 0 0 2px var(--accent) inset}
+  .series-head{display:grid;grid-template-columns:1fr max-content 1fr;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line);background:#1a2030}
   .team-name{font-weight:900;justify-self:start}
   .opp-name{font-weight:900;justify-self:end}
   .series-score{justify-self:center;font-weight:900;font-size:1.05rem;color:#fff;background:#101420;border:1px solid var(--line);border-radius:8px;padding:6px 10px}
   .series-meta{grid-column:1 / -1; font-size:.85rem;color:var(--muted)}
-
-  .map-row{
-    display:grid;grid-template-columns:220px 1fr 220px;gap:10px;
-    padding:8px 12px;border-top:1px solid #2f3545;align-items:center
-  }
-  @media(max-width:700px){ .map-row{grid-template-columns:160px 1fr 160px} }
+  .map-row{display:grid;grid-template-columns:220px 1fr 220px;gap:10px;padding:8px 12px;border-top:1px solid #2f3545;align-items:center}
   .map-row:nth-child(odd){background:#181e2a}
-
   .side{display:grid;gap:8px;align-items:center}
   .side-left{grid-template-columns:16px 1fr;justify-self:start}
   .side-right{grid-template-columns:1fr 16px;justify-self:end}
@@ -87,162 +76,76 @@
   .tick{background:var(--good)}
   .cross{background:var(--bad)}
   .dim{opacity:.55}
-
   .mode-stack{display:flex;flex-direction:column;line-height:1.15;justify-self:center;align-items:center;text-align:center}
   .mode-pill{font-size:.7rem;border:1px solid var(--line);padding:1px 6px;border-radius:999px;background:#111827;color:#e8ecf5;width:max-content;margin:0 auto}
   .map-title{font-size:.95rem;margin-top:2px;text-align:center}
-
   .series-foot{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-top:1px solid var(--line);background:#1a2030;color:var(--muted);font-size:.85rem}
-
-  /* fold (collapsible) */
-  details.fold{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px;margin-top:10px}
-  details.fold>summary{cursor:pointer;color:#e7ecf5}
 </style>
 </head>
 <body>
 <header>
   <div class="head">
     <img src="https://i.imgur.com/K0TTjUC.png" alt="COD:M Logo" class="logo">
-    <h1>COD:M — MP Analyzer</h1>
-    <a href="index.html" class="btn secondary push" title="Back to Home">← Home</a>
+    <h1>COD:M — Team Comparison</h1>
+    <a href="index.html" class="btn secondary" style="margin-left:auto">← Home</a>
   </div>
 </header>
 
 <div class="shell">
-
-  <!-- FILTERS -->
+  <!-- TEAM COMPARISON -->
   <section class="block">
-    <h2>Filters</h2>
-    <div class="controls">
-      <label class="chip">Tournament
-        <select id="fTourn"></select>
+    <h2>Team Comparison</h2>
+    <div class="controls" style="margin-bottom:8px">
+      <label class="chip">Team 1
+        <select id="cmpTeamA"></select>
       </label>
-      <label class="chip">Team
-        <select id="fTeam"></select>
+      <button class="btn secondary" id="cmpSwap" title="Swap teams">⇄ Swap</button>
+      <label class="chip">Team 2
+        <select id="cmpTeamB"></select>
       </label>
-      <label class="chip">Opponent
-        <select id="fOpp"></select>
-      </label>
-      <label class="chip">Mode
-        <select id="fMode"></select>
-      </label>
-      <label class="chip">Map
-        <select id="fMap"></select>
-      </label>
-      <label class="chip">Stage
-        <select id="fStage"></select>
-      </label>
-      <label class="chip">Day
-        <select id="fDay"></select>
-      </label>
-      <label class="chip">Result
-        <select id="fWL">
-          <option value="ALL">All</option>
-          <option value="W">Win</option>
-          <option value="L">Loss</option>
-        </select>
-      </label>
-      <label class="chip">Search
-        <input id="fSearch" type="text" placeholder="Team / Opponent / Map / Mode…">
-      </label>
-      <button class="btn" id="applyBtn">Apply</button>
-      <button class="btn secondary" id="resetBtn">Reset</button>
-      <button class="btn secondary" id="exportBtn">Export CSV</button>
+      <span class="muted">Scope: all data (allowed maps)</span>
     </div>
-    <div class="muted" id="meta">—</div>
-  </section>
 
-  <!-- SERIES VIEWER + QUICK ANALYTICS -->
-  <section class="block">
-    <div class="grid2">
-      <div>
-        <h2>Series Viewer</h2>
-        <div class="controls" style="margin-bottom:8px">
-          <label class="chip">Pick Series
-            <select id="fSeries"></select>
-          </label>
-          <span class="muted" id="seriesHint">—</span>
+    <div id="cmpEmpty" class="muted">Pick <b>Team 1</b> and <b>Team 2</b> to compare.</div>
+    <div id="cmpWrap" class="cmp-grid" style="display:none">
+      <div class="card">
+        <h3 id="cmpNameA">Team A</h3>
+        <div class="kv" id="cmpTilesA"></div>
+        <div class="compact" style="margin-top:8px">
+          <h3>By Mode</h3>
+          <div id="cmpModeA"></div>
         </div>
-        <div id="seriesCard" class="series-card">Loading…</div>
+        <div class="compact" style="margin-top:8px">
+          <h3>By Map</h3>
+          <div id="cmpMapA"></div>
+        </div>
       </div>
-
-      <div class="compact">
-        <h2>Quick Analytics (current scope)</h2>
-        <div id="quickTbl"></div>
-        <div class="grid2" style="margin-top:10px">
-          <div>
-            <h3>By Mode</h3>
-            <div id="modeTbl"></div>
-          </div>
-          <div>
-            <h3>By Map</h3>
-            <!-- grouped + collapsible per mode -->
-            <div id="mapTbl"></div>
-          </div>
+      <div class="card">
+        <h3 id="cmpNameB">Team B</h3>
+        <div class="kv" id="cmpTilesB"></div>
+        <div class="compact" style="margin-top:8px">
+          <h3>By Mode</h3>
+          <div id="cmpModeB"></div>
+        </div>
+        <div class="compact" style="margin-top:8px">
+          <h3>By Map</h3>
+          <div id="cmpMapB"></div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- STANDINGS (SERIES-BASED) -->
-  <section class="block compact">
-    <h2>Standings (series-based)</h2>
-
-    <div>
-      <h3>Overall (Series + Maps)</h3>
-      <div id="standOverall"></div>
-    </div>
-
-    <details class="fold" id="perModeFold">
-      <summary>Per Mode standings (map-only)</summary>
-      <div class="grid3" style="margin-top:8px">
-        <div>
-          <h3>HP</h3>
-          <div id="stand_hp"></div>
-        </div>
-        <div>
-          <h3>SND</h3>
-          <div id="stand_snd"></div>
-        </div>
-        <div>
-          <h3>CTRL</h3>
-          <div id="stand_ctrl"></div>
-        </div>
-      </div>
-    </details>
-
-    <!-- 🔽 Click-to-expand team matches panel -->
-    <details class="fold" id="teamMatchesBox" style="margin-top:10px">
-      <summary id="teamMatchesTitle">Team matches</summary>
-      <div id="teamMatches" style="margin-top:8px"></div>
-    </details>
+  <!-- H2H SUMMARY TABLE -->
+  <section class="block compact" id="h2hBlock">
+    <h2>Head-to-Head Matches</h2>
+    <div class="muted" id="h2hMeta">Pick two teams above to see their history.</div>
+    <div id="h2hTbl"></div>
   </section>
 
-  <!-- EXTRA INSIGHTS -->
-  <section class="block compact">
-    <h2>More Insights</h2>
-    <div class="grid2">
-      <div>
-        <h3>Best Teams (maps) — min 5 maps</h3>
-        <div id="bestTeamsTbl"></div>
-      </div>
-      <div>
-        <h3>Opponents faced (maps)</h3>
-        <div id="oppTbl"></div>
-      </div>
-    </div>
-    <div style="margin-top:10px">
-      <h3>Mode × Map Winrate Matrix</h3>
-      <div id="matrixTbl"></div>
-    </div>
-  </section>
-
-  <!-- RAW ROWS (collapsible) -->
-  <section class="block compact">
-    <details class="fold">
-      <summary>Rows</summary>
-      <div id="rowsTbl" style="margin-top:8px"></div>
-    </details>
+  <!-- ALL SERIES VIEWERS FOR THIS PAIR -->
+  <section class="block" id="seriesList">
+    <h2>Series Viewer (all matchups)</h2>
+    <div id="seriesHost" class="series-host"></div>
   </section>
 </div>
 
@@ -261,11 +164,7 @@ const sum = (arr, k) => arr.reduce((a,r)=>a+n(r[k]),0);
 const groupBy = (arr, keyFn) => arr.reduce((m,r)=>{ const k = keyFn(r); (m[k]=m[k]||[]).push(r); return m; },{});
 const distinct = (rows,key) => Array.from(new Set(rows.map(r=>r[key]).filter(Boolean)));
 const cleanWL = v => { const s = norm(v).toUpperCase(); return s==='W' || s==='L' ? s : ''; };
-const pct = (a,b) => b ? (a/b) : 0;
-
-/* Mode normalization and ordering */
-const MODE_ORDER = ['Hardpoint','Search & Destroy','Control']; // internal
-const MODE_SHORT = {'Hardpoint':'HP','Search & Destroy':'SND','Control':'CTRL'};
+const MODE_ORDER = ['Hardpoint','Search & Destroy','Control'];
 function normalizeMode(m){
   const s = norm(m).toLowerCase();
   if (!s) return '';
@@ -274,42 +173,16 @@ function normalizeMode(m){
   if (s.includes('control')) return 'Control';
   return norm(m);
 }
-function shortMode(m){
-  const canon = normalizeMode(m);
-  return MODE_SHORT[canon] || canon || '—';
-}
 
-/* ===== Allowed maps and teams ===== */
-const ALLOWED_MAPS = new Set([
-  'Summit','Hacienda','Apocalypse','Slums','Combine','Tunisia','Firing Range',
-  'Kurohana Metropolis','Standoff','Coastal','Raid','Takeoff','Crossfire','Arsenal'
-].map(key));
-let ALLOWED_TAGS = new Set(); // filled from player_list.Tag
-
+/* ===== Allowed maps/teams ===== */
+const ALLOWED_MAPS = new Set(['Summit','Hacienda','Apocalypse','Slums','Combine','Tunisia','Firing Range','Kurohana Metropolis','Standoff','Coastal','Raid','Takeoff','Crossfire','Arsenal'].map(key));
+let ALLOWED_TAGS = new Set();
 function isAllowedMap(m){ return ALLOWED_MAPS.has(key(m)); }
 function isAllowedTeam(t){ return !ALLOWED_TAGS.size ? true : ALLOWED_TAGS.has(key(t)); }
 
-/* CSV */
-function toCSV(rows){
-  if(!rows.length) return '';
-  const cols = Object.keys(rows[0]);
-  const head = cols.join(',');
-  const body = rows.map(r => cols.map(c=>{
-    const s = r[c]==null ? '' : String(r[c]);
-    return /(,|\n|\"|\r)/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
-  }).join(',')).join('\n');
-  return head+'\n'+body;
-}
-function download(name, text){
-  const blob = new Blob([text], {type:'text/csv;charset=utf-8;'}); const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob); a.download = name; a.click();
-  setTimeout(()=>URL.revokeObjectURL(a.href), 1500);
-}
-
-/* ===== Data state ===== */
-let ALL = [];   // normalized + filtered by allowed teams & maps (either side allowed)
-let SCOPE = []; // filtered rows (ignores blank W/L)
-let GAME_ENTRIES = []; // merged map-level entries for standings
+/* ===== Data ===== */
+let ALL = [];        // normalized rows
+let GAME_ENTRIES = [];// merged map-level entries, both perspectives
 
 /* ===== Fetch ===== */
 async function fetchAllMatches(){
@@ -328,61 +201,12 @@ async function fetchAllowedTags(){
   return new Set(tags.map(key));
 }
 
-/* ===== Filters ===== */
-function setOptions(sel, values, labelAll='All'){
-  const prev = sel.value || 'ALL';
-  sel.innerHTML = `<option value="ALL">${labelAll}</option>` +
-    values.sort((a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true}))
-          .map(v=>`<option value="${v}">${v}</option>`).join('');
-  sel.value = (prev && (prev==='ALL' || values.includes(prev))) ? prev : 'ALL';
-}
-
-/* Special setter for Mode: value=canonical, text=short label */
-function setModeOptions(sel, values){
-  const prev = sel.value || 'ALL';
-  const present = new Set(values);
-  const ordered = MODE_ORDER.filter(m=>present.has(m));
-  sel.innerHTML = `<option value="ALL">All modes</option>` +
-    ordered.map(m=>`<option value="${m}">${shortMode(m)}</option>`).join('');
-  sel.value = (prev && (prev==='ALL' || ordered.includes(prev))) ? prev : 'ALL';
-}
-
-/* build display list of allowed teams present in data (preserve casing seen in data) */
-function listAllowedTeamsPresent(){
-  const present = new Map(); // lower -> original casing
-  ALL.forEach(r=>{
-    [r.Tag, r['Vs Opponent']].forEach(name=>{
-      const k = key(name);
-      if (ALLOWED_TAGS.has(k) && !present.has(k)) present.set(k, norm(name));
-    });
-  });
-  return Array.from(present.values());
-}
-
-function populateDropdowns(){
-  setOptions(el('fTourn'), distinct(ALL,'Tournament'), 'All tournaments');
-
-  const allowedTeamList = listAllowedTeamsPresent();
-  setOptions(el('fTeam'), allowedTeamList,  'All teams');
-  setOptions(el('fOpp'),  allowedTeamList,  'All opponents');
-
-  setModeOptions(el('fMode'), Array.from(new Set(ALL.map(r=>r.ModeN).filter(Boolean))));
-  // only allowed maps present in ALL
-  setOptions(el('fMap'),   Array.from(new Set(ALL.map(r=>r.Map).filter(m=>isAllowedMap(m)))),  'All maps');
-  setOptions(el('fStage'), distinct(ALL,'Stage'),'All stages');
-  setOptions(el('fDay'),   distinct(ALL,'Day'),  'All days');
-}
-
-/* ===== Series key (neutral, team-agnostic, includes Tournament) ===== */
+/* ===== Build helpers ===== */
 function seriesKeyNeutral(r){
-  const tourn = norm(r.Tournament);
-  const stage = norm(r.Stage), day = norm(r.Day), ser = norm(r.Series);
-  const a = norm(r.Tag), b = norm(r['Vs Opponent']);
-  const pair = [a,b].sort((x,y)=>x.localeCompare(y)).join('~');
+  const tourn = norm(r.Tournament); const stage = norm(r.Stage), day = norm(r.Day), ser = norm(r.Series);
+  const a = norm(r.Tag), b = norm(r['Vs Opponent']); const pair = [a,b].sort((x,y)=>x.localeCompare(y)).join('~');
   return `${tourn}|${stage}|${day}|${ser}|${pair}`;
 }
-
-/* ===== Build merged map-level entries (for correct series math) ===== */
 function buildGameEntries(rows){
   const valid = rows.filter(r=> cleanWL(r['W/L']) );
   const g = groupBy(valid, r=> `${seriesKeyNeutral(r)}|${n(r.MATCHES)}|${norm(r.Map)}|${norm(r.ModeN)}`);
@@ -391,192 +215,33 @@ function buildGameEntries(rows){
     if (!list.length) return;
     let rA = list[0];
     let rB = list.find(x => norm(x.Tag)!==norm(rA.Tag)) || null;
-
-    const keyParts = (seriesKeyNeutral(rA)).split('|');
-    const [tourn,stage,day,ser] = keyParts;
-
-    const A = norm(rA.Tag);
-    const B = rB ? norm(rB.Tag) : norm(rA['Vs Opponent']);
-
-    const aScore = n(rA.Score);
-    const bScore = rB ? n(rB.Score) : n(rA['Opp Score']);
-
-    const map = norm(rA.Map);
-    const mode= norm(rA.ModeN);
-    const idx = n(rA.MATCHES);
-
+    const [tourn,stage,day,ser] = (seriesKeyNeutral(rA)).split('|');
+    const A = norm(rA.Tag); const B = rB ? norm(rB.Tag) : norm(rA['Vs Opponent']);
+    const aScore = n(rA.Score); const bScore = rB ? n(rB.Score) : n(rA['Opp Score']);
+    const map = norm(rA.Map); const mode= norm(rA.ModeN); const idx = n(rA.MATCHES);
     if ((aScore + bScore) <= 0) return;
-
-    // perspective: A
-    out.push({
-      tournament:tourn, seriesNeutral: seriesKeyNeutral(rA),
-      stage, day, seriesNo: ser,
-      team: A, opp: B, mode, map, mapIdx: idx,
-      ownScore: aScore, oppScore: bScore,
-      win: aScore>bScore ? 1:0, loss: aScore<bScore ? 1:0
-    });
-    // perspective: B
-    out.push({
-      tournament:tourn, seriesNeutral: seriesKeyNeutral(rA),
-      stage, day, seriesNo: ser,
-      team: B, opp: A, mode, map, mapIdx: idx,
-      ownScore: bScore, oppScore: aScore,
-      win: bScore>aScore ? 1:0, loss: bScore<aScore ? 1:0
-    });
+    out.push({tournament:tourn, seriesNeutral: seriesKeyNeutral(rA), stage, day, seriesNo: ser, team: A, opp: B, mode, map, mapIdx: idx, ownScore: aScore, oppScore: bScore, win: aScore>bScore ? 1:0, loss: aScore<bScore ? 1:0});
+    out.push({tournament:tourn, seriesNeutral: seriesKeyNeutral(rA), stage, day, seriesNo: ser, team: B, opp: A, mode, map, mapIdx: idx, ownScore: bScore, oppScore: aScore, win: bScore>aScore ? 1:0, loss: bScore<aScore ? 1:0});
   });
   return out;
 }
 
-
-/* ===== Filters apply to ROWS (team/opponent symmetric) ===== */
-function applyFilters(){
-  const F = {
-    tourn:el('fTourn').value,
-    team: el('fTeam').value,
-    opp:  el('fOpp').value,
-    mode: el('fMode').value,
-    map:  el('fMap').value,
-    stage:el('fStage').value,
-    day:  el('fDay').value,
-    wl:   el('fWL').value,
-    q:    (el('fSearch').value||'').trim().toLowerCase()
-  };
-  let rows = ALL;
-
-  if (F.tourn!=='ALL') rows = rows.filter(r=>key(r.Tournament)===key(F.tourn));
-
-  const teamSel = key(F.team), oppSel = key(F.opp);
-  if (F.team!=='ALL' && F.opp!=='ALL'){
-    rows = rows.filter(r=>{
-      const a = key(r.Tag), b = key(r['Vs Opponent']);
-      return (a===teamSel && b===oppSel) || (a===oppSel && b===teamSel);
+/* ===== UI helpers ===== */
+function setOptions(sel, values){
+  sel.innerHTML = `<option value="">— Select —</option>` + values.map(v=>`<option value="${v}">${v}</option>`).join('');
+}
+function listAllowedTeamsPresent(rowsBase=ALL){
+  const present = new Map(); // lower -> original casing
+  rowsBase.forEach(r=>{
+    [r.Tag, r['Vs Opponent']].forEach(name=>{
+      const k = key(name);
+      if (ALLOWED_TAGS.has(k) && !present.has(k)) present.set(k, norm(name));
     });
-  } else {
-    if (F.team!=='ALL') rows = rows.filter(r=> key(r.Tag)===teamSel || key(r['Vs Opponent'])===teamSel );
-    if (F.opp!=='ALL')  rows = rows.filter(r=> key(r.Tag)===oppSel  || key(r['Vs Opponent'])===oppSel  );
-  }
-
-  if (F.mode!=='ALL')  rows = rows.filter(r=>key(r.ModeN)===key(F.mode));
-  if (F.map!=='ALL')   rows = rows.filter(r=>key(r.Map)===key(F.map));
-  if (F.stage!=='ALL') rows = rows.filter(r=>key(r.Stage)===key(F.stage));
-  if (F.day!=='ALL')   rows = rows.filter(r=>String(r.Day)===String(F.day));
-
-  if (F.q){
-    rows = rows.filter(r=>{
-      const hay = [r.Tournament,r.Tag, r['Vs Opponent'], r.Map, r.ModeN, r.Stage, r.Series].map(x=>norm(x).toLowerCase()).join('|');
-      return hay.includes(F.q);
-    });
-  }
-  rows = rows.filter(r => cleanWL(r['W/L']));
-  if (F.wl!=='ALL') rows = rows.filter(r=>cleanWL(r['W/L'])===F.wl);
-
-  SCOPE = rows;
-
-  el('meta').textContent =
-   `Rows: ${SCOPE.length} / ${ALL.length} • Tournaments: ${distinct(SCOPE,'Tournament').length} • Teams: ${distinct(SCOPE,'Tag').length} • Opponents: ${distinct(SCOPE,'Vs Opponent').length}`;
-}
-
-/* ===== Apply current filters to GAME_ENTRIES for standings ===== */
-function filteredEntriesForStandings(){
-  const F = {
-    tourn:el('fTourn').value,
-    team: el('fTeam').value,
-    opp:  el('fOpp').value,
-    mode: el('fMode').value,
-    map:  el('fMap').value,
-    stage:el('fStage').value,
-    day:  el('fDay').value,
-  };
-  let E = GAME_ENTRIES.slice();
-
-  if (F.tourn!=='ALL') E = E.filter(e=>key(e.tournament)===key(F.tourn));
-
-  const teamSel = key(F.team), oppSel = key(F.opp);
-  if (F.team!=='ALL' && F.opp!=='ALL'){
-    E = E.filter(e=>{
-      const t = key(e.team), o = key(e.opp);
-      return (t===teamSel && o===oppSel) || (t===oppSel && o===teamSel);
-    });
-  } else {
-    if (F.team!=='ALL') E = E.filter(e=> key(e.team)===teamSel || key(e.opp)===teamSel );
-    if (F.opp!=='ALL')  E = E.filter(e=> key(e.team)===oppSel  || key(e.opp)===oppSel  );
-  }
-
-  if (F.mode!=='ALL')  E = E.filter(e=> key(e.mode)===key(F.mode));
-  if (F.map!=='ALL')   E = E.filter(e=> key(e.map)===key(F.map));
-  if (F.stage!=='ALL') E = E.filter(e=> key(e.stage)===key(F.stage));
-  if (F.day!=='ALL')   E = E.filter(e=> String(e.day)===String(F.day));
-
-  return E;
-}
-
-/* ===== Series dropdown (dedup, neutral key) ===== */
-function setSeriesOptions(rows){
-  const dd = el('fSeries');
-  const items = [...new Map(rows.map(r=>{
-    const keyN = seriesKeyNeutral(r);
-    const [tourn,stage,day,ser,pair] = keyN.split('|');
-    const [t1,t2] = pair.split('~');
-    const label = `${tourn? (tourn+' • ') : ''}${t1} vs ${t2} • ${stage||'—'} • Day ${day||'—'} • Series ${ser||'—'}`;
-    const ord = [tourn, stage, Number(day)||0, Number(ser)||0, Number(r.MATCHES)||0, Number(r.id)||0];
-    return [keyN, {key:keyN,label,ord}];
-  })).values()]
-  .sort((a,b)=> String(a.ord[0]).localeCompare(String(b.ord[0])) ||
-               String(a.ord[1]).localeCompare(String(b.ord[1])) ||
-               a.ord[2]-b.ord[2] || a.ord[3]-b.ord[3] || a.ord[4]-b.ord[4] || a.ord[5]-b.ord[5]);
-
-  const prev = dd.value;
-  dd.innerHTML = items.map(s=>`<option value="${s.key}">${s.label}</option>`).join('');
-  dd.value = items.find(s=>s.key===prev)?.key || (items[items.length-1]?.key || '');
-  el('seriesHint').textContent = `${items.length} series in scope`;
-
-  if (!items.length){
-    el('seriesCard').innerHTML = '<div class="muted" style="padding:12px">No series in scope — widen your filters.</div>';
-  }
-}
-
-/* ===== Quick analytics helpers ===== */
-function quickStats(rows){
-  const games = rows.length;
-  const w = rows.filter(r=>cleanWL(r['W/L'])==='W').length;
-  const l = rows.filter(r=>cleanWL(r['W/L'])==='L').length;
-  const ptsFor = sum(rows,'Score');
-  const ptsAg  = sum(rows,'Opp Score');
-  return { games, wins:w, losses:l, winrate: games ? (w/games) : 0, ptsFor, ptsAg, diff: ptsFor-ptsAg };
-}
-
-/* Choose exact rows for Quick Analytics based on Team/Opp filters */
-function getQuickRows(){
-  const t = el('fTeam').value, o = el('fOpp').value;
-  const tSel = key(t), oSel = key(o);
-  if (t !== 'ALL'){
-    return SCOPE.filter(r => key(r.Tag) === tSel);      // perspective: Team
-  } else if (o !== 'ALL'){
-    return SCOPE.filter(r => key(r.Tag) === oSel);      // perspective: Opponent (when Team=ALL)
-  }
-  return SCOPE;                                         // neutral scope
-}
-
-function byMode(rows){
-  const g = groupBy(rows, r=>r.ModeN||'—');
-  return Object.entries(g).map(([mode,list])=>{
-    const qs = quickStats(list);
-    return { mode, games:qs.games, wins:qs.wins, losses:qs.losses, winrate:qs.winrate };
-  }).sort((a,b)=> {
-    const ai = MODE_ORDER.indexOf(a.mode), bi = MODE_ORDER.indexOf(b.mode);
-    return (ai-bi) || (b.winrate-a.winrate) || (b.games-a.games);
   });
+  // ⬇️ Sort A→Z, case-insensitive
+  return Array.from(present.values()).sort((a,b)=>a.localeCompare(b, undefined, {sensitivity:'base'}));
 }
-function byMap(rows){
-  const g = groupBy(rows, r=>norm(r.Map)||'—');
-  return Object.entries(g).map(([map,list])=>{
-    const qs = quickStats(list);
-    return { map, games:qs.games, wins:qs.wins, losses:qs.losses, winrate:qs.winrate };
-  }).sort((a,b)=> b.winrate-a.winrate || b.games-a.games);
-}
-
-/* ===== Render compact tables ===== */
-function renderTable(hostId, rows, cols, empty='No rows.', opts={}){
+function renderTable(hostId, rows, cols, empty='No rows.'){
   const host = el(hostId);
   if (!rows.length){ host.innerHTML = `<div class="muted">${empty}</div>`; return; }
   const thead = `<thead><tr>${cols.map(c=>`<th class="${c.right?'right':''}">${c.label}</th>`).join('')}</tr></thead>`;
@@ -587,413 +252,174 @@ function renderTable(hostId, rows, cols, empty='No rows.', opts={}){
   }).join('')}</tr>`).join('');
   host.innerHTML = `<table class="table"><thead>${thead}</thead><tbody>${tbodyHTML}</tbody></table>`;
   const tbody = host.querySelector('tbody');
-  if (opts.onRowClick){
+  if (hostId==='h2hTbl'){
     [...tbody.rows].forEach((tr,i)=>{
       tr.classList.add('clickable');
-      tr.addEventListener('click', ()=> opts.onRowClick(rows[i]));
+      tr.addEventListener('click', ()=>{
+        const k = rows[i].seriesKey;
+        const elCard = document.querySelector(`[data-series="${CSS.escape(k)}"]`);
+        if (elCard){
+          elCard.scrollIntoView({behavior:'smooth',block:'start'});
+          elCard.classList.add('highlight');
+          setTimeout(()=>elCard.classList.remove('highlight'), 1000);
+        }
+      });
     });
   }
 }
-/* Small helper to build a table as HTML string (for grouped collapsibles) */
-function tableHTML(rows, cols){
-  if (!rows.length) return `<div class="muted">—</div>`;
-  const thead = `<thead><tr>${cols.map(c=>`<th class="${c.right?'right':''}">${c.label}</th>`).join('')}</tr></thead>`;
-  const body = rows.map(r=>`<tr>${
-    cols.map(c=>{
-      let v = r[c.key];
-      if (c.format==='pct') v = (typeof v==='number') ? (v*100).toFixed(1)+'%' : '—';
-      return `<td class="${c.right?'right':''}">${v ?? '—'}</td>`;
-    }).join('')
-  }</tr>`).join('');
-  return `<table class="table"><thead>${thead}</thead><tbody>${body}</tbody></table>`;
+
+function quickStats(rows){
+  const games = rows.length;
+  const w = rows.filter(r=>cleanWL(r['W/L'])==='W').length;
+  const l = rows.filter(r=>cleanWL(r['W/L'])==='L').length;
+  const ptsFor = sum(rows,'Score');
+  const ptsAg  = sum(rows,'Opp Score');
+  return { games, wins:w, losses:l, winrate: games ? (w/games) : 0, ptsFor, ptsAg, diff: ptsFor-ptsAg };
+}
+function byMode(rows){
+  const g = groupBy(rows, r=>r.ModeN||'—');
+  return Object.entries(g).map(([mode,list])=>{
+    const qs = quickStats(list);
+    return { mode, games:qs.games, wins:qs.wins, losses:qs.losses, winrate:qs.winrate };
+  }).sort((a,b)=> {
+    const ai = MODE_ORDER.indexOf(a.mode), bi = MODE_ORDER.indexOf(b.mode);
+    return (ai-bi) || (b.winrate-a.winrate) || (b.games-a.games);
+  });
+}
+function renderTeamMode(hostId, rows){
+  const list = byMode(rows).map(r=>({mode:r.mode, games:r.games, wins:r.wins, losses:r.losses, winrate:r.winrate}));
+  renderTable(hostId, list, [
+    {label:'Mode',key:'mode'},
+    {label:'G',key:'games',right:true},
+    {label:'W',key:'wins',right:true},
+    {label:'L',key:'losses',right:true},
+    {label:'Win %',key:'winrate',format:'pct',right:true}
+  ], '—');
+}
+function byMap(rows){
+  const g = groupBy(rows, r=>norm(r.Map)||'—');
+  return Object.entries(g).map(([map,list])=>{
+    const qs = quickStats(list);
+    return { map, games:qs.games, wins:qs.wins, losses:qs.losses, winrate:qs.winrate };
+  })
+  // Sort by Win% (desc), then games (desc), then map name A→Z
+  .sort((a,b)=> (b.winrate - a.winrate) || (b.games - a.games) || a.map.localeCompare(b.map));
+}
+function renderTeamMap(hostId, rows){
+  const list = byMap(rows).map(r=>({map:r.map, games:r.games, wins:r.wins, losses:r.losses, winrate:r.winrate}));
+  renderTable(hostId, list, [
+    {label:'Map',key:'map'},
+    {label:'G',key:'games',right:true},
+    {label:'W',key:'wins',right:true},
+    {label:'L',key:'losses',right:true},
+    {label:'Win %',key:'winrate',format:'pct',right:true}
+  ], '—');
+}
+function renderKV(hostId, kv){
+  el(hostId).innerHTML = kv.map(x=>`<div class="tile"><div class="k">${x.k}</div><div class="v">${x.v}</div></div>`).join('');
+}
+function teamQuick(rows){
+  const s = quickStats(rows);
+  return [
+    {k:'Games',v:s.games},
+    {k:'Wins',v:s.wins},
+    {k:'Losses',v:s.losses},
+    {k:'Win %',v: (s.winrate*100).toFixed(1)+'%'},
+    {k:'Pts For',v:s.ptsFor},
+    {k:'Pts Ag',v:s.ptsAg},
+    {k:'Diff',v:s.diff}
+  ];
 }
 
-/* ===== Series viewer ===== */
-function renderSeriesCard(neutralKey){
-  if (!neutralKey){ el('seriesCard').innerHTML = '<div class="muted" style="padding:12px">No series selected.</div>'; return; }
-  const seriesRows = ALL.filter(r => seriesKeyNeutral(r) === neutralKey)
-                        .sort((a,b)=> (n(a.MATCHES)-n(b.MATCHES)) || (n(a.id)-n(b.id)));
-  if (!seriesRows.length){ el('seriesCard').innerHTML = '<div class="muted" style="padding:12px">Series not found.</div>'; return; }
+/* ===== Comparison ===== */
+function renderComparison(){
+  const a = el('cmpTeamA').value, b = el('cmpTeamB').value;
+  if (!a || !b || key(a)===key(b)){
+    el('cmpWrap').style.display = 'none';
+    el('cmpEmpty').style.display = '';
+    el('h2hTbl').innerHTML = '';
+    el('h2hMeta').textContent = 'Pick two teams above to see their history.';
+    el('seriesHost').innerHTML='';
+    return;
+  }
+  el('cmpNameA').textContent = a; el('cmpNameB').textContent = b;
+  const aRows = ALL.filter(r=> key(r.Tag)===key(a) && cleanWL(r['W/L']));
+  const bRows = ALL.filter(r=> key(r.Tag)===key(b) && cleanWL(r['W/L']));
+  renderKV('cmpTilesA', teamQuick(aRows)); renderKV('cmpTilesB', teamQuick(bRows));
+  renderTeamMode('cmpModeA', aRows); renderTeamMode('cmpModeB', bRows);
+  renderTeamMap('cmpMapA', aRows);   renderTeamMap('cmpMapB', bRows);
+  el('cmpEmpty').style.display = 'none'; el('cmpWrap').style.display = '';
+  renderH2HAndSeries(a,b);
+}
 
-  const [tourn,stage,day,ser,pair] = neutralKey.split('|');
-  let [A,B] = pair.split('~');
-  const selTeam = norm(el('fTeam').value);
-  if (selTeam && selTeam!=='ALL' && selTeam===B){ [A,B] = [B,A]; }
+function renderH2HAndSeries(a,b){
+  const A = norm(a), B = norm(b);
+  const rows = GAME_ENTRIES.filter(e => norm(e.team)===A && norm(e.opp)===B);
+  const bySeries = groupBy(rows, e=>e.seriesNeutral);
+  const series = Object.values(bySeries).map(list=>{
+    const s = list[0];
+    const aW = list.reduce((t,e)=>t+e.win,0);
+    const aL = list.reduce((t,e)=>t+e.loss,0);
+    return {
+      tournament:s.tournament, stage:s.stage, day:s.day, series:s.seriesNo,
+      aWins:aW, bWins:aL, maps:list.length, seriesKey:s.seriesNeutral
+    };
+  }).sort((x,y)=>
+    (String(y.tournament).localeCompare(String(x.tournament))) ||
+    (String(y.stage).localeCompare(String(x.stage))) ||
+    ((+y.day||0)-(+x.day||0)) ||
+    ((+y.series||0)-(+x.series||0))
+  );
 
-  const g = groupBy(seriesRows, r => `${n(r.MATCHES)}|${norm(r.Map)}|${norm(r.ModeN)}`);
-  const linesRaw = Object.values(g).map(list=>{
-    const ra = list[0];
-    const rb = list.find(x => norm(x.Tag)!==norm(ra.Tag)) || null;
-    const map = norm((ra||rb||{}).Map);
-    const mode = norm((ra||rb||{}).ModeN);
-    const aScore = norm(ra.Tag)===A ? n(ra.Score) : (rb ? n(rb.Score) : n(ra['Opp Score']));
-    const bScore = norm(ra.Tag)===A ? (rb ? n(rb.Score) : n(ra['Opp Score'])) : n(ra.Score);
-    return { idx:n((ra||rb||{}).MATCHES), map, mode, aScore, bScore };
-  });
-  const lines = linesRaw.filter(l => (l.aScore + l.bScore) > 0).sort((x,y)=>x.idx-y.idx);
+  el('h2hMeta').textContent = series.length
+    ? `${series.length} series between ${a} and ${b} (latest first)`
+    : `No head-to-head series between ${a} and ${b}`;
 
-  const played = lines.length;
-  const aWins = lines.filter(l=>l.aScore>l.bScore).length;
-  const bWins = lines.filter(l=>l.bScore>l.aScore).length;
+  renderTable('h2hTbl', series, [
+    {label:'Tournament',key:'tournament'},
+    {label:'Stage',key:'stage'},
+    {label:'Day',key:'day',right:true},
+    {label:'Series',key:'series',right:true},
+    {label:`${a} MW`,key:'aWins',right:true},
+    {label:`${b} MW`,key:'bWins',right:true},
+    {label:'Maps',key:'maps',right:true}
+  ], '—');
 
+  const host = el('seriesHost'); host.innerHTML = '';
+  if (!series.length){
+    host.innerHTML = '<div class="muted">No series viewer to show.</div>';
+    return;
+  }
+  host.innerHTML = series.map(s=> renderSeriesCardHTML(rows.filter(e=> e.seriesNeutral===s.seriesKey), A, B)).join('');
+}
+
+function renderSeriesCardHTML(list, A, B){
+  const played = list.length;
+  const aWins = list.reduce((t,e)=>t+e.win,0);
+  const bWins = list.reduce((t,e)=>t+e.loss,0);
+  const s0 = list[0] || {};
   const head = `
     <div class="series-head">
       <div class="team-name">${A}</div>
       <div class="series-score">${aWins} : ${bWins} <span class="muted" style="font-weight:600"> (Bo${played})</span></div>
       <div class="opp-name">${B}</div>
-      <div class="series-meta">${tourn? (tourn+' • ') : ''}${stage||'—'} • Day ${day||'—'} • Series ${ser||'—'}</div>
+      <div class="series-meta">${s0.tournament? (s0.tournament+' • ') : ''}${s0.stage||'—'} • Day ${s0.day||'—'} • Series ${s0.seriesNo||'—'}</div>
     </div>`;
-
-  const body = lines.map(l=>{
-    const aWin = l.aScore>l.bScore;
-    const left  = `<div class="side side-left ${aWin?'':'dim'}"><span class="${aWin?'tick':'cross'}"></span><div class="scoreL">${l.aScore}</div></div>`;
-    const mid   = `<div class="mode-stack"><span class="mode-pill">${shortMode(l.mode)||'—'}</span><div class="map-title">${l.map||'—'}</div></div>`;
-    const right = `<div class="side side-right ${aWin?'dim':''}"><div class="scoreR">${l.bScore}</div><span class="${aWin?'cross':'tick'}"></span></div>`;
+  const rowsSorted = list.slice().sort((x,y)=>(x.mapIdx||0)-(y.mapIdx||0));
+  const body = rowsSorted.map(l=>{
+    const aWin = !!l.win;
+    const left  = `<div class="side side-left ${aWin?'':'dim'}"><span class="${aWin?'tick':'cross'}"></span><div class="scoreL">${l.ownScore}</div></div>`;
+    const mid   = `<div class="mode-stack"><span class="mode-pill">${l.mode||'—'}</span><div class="map-title">${l.map||'—'}</div></div>`;
+    const right = `<div class="side side-right ${aWin?'dim':''}"><div class="scoreR">${l.oppScore}</div><span class="${aWin?'cross':'tick'}"></span></div>`;
     return `<div class="map-row">${left}${mid}${right}</div>`;
   }).join('');
-
-  const foot = `<div class="series-foot"><span>Maps played: ${played}</span><span>Pick a different series from the dropdown above.</span></div>`;
-  el('seriesCard').innerHTML = head + body + foot;
+  const foot = `<div class="series-foot"><span>Maps played: ${played}</span><span>&nbsp;</span></div>`;
+  return `<div class="series-card" data-series="${s0.seriesNeutral}">${head}${body}${foot}</div>`;
 }
-
-/* ===== Standings (series-based) ===== */
-function computeStandings(entries, modeFilter=null){
-  const base = modeFilter ? entries.filter(e=>e.mode===modeFilter) : entries;
-  const rows = base.filter(e => ALLOWED_TAGS.has(key(e.team))); // only allowed teams
-
-  const bySeriesTeam = groupBy(rows, e => `${e.seriesNeutral}|${e.team}`);
-  const perSeriesOutcome = Object.values(bySeriesTeam).map(list=>{
-    const team = list[0].team;
-    const mapsW = list.reduce((a,e)=>a+e.win,0);
-    const mapsL = list.reduce((a,e)=>a+e.loss,0);
-    const played = mapsW + mapsL;
-    const seriesW = played && mapsW > mapsL ? 1 : 0;
-    const seriesL = played && mapsL > mapsW ? 1 : 0;
-    return { team, seriesW, seriesL, seriesP: played ? 1 : 0, mapsW, mapsL };
-  });
-
-  const agg = {};
-  perSeriesOutcome.forEach(r=>{
-    const A = (agg[r.team] ||= { team:r.team, seriesP:0, seriesW:0, seriesL:0, mapsW:0, mapsL:0 });
-    A.seriesP += r.seriesP; A.seriesW += r.seriesW; A.seriesL += r.seriesL; A.mapsW += r.mapsW; A.mapsL += r.mapsL;
-  });
-
-  const out = Object.values(agg).map(r=>{
-    const mapP = r.mapsW + r.mapsL;
-    return {
-      team:r.team,
-      series_played:r.seriesP,
-      series_wins:r.seriesW,
-      series_losses:r.seriesL,
-      series_winrate: r.seriesP ? (r.seriesW / r.seriesP) : 0,
-      map_wins:r.mapsW,
-      map_losses:r.mapsL,
-      map_winrate: mapP ? (r.mapsW / mapP) : 0
-    };
-  });
-
-  return out.sort((a,b)=>
-    (b.series_winrate - a.series_winrate) ||
-    (b.series_wins - a.series_wins) ||
-    (b.map_winrate - a.map_winrate) ||
-    (b.map_wins - a.map_wins)
-  );
-}
-
-/* ===== Team matches panel ===== */
-function scrollToMatches(){
-  const box = el('teamMatchesBox');
-  if (box) { box.open = true; box.scrollIntoView({behavior:'smooth', block:'start'}); }
-}
-function renderTeamMatchesPanel(team, modeFilter=null){
-  const host = el('teamMatches');
-  const title = el('teamMatchesTitle');
-  const E = filteredEntriesForStandings()
-            .filter(e => key(e.team)===key(team))
-            .filter(e => !modeFilter || key(e.mode)===key(modeFilter));
-
-  if (!E.length){
-    title.textContent = `Team matches — ${team}`;
-    host.innerHTML = `<div class="muted">No series in the current filter.</div>`;
-    const box = el('teamMatchesBox'); if (box) { box.open = true; box.scrollIntoView({behavior:'smooth', block:'start'}); }
-    return;
-  }
-
-  const bySeries = groupBy(E, e => e.seriesNeutral);
-  const seriesList = Object.values(bySeries).sort((a,b)=>
-    String(a[0].tournament).localeCompare(String(b[0].tournament)) ||
-    String(a[0].stage).localeCompare(String(b[0].stage)) ||
-    (Number(a[0].day)||0) - (Number(b[0].day)||0) ||
-    (Number(a[0].seriesNo)||0) - (Number(b[0].seriesNo)||0)
-  );
-
-  title.textContent = `Team matches — ${team} ${modeFilter? '('+shortMode(modeFilter)+')':''} • ${seriesList.length} series`;
-
-  host.innerHTML = seriesList.map(list=>{
-    const s = list[0];
-    const mapsW = list.reduce((a,e)=>a+e.win,0);
-    const mapsL = list.reduce((a,e)=>a+e.loss,0);
-    const seriesKey = s.seriesNeutral;
-
-    const mapRows = list.slice().sort((x,y)=>(x.mapIdx||0)-(y.mapIdx||0))
-      .map(m=>`<tr>
-          <td class="right" style="width:36px">${m.mapIdx ?? ''}</td>
-          <td>${shortMode(m.mode)}</td>
-          <td>${m.map}</td>
-          <td class="right">${(m.ownScore ?? '')}–${(m.oppScore ?? '')}</td>
-          <td class="right">${m.win? 'W':'L'}</td>
-        </tr>`).join('');
-
-    return `
-      <details class="fold" open>
-        <summary>
-          <strong>${team}</strong> vs ${s.opp} • ${s.tournament? s.tournament+' • ':''}${s.stage||'—'} • Day ${s.day||'—'} • Series ${s.seriesNo||'—'}
-          &nbsp; — &nbsp; <strong>${mapsW}:${mapsL}</strong>
-          <button class="btn xs secondary" style="margin-left:8px"
-            onclick="(function(){ const dd=el('fSeries'); if(dd){ dd.value='${seriesKey}'; renderSeriesCard(dd.value); window.scrollTo({top:0,behavior:'smooth'}); } })(); event.stopPropagation();">
-            View in Series Viewer
-          </button>
-        </summary>
-        <div class="compact" style="margin-top:8px">
-          <table>
-            <thead>
-              <tr>
-                <th class="right">#</th>
-                <th>Mode</th>
-                <th>Map</th>
-                <th class="right">Score</th>
-                <th class="right">Result</th>
-              </tr>
-            </thead>
-            <tbody>${mapRows}</tbody>
-          </table>
-        </div>
-      </details>`;
-  }).join('');
-
-  const box = el('teamMatchesBox'); if (box) { box.open = true; box.scrollIntoView({behavior:'smooth', block:'start'}); }
-}
-
-
-function renderStandings(){
-  const E = filteredEntriesForStandings();
-
-  const overall = computeStandings(E);
-  renderTable('standOverall', overall, [
-    {label:'Team',key:'team'},
-    {label:'Series',key:'series_played',right:true},
-    {label:'SW',key:'series_wins',right:true},
-    {label:'SL',key:'series_losses',right:true},
-    {label:'S Win %',key:'series_winrate',format:'pct',right:true},
-    {label:'MW',key:'map_wins',right:true},
-    {label:'ML',key:'map_losses',right:true},
-    {label:'M Win %',key:'map_winrate',format:'pct',right:true},
-  ], 'No series.', {
-    onRowClick: (r)=> renderTeamMatchesPanel(r.team, null)
-  });
-
-  const hp  = computeStandings(E, 'Hardpoint').map(r=>({...r, maps:r.map_wins+r.map_losses}));
-  const snd = computeStandings(E, 'Search & Destroy').map(r=>({...r, maps:r.map_wins+r.map_losses}));
-  const ctl = computeStandings(E, 'Control').map(r=>({...r, maps:r.map_wins+r.map_losses}));
-
-  const modeCols = [
-    {label:'Team',key:'team'},
-    {label:'Maps',key:'maps',right:true},
-    {label:'MW',key:'map_wins',right:true},
-    {label:'ML',key:'map_losses',right:true},
-    {label:'M %',key:'map_winrate',format:'pct',right:true},
-  ];
-  renderTable('stand_hp',  hp.slice(0,30),  modeCols, '—', { onRowClick:(r)=>renderTeamMatchesPanel(r.team,'Hardpoint') });
-  renderTable('stand_snd', snd.slice(0,30), modeCols, '—', { onRowClick:(r)=>renderTeamMatchesPanel(r.team,'Search & Destroy') });
-  renderTable('stand_ctrl',ctl.slice(0,30), modeCols, '—', { onRowClick:(r)=>renderTeamMatchesPanel(r.team,'Control') });
-}
-
-/* ===== Extra insights ===== */
-function renderBestTeams(){
-  const rowsSrc = SCOPE.filter(r => ALLOWED_TAGS.has(key(r.Tag)));
-  const g = groupBy(rowsSrc, r=>norm(r.Tag));
-  const rows = Object.entries(g).map(([team,list])=>{
-    const w = list.filter(r=>cleanWL(r['W/L'])==='W').length;
-    const l = list.filter(r=>cleanWL(r['W/L'])==='L').length;
-    const games = w+l;
-    return { team, games, wins:w, losses:l, winrate: games ? (w/games) : 0 };
-  }).filter(r=>r.games>=5)
-    .sort((a,b)=> b.winrate-a.winrate || b.games-a.games)
-    .slice(0,12);
-
-  renderTable('bestTeamsTbl', rows, [
-    {label:'Team',key:'team'},
-    {label:'G',key:'games',right:true},
-    {label:'W',key:'wins',right:true},
-    {label:'L',key:'losses',right:true},
-    {label:'Win %',key:'winrate',format:'pct',right:true},
-  ], '—');
-}
-
-function renderOpponents(){
-  const rowsSrc = SCOPE.filter(r => ALLOWED_TAGS.has(key(r.Tag)));
-  const g = groupBy(rowsSrc, r=>norm(r['Vs Opponent']));
-  const rows = Object.entries(g).map(([opp,list])=>{
-    const w = list.filter(r=>cleanWL(r['W/L'])==='W').length;
-    const l = list.filter(r=>cleanWL(r['W/L'])==='L').length;
-    const games = w+l;
-    return { opponent: opp||'—', games, wins:w, losses:l, winrate: games ? (w/games) : 0 };
-  })
-  .filter(r => ALLOWED_TAGS.has(key(r.opponent)))
-  .sort((a,b)=> b.games-a.games)
-  .slice(0,12);
-
-  renderTable('oppTbl', rows, [
-    {label:'Opponent',key:'opponent'},
-    {label:'G',key:'games',right:true},
-    {label:'W',key:'wins',right:true},
-    {label:'L',key:'losses',right:true},
-    {label:'Win %',key:'winrate',format:'pct',right:true},
-  ], '—');
-}
-
-/* Grouped “By Map” (collapsible per mode) */
-function renderByMapGrouped(rows){
-  const byModeObj = groupBy(rows, r=>r.ModeN || '—');
-  const host = el('mapTbl');
-
-  const cols = [
-    {label:'Map',key:'map'},
-    {label:'G',key:'games',right:true},
-    {label:'W',key:'wins',right:true},
-    {label:'L',key:'losses',right:true},
-    {label:'Win %',key:'winrate',format:'pct',right:true},
-  ];
-
-  function mapsFor(list){
-    const g = groupBy(list, r=>norm(r.Map)||'—');
-    return Object.entries(g).map(([map,ll])=>{
-      const qs = quickStats(ll);
-      return { map, games:qs.games, wins:qs.wins, losses:qs.losses, winrate:qs.winrate };
-    }).sort((a,b)=> b.winrate-a.winrate || b.games-a.games);
-  }
-
-  const html = MODE_ORDER.map(m=>{
-    const list = byModeObj[m] || [];
-    const rowsM = mapsFor(list);
-    if (!rowsM.length) return '';
-    return `
-      <details class="fold" open>
-        <summary><strong>${shortMode(m)}</strong></summary>
-        <div class="compact" style="margin-top:8px">
-          ${tableHTML(rowsM, cols)}
-        </div>
-      </details>`;
-  }).join('');
-
-  host.innerHTML = html || `<div class="muted">—</div>`;
-}
-
-function renderMatrix(){
-  const rowsSrc = SCOPE.filter(r => ALLOWED_TAGS.has(key(r.Tag)));
-  const byMapAll = (function(rows){
-    const g = groupBy(rows, r=>norm(r.Map)||'—');
-    return Object.entries(g).map(([map,list])=>{
-      const games = list.length;
-      const wins  = list.filter(r=>cleanWL(r['W/L'])==='W').length;
-      return { map, games, winrate: games ? (wins/games) : 0 };
-    }).sort((a,b)=> b.winrate-a.winrate || b.games-a.games);
-  })(rowsSrc);
-
-  const topMaps = byMapAll.slice(0,8).map(r=>r.map);
-  const byModeMap = {}; MODE_ORDER.forEach(m=> byModeMap[m] = {});
-  rowsSrc.forEach(r=>{
-    const m = r.ModeN || '—'; if (!MODE_ORDER.includes(m)) return;
-    const mp = norm(r.Map); if (!topMaps.includes(mp)) return;
-    const cell = (byModeMap[m][mp] ||= {games:0,wins:0});
-    cell.games += 1;
-    cell.wins  += cleanWL(r['W/L'])==='W' ? 1 : 0;
-  });
-
-  const rows = MODE_ORDER.map(m=>{
-    const row = { mode: shortMode(m) };
-    topMaps.forEach(mp=>{
-      const cell = byModeMap[m][mp] || {games:0,wins:0};
-      row[mp] = cell.games ? `${(cell.wins/cell.games*100).toFixed(1)}% (${cell.games})` : '—';
-    });
-    return row;
-  });
-
-  const cols = [{label:'Mode',key:'mode'}].concat(topMaps.map(mp=>({label:mp,key:mp})));
-  renderTable('matrixTbl', rows, cols, '—');
-}
-
-/* ===== Rows viewer ===== */
-function renderRows(){
-  const rowsShort = SCOPE.map(r=>({
-    ...r,
-    ModeS: shortMode(r.ModeN)
-  }));
-  const cols = [
-    {label:'ID',key:'id'}, {label:'Tournament',key:'Tournament'},
-    {label:'Team',key:'Tag'}, {label:'Opponent',key:'Vs Opponent'},
-    {label:'Stage',key:'Stage'}, {label:'Day',key:'Day'}, {label:'Series',key:'Series'},
-    {label:'Mode',key:'ModeS'}, {label:'Map',key:'Map'}, {label:'W/L',key:'W/L'},
-    {label:'Score',key:'Score',right:true}, {label:'Opp',key:'Opp Score',right:true},
-  ];
-  renderTable('rowsTbl', rowsShort, cols, 'No rows in scope.');
-}
-
-/* ===== Main render ===== */
-function renderAll(){
-  setSeriesOptions(SCOPE);
-  renderSeriesCard(el('fSeries').value);
-
-  const QA_ROWS = getQuickRows();
-  const q = (function(rows){
-    const games = rows.length;
-    const w = rows.filter(r=>cleanWL(r['W/L'])==='W').length;
-    const l = rows.filter(r=>cleanWL(r['W/L'])==='L').length;
-    const ptsFor = sum(rows,'Score');
-    const ptsAg  = sum(rows,'Opp Score');
-    return {games,wins:w,losses:l,winrate:games?(w/games):0,ptsFor,ptsAg,diff:ptsFor-ptsAg};
-  })(QA_ROWS);
-
-  /* Quick Analytics — removed Pts For / Pts Ag / Diff */
-  renderTable('quickTbl', [{
-    games:q.games, wins:q.wins, losses:q.losses, winrate:q.winrate
-  }], [
-    {label:'Games',key:'games',right:true},
-    {label:'Wins',key:'wins',right:true},
-    {label:'Losses',key:'losses',right:true},
-    {label:'Win %',key:'winrate',format:'pct',right:true},
-  ]);
-
-  const modes = byMode(QA_ROWS).map(r=>({mode:shortMode(r.mode), games:r.games, wins:r.wins, losses:r.losses, winrate:r.winrate}));
-  renderTable('modeTbl', modes, [
-    {label:'Mode',key:'mode'}, {label:'G',key:'games',right:true},
-    {label:'W',key:'wins',right:true}, {label:'L',key:'losses',right:true}, {label:'Win %',key:'winrate',format:'pct',right:true}
-  ], '—');
-
-  /* Grouped “By Map” per mode with collapsibles */
-  renderByMapGrouped(QA_ROWS);
-
-  renderStandings();
-  renderRows();
-  renderBestTeams();
-  renderOpponents();
-  renderMatrix();
-}
-
-/* ===== Wire up ===== */
-el('applyBtn').onclick = ()=>{ applyFilters(); renderAll(); };
-el('resetBtn').onclick = ()=>{
-  ['fTourn','fTeam','fOpp','fMode','fMap','fStage','fDay','fWL'].forEach(id=> el(id).value='ALL');
-  el('fSearch').value = '';
-  applyFilters(); renderAll();
-};
-el('exportBtn').onclick = ()=> download('codm_mp_scope.csv', toCSV(SCOPE));
-el('fSeries').addEventListener('change', (e)=> renderSeriesCard(e.target.value));
 
 /* ===== Boot ===== */
 (async function init(){
   ALLOWED_TAGS = await fetchAllowedTags();
-
   const raw = await fetchAllMatches();
 
   // normalize + hard filter:
@@ -1017,11 +443,18 @@ el('fSeries').addEventListener('change', (e)=> renderSeriesCard(e.target.value))
 
   GAME_ENTRIES = buildGameEntries(ALL);
 
-  populateDropdowns();
-  applyFilters();
-  renderAll();
+  // Build team selects (sorted A→Z)
+  const teams = listAllowedTeamsPresent(ALL);
+  setOptions(el('cmpTeamA'), teams);
+  setOptions(el('cmpTeamB'), teams);
+
+  // Wire
+  el('cmpSwap').addEventListener('click', ()=>{
+    const a=el('cmpTeamA'), b=el('cmpTeamB'); const v=a.value; a.value=b.value; b.value=v; renderComparison();
+  });
+  el('cmpTeamA').addEventListener('change', renderComparison);
+  el('cmpTeamB').addEventListener('change', renderComparison);
 })();
 </script>
 </body>
 </html>
-
