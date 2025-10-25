@@ -37,7 +37,7 @@
       "maps";
   }
   
-  /* ≥ 768px: switch back to maps left, viewer right */
+  /* ≥ 768px: maps left, viewer right */
   @media (min-width:768px){
     .grid{
       grid-template-columns:360px 1fr;
@@ -45,7 +45,7 @@
     }
   }
   
-  /* Assign areas */
+  /* Areas */
   .panel{ grid-area: maps; }
   .viewer{ grid-area: viewer; }
 
@@ -61,7 +61,7 @@
   .mode-section{margin-bottom:10px}
   .mode-title{margin:6px 0 8px 0;font-weight:800;color:#fff}
 
-  /* Map list — desktop: 1 column */
+  /* Map list */
   .map-list{
     display:grid;
     grid-template-columns: 1fr;
@@ -92,13 +92,11 @@
 
   .img-wrap{
     width:100%;height:72vh;min-height:360px;background:#0a0e18;border:1px solid var(--line);
-    border-radius:12px;display:flex;align-items:center;justify-content:center;overflow:auto;
-    cursor:grab;
+    border-radius:12px;display:flex;align-items:flex-start;justify-content:center; /* TOP aligned, horizontally centered */
+    overflow:auto; cursor:grab;
   }
   .img-wrap.grabbing{cursor:grabbing}
-  /* zoom stage grows/shrinks in layout (so scrollbars reflect size) */
   .zoom-stage{display:inline-block; width:auto; height:auto;}
-  /* the image always fills the stage, keeping aspect ratio */
   .zoom-stage img{width:100%;height:100%;object-fit:contain;display:block}
 
   .muted{color:var(--muted)}
@@ -128,7 +126,7 @@
       <p class="muted" id="countNote" style="margin-top:8px"></p>
     </section>
 
-    <!-- Right: viewer (shown first on small screens) -->
+    <!-- Right: viewer -->
     <section class="viewer">
       <div class="viewer-head">
         <div class="viewer-title" id="title">Select a map</div>
@@ -200,9 +198,9 @@
   let activeName = '';        // currently selected map name
 
   // Zoom state
-  let baseW = 0, baseH = 0;  // fitted size at 100% (so default placement stays identical)
+  let baseW = 0, baseH = 0;  // fitted size at 100%
   let zoom = 1;
-  const Z_MIN = 1;           // keep default (fit) as the minimum
+  const Z_MIN = 1;
   const Z_MAX = 6;
   const Z_STEP = 0.2;
 
@@ -281,7 +279,7 @@
 
   function filterList(){ renderGroups(); }
 
-  // === Zoom mechanics ===
+  /* === Zoom mechanics === */
   function setZoom(nextZoom, anchor = 'center', clientX = null, clientY = null){
     const prev = zoom;
     zoom = clamp(nextZoom, Z_MIN, Z_MAX);
@@ -308,32 +306,30 @@
   }
 
   function resetZoomToFit(){
-    // temporarily let the image auto-fit the viewer to measure the "default placement"
+    // let the image auto-fit to measure the "default placement"
     stage.style.width = stage.style.height = '';
     imgEl.style.width = imgEl.style.height = '';
     imgEl.style.maxWidth = '100%';
     imgEl.style.maxHeight = '100%';
 
-    // wait for layout
     requestAnimationFrame(()=>{
       const r = imgEl.getBoundingClientRect();
       baseW = r.width;
       baseH = r.height;
 
-      // lock stage to that fitted size (so 100% = default placement)
+      // lock stage to the fitted size (100% = default)
       stage.style.width  = baseW + 'px';
       stage.style.height = baseH + 'px';
 
-      // image fills the stage (keeps aspect ratio via object-fit)
       imgEl.style.width = '100%';
       imgEl.style.height = '100%';
 
       zoom = 1;
       zoomMeter.textContent = '100%';
 
-      // center in viewport
+      // Default view: TOP aligned, horizontally centered
+      wrap.scrollTop  = 0;
       wrap.scrollLeft = Math.max(0, (stage.scrollWidth - wrap.clientWidth)/2);
-      wrap.scrollTop  = Math.max(0, (stage.scrollHeight - wrap.clientHeight)/2);
     });
   }
 
@@ -371,15 +367,15 @@
   })();
 
   // Zoom buttons
-  zoomInBtn.addEventListener('click', ()=> setZoom(zoom + Z_STEP, 'center'));
-  zoomOutBtn.addEventListener('click', ()=> setZoom(zoom - Z_STEP, 'center'));
+  zoomInBtn.addEventListener('click', ()=> setZoom(zoom + 0.2, 'center'));
+  zoomOutBtn.addEventListener('click', ()=> setZoom(zoom - 0.2, 'center'));
   zoomMeter.addEventListener('click', resetZoomToFit);
 
   // Keyboard shortcuts (zoom)
   window.addEventListener('keydown', (e)=>{
     if (e.ctrlKey || e.metaKey){
-      if (e.key === '+' || e.key === '=' ){ e.preventDefault(); setZoom(zoom + Z_STEP, 'center'); }
-      if (e.key === '-' ){ e.preventDefault(); setZoom(zoom - Z_STEP, 'center'); }
+      if (e.key === '+' || e.key === '=' ){ e.preventDefault(); setZoom(zoom + 0.2, 'center'); }
+      if (e.key === '-' ){ e.preventDefault(); setZoom(zoom - 0.2, 'center'); }
       if (e.key === '0' ){ e.preventDefault(); resetZoomToFit(); }
     }
   });
@@ -404,8 +400,8 @@
   MAPS.forEach(m => { const im = new Image(); im.src = m.url; });
 
   // Search wiring
-  q.addEventListener('input', filterList);
-  clearBtn.addEventListener('click', ()=>{ q.value=''; filterList(); });
+  q.addEventListener('input', renderGroups);
+  clearBtn.addEventListener('click', ()=>{ q.value=''; renderGroups(); });
 
   // Initial render
   renderGroups();
