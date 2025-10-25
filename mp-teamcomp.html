@@ -38,9 +38,9 @@
     display:grid;
     grid-template-columns:repeat(2, minmax(280px, 1fr)) !important; /* force two columns */
     gap:12px;
-    overflow-x:auto;                 /* allow sideways scroll when too narrow */
+    overflow-x:auto;
     -webkit-overflow-scrolling:touch;
-    padding-bottom:6px;              /* room for scrollbar */
+    padding-bottom:6px;
   }
   .card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px;min-width:0}
   .card h3{margin:0 0 6px 0}
@@ -80,6 +80,10 @@
   .mode-pill{font-size:.7rem;border:1px solid var(--line);padding:1px 6px;border-radius:999px;background:#111827;color:#e8ecf5;width:max-content;margin:0 auto}
   .map-title{font-size:.95rem;margin-top:2px;text-align:center}
   .series-foot{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-top:1px solid var(--line);background:#1a2030;color:var(--muted);font-size:.85rem}
+
+  /* Collapsibles for By Map per mode */
+  details.fold{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px;margin-top:8px}
+  details.fold>summary{cursor:pointer;color:#e7ecf5}
 </style>
 </head>
 <body>
@@ -164,7 +168,10 @@ const sum = (arr, k) => arr.reduce((a,r)=>a+n(r[k]),0);
 const groupBy = (arr, keyFn) => arr.reduce((m,r)=>{ const k = keyFn(r); (m[k]=m[k]||[]).push(r); return m; },{});
 const distinct = (rows,key) => Array.from(new Set(rows.map(r=>r[key]).filter(Boolean)));
 const cleanWL = v => { const s = norm(v).toUpperCase(); return s==='W' || s==='L' ? s : ''; };
-const MODE_ORDER = ['Hardpoint','Search & Destroy','Control'];
+
+/* Mode normalization and labels */
+const MODE_ORDER = ['Hardpoint','Search & Destroy','Control']; // internal canonical order
+const MODE_SHORT = {'Hardpoint':'HP','Search & Destroy':'SND','Control':'CTRL'};
 function normalizeMode(m){
   const s = norm(m).toLowerCase();
   if (!s) return '';
@@ -172,6 +179,10 @@ function normalizeMode(m){
   if (s.includes('search') || s.includes('snd')) return 'Search & Destroy';
   if (s.includes('control')) return 'Control';
   return norm(m);
+}
+function shortMode(m){
+  const canon = normalizeMode(m);
+  return MODE_SHORT[canon] || canon || '—';
 }
 
 /* ===== Allowed maps/teams ===== */
@@ -181,7 +192,7 @@ function isAllowedMap(m){ return ALLOWED_MAPS.has(key(m)); }
 function isAllowedTeam(t){ return !ALLOWED_TAGS.size ? true : ALLOWED_TAGS.has(key(t)); }
 
 /* ===== Data ===== */
-let ALL = [];        // normalized rows
+let ALL = [];         // normalized rows
 let GAME_ENTRIES = [];// merged map-level entries, both perspectives
 
 /* ===== Fetch ===== */
@@ -238,7 +249,6 @@ function listAllowedTeamsPresent(rowsBase=ALL){
       if (ALLOWED_TAGS.has(k) && !present.has(k)) present.set(k, norm(name));
     });
   });
-  // ⬇️ Sort A→Z, case-insensitive
   return Array.from(present.values()).sort((a,b)=>a.localeCompare(b, undefined, {sensitivity:'base'}));
 }
 function renderTable(hostId, rows, cols, empty='No rows.'){
@@ -276,45 +286,80 @@ function quickStats(rows){
   const ptsAg  = sum(rows,'Opp Score');
   return { games, wins:w, losses:l, winrate: games ? (w/games) : 0, ptsFor, ptsAg, diff: ptsFor-ptsAg };
 }
+
+/* By Mode (show short labels) */
 function byMode(rows){
   const g = groupBy(rows, r=>r.ModeN||'—');
   return Object.entries(g).map(([mode,list])=>{
     const qs = quickStats(list);
-    return { mode, games:qs.games, wins:qs.wins, losses:qs.losses, winrate:qs.winrate };
+    return { modeS: shortMode(mode), games:qs.games, wins:qs.wins, losses:qs.losses, winrate:qs.winrate, _mode:mode };
   }).sort((a,b)=> {
-    const ai = MODE_ORDER.indexOf(a.mode), bi = MODE_ORDER.indexOf(b.mode);
+    const ai = MODE_ORDER.indexOf(a._mode), bi = MODE_ORDER.indexOf(b._mode);
     return (ai-bi) || (b.winrate-a.winrate) || (b.games-a.games);
   });
 }
 function renderTeamMode(hostId, rows){
-  const list = byMode(rows).map(r=>({mode:r.mode, games:r.games, wins:r.wins, losses:r.losses, winrate:r.winrate}));
+  const list = byMode(rows).map(r=>({modeS:r.modeS, games:r.games, wins:r.wins, losses:r.losses, winrate:r.winrate}));
   renderTable(hostId, list, [
-    {label:'Mode',key:'mode'},
+    {label:'Mode',key:'modeS'},
     {label:'G',key:'games',right:true},
     {label:'W',key:'wins',right:true},
     {label:'L',key:'losses',right:true},
     {label:'Win %',key:'winrate',format:'pct',right:true}
   ], '—');
 }
+
+/* By Map base util */
 function byMap(rows){
   const g = groupBy(rows, r=>norm(r.Map)||'—');
   return Object.entries(g).map(([map,list])=>{
     const qs = quickStats(list);
     return { map, games:qs.games, wins:qs.wins, losses:qs.losses, winrate:qs.winrate };
-  })
-  // Sort by Win% (desc), then games (desc), then map name A→Z
-  .sort((a,b)=> (b.winrate - a.winrate) || (b.games - a.games) || a.map.localeCompare(b.map));
+  }).sort((a,b)=> (b.winrate - a.winrate) || (b.games - a.games) || a.map.localeCompare(b.map));
 }
-function renderTeamMap(hostId, rows){
-  const list = byMap(rows).map(r=>({map:r.map, games:r.games, wins:r.wins, losses:r.losses, winrate:r.winrate}));
-  renderTable(hostId, list, [
+/* Grouped By Map per mode with collapsibles */
+function renderTeamMapGrouped(hostId, rows){
+  const host = el(hostId);
+  const byModeObj = groupBy(rows, r=>r.ModeN || '—');
+
+  const cols = [
     {label:'Map',key:'map'},
     {label:'G',key:'games',right:true},
     {label:'W',key:'wins',right:true},
     {label:'L',key:'losses',right:true},
-    {label:'Win %',key:'winrate',format:'pct',right:true}
-  ], '—');
+    {label:'Win %',key:'winrate',format:'pct',right:true},
+  ];
+
+  function tableHTML(list){
+    if (!list.length) return `<div class="muted">—</div>`;
+    const thead = `<thead><tr>${cols.map(c=>`<th class="${c.right?'right':''}">${c.label}</th>`).join('')}</tr></thead>`;
+    const body = list.map(r=>`<tr>${
+      cols.map(c=>{
+        let v = r[c.key];
+        if (c.format==='pct') v = (typeof v==='number') ? (v*100).toFixed(1)+'%' : '—';
+        return `<td class="${c.right?'right':''}">${v ?? '—'}</td>`;
+      }).join('')
+    }</tr>`).join('');
+    return `<table class="table"><thead>${thead}</thead><tbody>${body}</tbody></table>`;
+  }
+
+  const html = MODE_ORDER.map(m=>{
+    const listM = (byModeObj[m] || []);
+    if (!listM.length) return '';
+    const rowsM = byMap(listM);
+    return `
+      <details class="fold" open>
+        <summary><strong>${shortMode(m)}</strong></summary>
+        <div class="compact" style="margin-top:8px">
+          ${tableHTML(rowsM)}
+        </div>
+      </details>`;
+  }).join('');
+
+  host.innerHTML = html || `<div class="muted">—</div>`;
 }
+
+/* KV tiles (remove Pts For / Pts Ag / Diff) */
 function renderKV(hostId, kv){
   el(hostId).innerHTML = kv.map(x=>`<div class="tile"><div class="k">${x.k}</div><div class="v">${x.v}</div></div>`).join('');
 }
@@ -324,10 +369,7 @@ function teamQuick(rows){
     {k:'Games',v:s.games},
     {k:'Wins',v:s.wins},
     {k:'Losses',v:s.losses},
-    {k:'Win %',v: (s.winrate*100).toFixed(1)+'%'},
-    {k:'Pts For',v:s.ptsFor},
-    {k:'Pts Ag',v:s.ptsAg},
-    {k:'Diff',v:s.diff}
+    {k:'Win %',v:(s.winrate*100).toFixed(1)+'%'},
   ];
 }
 
@@ -343,12 +385,22 @@ function renderComparison(){
     return;
   }
   el('cmpNameA').textContent = a; el('cmpNameB').textContent = b;
+
   const aRows = ALL.filter(r=> key(r.Tag)===key(a) && cleanWL(r['W/L']));
   const bRows = ALL.filter(r=> key(r.Tag)===key(b) && cleanWL(r['W/L']));
-  renderKV('cmpTilesA', teamQuick(aRows)); renderKV('cmpTilesB', teamQuick(bRows));
-  renderTeamMode('cmpModeA', aRows); renderTeamMode('cmpModeB', bRows);
-  renderTeamMap('cmpMapA', aRows);   renderTeamMap('cmpMapB', bRows);
-  el('cmpEmpty').style.display = 'none'; el('cmpWrap').style.display = '';
+
+  renderKV('cmpTilesA', teamQuick(aRows));
+  renderKV('cmpTilesB', teamQuick(bRows));
+
+  renderTeamMode('cmpModeA', aRows);
+  renderTeamMode('cmpModeB', bRows);
+
+  renderTeamMapGrouped('cmpMapA', aRows);
+  renderTeamMapGrouped('cmpMapB', bRows);
+
+  el('cmpEmpty').style.display = 'none';
+  el('cmpWrap').style.display = '';
+
   renderH2HAndSeries(a,b);
 }
 
@@ -409,7 +461,7 @@ function renderSeriesCardHTML(list, A, B){
   const body = rowsSorted.map(l=>{
     const aWin = !!l.win;
     const left  = `<div class="side side-left ${aWin?'':'dim'}"><span class="${aWin?'tick':'cross'}"></span><div class="scoreL">${l.ownScore}</div></div>`;
-    const mid   = `<div class="mode-stack"><span class="mode-pill">${l.mode||'—'}</span><div class="map-title">${l.map||'—'}</div></div>`;
+    const mid   = `<div class="mode-stack"><span class="mode-pill">${shortMode(l.mode) || '—'}</span><div class="map-title">${l.map || '—'}</div></div>`;
     const right = `<div class="side side-right ${aWin?'dim':''}"><div class="scoreR">${l.oppScore}</div><span class="${aWin?'cross':'tick'}"></span></div>`;
     return `<div class="map-row">${left}${mid}${right}</div>`;
   }).join('');
