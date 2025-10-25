@@ -170,7 +170,7 @@ const distinct = (rows,key) => Array.from(new Set(rows.map(r=>r[key]).filter(Boo
 const cleanWL = v => { const s = norm(v).toUpperCase(); return s==='W' || s==='L' ? s : ''; };
 
 /* Mode normalization and labels */
-const MODE_ORDER = ['Hardpoint','Search & Destroy','Control']; // internal canonical order
+const MODE_ORDER = ['Hardpoint','Search & Destroy','Control']; // canonical order
 const MODE_SHORT = {'Hardpoint':'HP','Search & Destroy':'SND','Control':'CTRL'};
 function normalizeMode(m){
   const s = norm(m).toLowerCase();
@@ -191,13 +191,17 @@ const ALLOWED_MAP_NAMES = [
   'Hacienda','Kurohana Metropolis','Raid','Slums','Standoff','Summit','Takeoff','Tunisia'
 ];
 const ALLOWED_MAPS = new Set(ALLOWED_MAP_NAMES.map(key));
+const MAP_LABEL_BY_KEY = Object.fromEntries(ALLOWED_MAP_NAMES.map(nm=>[key(nm), nm]));
+function canonicalMapLabel(m){ return MAP_LABEL_BY_KEY[key(m)] || norm(m); }
+
 let ALLOWED_TAGS = new Set();
 function isAllowedMap(m){ return ALLOWED_MAPS.has(key(m)); }
 function isAllowedTeam(t){ return !ALLOWED_TAGS.size ? true : ALLOWED_TAGS.has(key(t)); }
 
 /* ===== Data ===== */
-let ALL = [];         // normalized rows
-let GAME_ENTRIES = [];// merged map-level entries, both perspectives
+let ALL = [];          // normalized rows
+let GAME_ENTRIES = []; // merged map-level entries, both perspectives
+let APPLICABLE_MAPS_BY_MODE = {}; // computed from data: which maps actually appear per mode
 
 /* ===== Fetch ===== */
 async function fetchAllMatches(){
@@ -237,6 +241,24 @@ function buildGameEntries(rows){
     if ((aScore + bScore) <= 0) return;
     out.push({tournament:tourn, seriesNeutral: seriesKeyNeutral(rA), stage, day, seriesNo: ser, team: A, opp: B, mode, map, mapIdx: idx, ownScore: aScore, oppScore: bScore, win: aScore>bScore ? 1:0, loss: aScore<bScore ? 1:0});
     out.push({tournament:tourn, seriesNeutral: seriesKeyNeutral(rA), stage, day, seriesNo: ser, team: B, opp: A, mode, map, mapIdx: idx, ownScore: bScore, oppScore: aScore, win: bScore>aScore ? 1:0, loss: bScore<aScore ? 1:0});
+  });
+  return out;
+}
+
+/* Which maps are applicable per mode (from data) */
+function computeApplicableMapsByMode(baseRows=ALL){
+  const pools = {};
+  MODE_ORDER.forEach(m => pools[m] = new Set());
+  baseRows.forEach(r=>{
+    const m = r.ModeN;
+    const mp = canonicalMapLabel(r.Map);
+    if (!MODE_ORDER.includes(m)) return;
+    if (!isAllowedMap(mp)) return;
+    pools[m].add(canonicalMapLabel(mp));
+  });
+  const out = {};
+  MODE_ORDER.forEach(m=>{
+    out[m] = Array.from(pools[m]).sort((a,b)=>a.localeCompare(b));
   });
   return out;
 }
@@ -313,7 +335,7 @@ function renderTeamMode(hostId, rows){
   ], '—');
 }
 
-/* Grouped By Map per mode with collapsibles (show ALL maps, A→Z) */
+/* Grouped By Map per mode with collapsibles (ONLY applicable maps for that mode, A→Z) */
 function renderTeamMapGrouped(hostId, rows){
   const host = el(hostId);
   const byModeObj = groupBy(rows, r=>r.ModeN || '—');
@@ -327,6 +349,7 @@ function renderTeamMapGrouped(hostId, rows){
   ];
 
   function tableHTML(list){
+    if (!list.length) return `<div class="muted">—</div>`;
     const thead = `<thead><tr>${cols.map(c=>`<th class="${c.right?'right':''}">${c.label}</th>`).join('')}</tr></thead>`;
     const body = list.map(r=>`<tr>${
       cols.map(c=>{
@@ -338,21 +361,24 @@ function renderTeamMapGrouped(hostId, rows){
     return `<table class="table"><thead>${thead}</thead><tbody>${body}</tbody></table>`;
   }
 
-  function rowsForMode(list){
-    // Build one row per allowed map, alphabetically
-    const mapsAlpha = ALLOWED_MAP_NAMES.slice().sort((a,b)=>a.localeCompare(b));
-    return mapsAlpha.map(mp=>{
+  function rowsForMode(list, modeCanon){
+    // applicable map pool for this mode (from dataset), else empty
+    const pool = (APPLICABLE_MAPS_BY_MODE[modeCanon] || []).slice();
+    if (!pool.length) return []; // nothing applicable for this mode
+    // Build one row per applicable map, A→Z
+    return pool.map(mp=>{
       const played = list.filter(r=> key(r.Map)===key(mp));
       const games = played.length;
       const wins  = played.filter(r=> cleanWL(r['W/L'])==='W').length;
       const losses= games - wins;
-      return { map: mp, games, wins, losses, winrate: games ? (wins/games) : null };
+      return { map: canonicalMapLabel(mp), games, wins, losses, winrate: games ? (wins/games) : null };
     });
   }
 
   const html = MODE_ORDER.map(m=>{
     const listM = byModeObj[m] || [];
-    const rowsM = rowsForMode(listM);
+    const rowsM = rowsForMode(listM, m);
+    if (!rowsM.length) return '';
     return `
       <details class="fold" open>
         <summary><strong>${shortMode(m)}</strong></summary>
@@ -365,7 +391,7 @@ function renderTeamMapGrouped(hostId, rows){
   host.innerHTML = html || `<div class="muted">—</div>`;
 }
 
-/* KV tiles (only the requested four) */
+/* KV tiles (requested four only) */
 function renderKV(hostId, kv){
   el(hostId).innerHTML = kv.map(x=>`<div class="tile"><div class="k">${x.k}</div><div class="v">${x.v}</div></div>`).join('');
 }
@@ -500,6 +526,9 @@ function renderSeriesCardHTML(list, A, B){
   );
 
   GAME_ENTRIES = buildGameEntries(ALL);
+
+  // Compute applicable map pools per mode (from dataset)
+  APPLICABLE_MAPS_BY_MODE = computeApplicableMapsByMode(ALL);
 
   // Build team selects (sorted A→Z)
   const teams = listAllowedTeamsPresent(ALL);
