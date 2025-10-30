@@ -26,22 +26,12 @@
 
   /* Layout */
   .shell{max-width:1200px;margin:16px auto;padding:0 12px}
-  
-  /* Mobile-first: viewer on top, maps below */
   .grid{
-    display:grid;
-    gap:14px;
-    grid-template-columns:1fr;
-    grid-template-areas:
-      "viewer"
-      "maps";
+    display:grid; gap:14px; grid-template-columns:1fr;
+    grid-template-areas: "viewer" "maps";
   }
-  /* ≥ 768px: maps left, viewer right */
   @media (min-width:768px){
-    .grid{
-      grid-template-columns:360px 1fr;
-      grid-template-areas:"maps viewer";
-    }
+    .grid{ grid-template-columns:360px 1fr; grid-template-areas:"maps viewer"; }
   }
   .panel{ grid-area: maps; }
   .viewer{ grid-area: viewer; }
@@ -59,17 +49,10 @@
   .mode-title{margin:6px 0 8px 0;font-weight:800;color:#fff}
 
   /* Map list */
-  .map-list{
-    display:grid;
-    grid-template-columns: 1fr;
-    gap:8px;
-  }
-  @media (max-width: 1000px){
-    .map-list{ grid-template-columns: repeat(3, minmax(80px, 1fr)); }
-  }
-  @media (max-width: 600px){
-    .map-list{ grid-template-columns: repeat(2, minmax(120px, 1fr)); }
-  }
+  .map-list{ display:grid; grid-template-columns: 1fr; gap:8px; }
+  @media (max-width: 1000px){ .map-list{ grid-template-columns: repeat(3, minmax(80px, 1fr)); } }
+  @media (max-width: 600px){ .map-list{ grid-template-columns: repeat(2, minmax(120px, 1fr)); } }
+
   .map-btn{
     background:#0f1524;border:1px solid var(--line);color:#dfe7f5;border-radius:12px;
     padding:10px 10px; text-align:center; cursor:pointer; user-select:none;
@@ -80,35 +63,32 @@
 
   /* Viewer */
   .viewer{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:10px}
-  .viewer-head{display:flex;align-items:center;gap:10px;margin:0 0 10px 0}
+  .viewer-head{display:flex;align-items:center;gap:10px;margin:0 0 10px 0;flex-wrap:wrap}
   .viewer-title{font-weight:800}
   .viewer-tools{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
   .viewer-tools .btn{padding:6px 10px}
   .viewer-tools .meter{min-width:52px;text-align:center;font-variant-numeric:tabular-nums}
 
+  /* HP Variant Bar */
+  .variant-bar{
+    display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 8px 0;
+  }
+  .seg-btn{
+    background:#0f1524;border:1px solid var(--line);color:#dfe7f5;border-radius:999px;
+    padding:6px 10px; font-size:.9rem; cursor:pointer; user-select:none;
+    transition:transform .05s ease, border-color .2s ease, background .2s ease;
+  }
+  .seg-btn:hover{transform:translateY(-1px);border-color:#4b9bd6}
+  .seg-btn.active{background:#152036;border-color:var(--accent);box-shadow:0 0 0 2px #152036, 0 0 0 4px rgba(127,210,255,.25) inset}
+
   /* Pan+Zoom Stage */
   .img-wrap{
-    position:relative;
-    width:100%;
-    height:72vh;               /* responsive viewer height */
-    min-height:360px;
-    background:#0a0e18;
-    border:1px solid var(--line);
-    border-radius:12px;
-    overflow:hidden;           /* ensure whole image visible at default, no scrollbars */
-    touch-action:none;         /* allow custom pinch/drag gestures */
-    user-select:none;
+    position:relative; width:100%; height:72vh; min-height:360px;
+    background:#0a0e18; border:1px solid var(--line); border-radius:12px;
+    overflow:hidden; touch-action:none; user-select:none;
   }
-  #stage{
-    position:absolute;         /* we position it via left/top offsets */
-    will-change:transform,width,height;
-  }
-  #stage img{
-    width:100%; height:100%;   /* image fills the stage rectangle */
-    object-fit:contain;        /* preserves aspect ratio */
-    display:block;
-    pointer-events:none;       /* so dragging grabs the stage */
-  }
+  #stage{ position:absolute; will-change:transform,width,height; }
+  #stage img{ width:100%; height:100%; object-fit:contain; display:block; pointer-events:none; }
 
   .muted{color:var(--muted)}
 </style>
@@ -140,7 +120,11 @@
     <!-- Right: viewer -->
     <section class="viewer">
       <div class="viewer-head">
-        <div class="viewer-title" id="title">Select a map</div>
+        <div>
+          <div class="viewer-title" id="title">Select a map</div>
+          <!-- Variant buttons appear here when a Hardpoint map is selected -->
+          <div id="variantBar" class="variant-bar" style="display:none"></div>
+        </div>
         <div class="viewer-tools">
           <button class="btn secondary" id="zoomOut" title="Zoom out (Ctrl/⌘ -)">−</button>
           <button class="btn secondary meter" id="zoomMeter" title="Reset view (Ctrl/⌘ 0)">100%</button>
@@ -149,6 +133,7 @@
           <a id="downloadLink" class="btn" href="#" download>Download</a>
         </div>
       </div>
+
       <div class="img-wrap" id="wrap">
         <div id="stage"><img id="img" alt="Map layout preview" /></div>
       </div>
@@ -160,7 +145,7 @@
 </div>
 
 <script>
-  /* === Source images === */
+  /* === Source images (default "All" images) === */
   const MAPS = [
     {name:'Coastal', url:'https://i.imgur.com/2JRlrj5.png'},
     {name:'Crossfire', url:'https://i.imgur.com/YYor9iP.png'},
@@ -177,7 +162,7 @@
     {name:'Combine', url:'https://i.imgur.com/DtBhN36.png'}
   ];
 
-  /* === Grouping by mode (buttons appear under each) === */
+  /* === Grouping by mode === */
   const MAPS_BY_MODE = {
     'Hardpoint':        ['Summit','Hacienda','Apocalypse','Slums','Combine'],
     'Search & Destroy': ['Tunisia','Firing Range','Kurohana Metropolis','Standoff','Coastal'],
@@ -185,8 +170,49 @@
   };
   const MODE_ORDER = ['Hardpoint','Search & Destroy','Control'];
 
+  /* === Hardpoint Variants (All, P1..P4) === */
+  const HP_VARIANTS = {
+    'Apocalypse': {
+      'All':'https://i.imgur.com/djfhXIE.png',
+      'P1':'https://i.imgur.com/9NVdBgP.png',
+      'P2':'https://i.imgur.com/u8Nogpu.png',
+      'P3':'https://i.imgur.com/x1x4wwq.png',
+      'P4':'https://i.imgur.com/ObpgHDH.png'
+    },
+    'Combine': {
+      'All':'https://i.imgur.com/DtBhN36.png',
+      'P1':'https://i.imgur.com/gtI51o8.png',
+      'P2':'https://i.imgur.com/rM5RqqB.png',
+      'P3':'https://i.imgur.com/932Edc6.png',
+      'P4':'https://i.imgur.com/rRR7930.png'
+    },
+    'Hacienda': {
+      'All':'https://i.imgur.com/aOWvPKU.png',
+      'P1':'https://i.imgur.com/KD4KFCx.jpeg',
+      'P2':'https://i.imgur.com/xu93Wnw.jpeg',
+      'P3':'https://i.imgur.com/cTnO39Y.jpeg',
+      'P4':'https://i.imgur.com/zmnepDg.jpeg'
+    },
+    'Slums': {
+      'All':'https://i.imgur.com/9y2NzWw.png',
+      'P1':'https://i.imgur.com/w0NAEaD.png',
+      'P2':'https://i.imgur.com/hYg1XDM.png',
+      'P3':'https://i.imgur.com/4MUlecf.png',
+      'P4':'https://i.imgur.com/UmbYAb0.png'
+    },
+    'Summit': {
+      'All':'https://i.imgur.com/yevs7pE.png',
+      'P1':'https://i.imgur.com/FcT6RBE.jpeg',
+      'P2':'https://i.imgur.com/pAwsWEp.jpeg',
+      'P3':'https://i.imgur.com/aQ7XvtZ.jpeg',
+      'P4':'https://i.imgur.com/sW3SNwA.jpeg'
+    }
+  };
+
   const groupsEl   = document.getElementById('groups');
   const titleEl    = document.getElementById('title');
+  const variantBar = document.getElementById('variantBar');
+
   const wrap       = document.getElementById('wrap');
   const stage      = document.getElementById('stage');
   const imgEl      = document.getElementById('img');
@@ -202,13 +228,14 @@
   const zoomMeter  = document.getElementById('zoomMeter');
 
   let flatFiltered = []; // visible ordered map names
-  let activeName = '';   // current selection
+  let activeName = '';   // current map
+  let activeVariant = 'All'; // HP segment (All/P1/P2/P3/P4)
 
-  // --- Pan & Zoom state ---
-  let naturalW = 0, naturalH = 0;   // image intrinsic dimensions
-  let baseScale = 1;                // scale to fit (default view)
-  let zoom = 1;                     // user zoom multiplier (>=1)
-  let offsetX = 0, offsetY = 0;     // stage offsets (px) relative to wrap
+  /* === Pan & Zoom state === */
+  let naturalW = 0, naturalH = 0;
+  let baseScale = 1;
+  let zoom = 1;
+  let offsetX = 0, offsetY = 0;
   const Z_MIN = 1, Z_MAX = 6, Z_STEP = 0.2;
 
   const clamp = (v,a,b)=> Math.min(Math.max(v,a),b);
@@ -235,7 +262,6 @@
     const s = effScale();
     const w = naturalW * s, h = naturalH * s;
 
-    // If content smaller than container, keep centered (no panning)
     if (w <= wrap.clientWidth){
       offsetX = Math.round((wrap.clientWidth - w)/2);
     } else {
@@ -256,8 +282,8 @@
       wrap.clientWidth  / naturalW,
       wrap.clientHeight / naturalH
     );
-    zoom = 1;                // default view
-    centerStage();           // fully visible, centered
+    zoom = 1;
+    centerStage();
     setStage();
     updateZoomMeter();
   }
@@ -283,7 +309,6 @@
     zoomAtFactor(factor, anchorX, anchorY);
   }
 
-  // Refit on resize while preserving visual center/zoom
   function handleResize(){
     if (!naturalW || !naturalH) return;
     const prevS = effScale();
@@ -291,12 +316,7 @@
     const cx = (centerX - offsetX) / prevS;
     const cy = (centerY - offsetY) / prevS;
 
-    // recompute base to fit new container
-    baseScale = Math.min(
-      wrap.clientWidth  / naturalW,
-      wrap.clientHeight / naturalH
-    );
-    // keep the *effective* scale as close as possible (zoom becomes prevS/base)
+    baseScale = Math.min(wrap.clientWidth / naturalW, wrap.clientHeight / naturalH);
     zoom = clamp(prevS / baseScale, Z_MIN, Z_MAX);
 
     const nextS = effScale();
@@ -309,96 +329,37 @@
   }
   window.addEventListener('resize', ()=> requestAnimationFrame(handleResize));
 
-  // --- Panning (mouse / touch one-finger) ---
+  /* === Panning (mouse/touch) === */
   (function panGesture(){
     let dragging = false, sx=0, sy=0, ox=0, oy=0;
-
-    const start = (x,y)=>{
-      dragging = true; sx=x; sy=y; ox=offsetX; oy=offsetY;
-    };
-    const move = (x,y)=>{
-      if (!dragging) return;
-      offsetX = ox + (x - sx);
-      offsetY = oy + (y - sy);
-      clampOffsets();
-      setStage();
-    };
+    const start = (x,y)=>{ dragging = true; sx=x; sy=y; ox=offsetX; oy=offsetY; };
+    const move = (x,y)=>{ if (!dragging) return; offsetX = ox + (x - sx); offsetY = oy + (y - sy); clampOffsets(); setStage(); };
     const end = ()=> { dragging = false; };
 
-    // Mouse
-    wrap.addEventListener('mousedown', (e)=>{
-      // allow panning even at zoom=1 (no movement will occur due to clamp)
-      if (e.button!==0) return;
-      e.preventDefault(); start(e.clientX, e.clientY);
-    });
+    wrap.addEventListener('mousedown', (e)=>{ if (e.button!==0) return; e.preventDefault(); start(e.clientX, e.clientY); });
     window.addEventListener('mousemove', (e)=> move(e.clientX, e.clientY));
     window.addEventListener('mouseup', end);
 
-    // Touch (one finger)
     let touchId = null;
-    wrap.addEventListener('touchstart', (e)=>{
-      if (e.touches.length===1){
-        const t = e.touches[0]; touchId = t.identifier; start(t.clientX, t.clientY);
-      }
-    }, {passive:true});
-    wrap.addEventListener('touchmove', (e)=>{
-      if (touchId==null) return;
-      const t = [...e.touches].find(t=>t.identifier===touchId);
-      if (t) move(t.clientX, t.clientY);
-    }, {passive:true});
+    wrap.addEventListener('touchstart', (e)=>{ if (e.touches.length===1){ const t = e.touches[0]; touchId=t.identifier; start(t.clientX,t.clientY);} }, {passive:true});
+    wrap.addEventListener('touchmove', (e)=>{ if (touchId==null) return; const t=[...e.touches].find(t=>t.identifier===touchId); if (t) move(t.clientX,t.clientY); }, {passive:true});
     wrap.addEventListener('touchend', ()=>{ touchId=null; end(); }, {passive:true});
     wrap.addEventListener('touchcancel', ()=>{ touchId=null; end(); }, {passive:true});
   })();
 
-  // --- Pinch Zoom (two fingers) ---
+  /* === Pinch Zoom === */
   (function pinchZoom(){
     let p1=null, p2=null;
-
     function dist(a,b){ const dx=a.clientX-b.clientX, dy=a.clientY-b.clientY; return Math.hypot(dx,dy); }
     function mid(a,b){ return {x:(a.clientX+b.clientX)/2, y:(a.clientY+b.clientY)/2}; }
 
-    wrap.addEventListener('touchstart', (e)=>{
-      if (e.touches.length===2){
-        p1 = e.touches[0]; p2 = e.touches[1];
-        // store initial pinch state
-        wrap.dataset.pinchD = dist(p1,p2);
-        const m = mid(p1,p2);
-        wrap.dataset.pinchX = m.x; wrap.dataset.pinchY = m.y;
-      }
-    }, {passive:true});
-
-    wrap.addEventListener('touchmove', (e)=>{
-      if (e.touches.length!==2 || p1==null || p2==null) return;
-      const n1 = e.touches[0], n2 = e.touches[1];
-      const d0 = parseFloat(wrap.dataset.pinchD || '0') || 0;
-      if (!d0) return;
-      const d1 = dist(n1,n2);
-      const m = mid(n1,n2);
-      const ax = parseFloat(wrap.dataset.pinchX || m.x);
-      const ay = parseFloat(wrap.dataset.pinchY || m.y);
-      const factor = d1 / d0;
-      // apply *relative* factor but also update the baseline so continuous pinch feels natural
-      zoomAtFactor(factor, ax, ay);
-      // reset baseline for smooth incremental scaling
-      wrap.dataset.pinchD = d1;
-      wrap.dataset.pinchX = m.x; wrap.dataset.pinchY = m.y;
-    }, {passive:true});
-
-    wrap.addEventListener('touchend', ()=>{
-      p1=p2=null;
-      delete wrap.dataset.pinchD;
-      delete wrap.dataset.pinchX;
-      delete wrap.dataset.pinchY;
-    }, {passive:true});
-    wrap.addEventListener('touchcancel', ()=>{
-      p1=p2=null;
-      delete wrap.dataset.pinchD;
-      delete wrap.dataset.pinchX;
-      delete wrap.dataset.pinchY;
-    }, {passive:true});
+    wrap.addEventListener('touchstart', (e)=>{ if (e.touches.length===2){ p1=e.touches[0]; p2=e.touches[1]; wrap.dataset.pinchD=dist(p1,p2); const m=mid(p1,p2); wrap.dataset.pinchX=m.x; wrap.dataset.pinchY=m.y; } }, {passive:true});
+    wrap.addEventListener('touchmove', (e)=>{ if (e.touches.length!==2 || !wrap.dataset.pinchD) return; const d0=parseFloat(wrap.dataset.pinchD)||0; if (!d0) return; const n1=e.touches[0], n2=e.touches[1]; const d1=dist(n1,n2); const m=mid(n1,n2); const ax=parseFloat(wrap.dataset.pinchX||m.x); const ay=parseFloat(wrap.dataset.pinchY||m.y); const factor=d1/d0; zoomAtFactor(factor, ax, ay); wrap.dataset.pinchD=d1; wrap.dataset.pinchX=m.x; wrap.dataset.pinchY=m.y; }, {passive:true});
+    wrap.addEventListener('touchend', ()=>{ p1=p2=null; delete wrap.dataset.pinchD; delete wrap.dataset.pinchX; delete wrap.dataset.pinchY; }, {passive:true});
+    wrap.addEventListener('touchcancel', ()=>{ p1=p2=null; delete wrap.dataset.pinchD; delete wrap.dataset.pinchX; delete wrap.dataset.pinchY; }, {passive:true});
   })();
 
-  // Wheel zoom (Ctrl/⌘ + wheel keeps page scroll normal; pinch on trackpads maps to this too)
+  /* === Wheel zoom (with Ctrl/⌘) === */
   wrap.addEventListener('wheel', (e)=>{
     if (e.ctrlKey || e.metaKey){
       e.preventDefault();
@@ -407,7 +368,7 @@
     }
   }, {passive:false});
 
-  // Buttons + keyboard zoom
+  /* === Buttons + keyboard zoom === */
   zoomInBtn.addEventListener('click', ()=> zoomStep(+1));
   zoomOutBtn.addEventListener('click',()=> zoomStep(-1));
   zoomMeter.addEventListener('click', ()=> fitToView());
@@ -419,10 +380,12 @@
     }
   });
 
-  // --- Map list rendering ---
+  /* === Map list rendering === */
   function findGlobalMap(name){
     return MAPS.find(m => m.name.toLowerCase() === name.toLowerCase());
   }
+  const isHPMap = (name)=> (MAPS_BY_MODE['Hardpoint']||[]).map(n=>n.toLowerCase()).includes(String(name).toLowerCase());
+
   function renderGroups(){
     const term = (q.value||'').trim().toLowerCase();
     flatFiltered = [];
@@ -452,7 +415,7 @@
         b.className = 'map-btn';
         b.textContent = m.name;
         b.dataset.name = m.name;
-        b.onclick = () => selectName(m.name);
+        b.onclick = () => selectName(m.name, 'All'); // default to 'All' on map switch
         list.appendChild(b);
       });
 
@@ -465,7 +428,7 @@
 
     applyActiveStyle();
     if (flatFiltered.length && !flatFiltered.includes(activeName)){
-      selectName(flatFiltered[0]);
+      selectName(flatFiltered[0], 'All');
     }
   }
 
@@ -473,23 +436,68 @@
     groupsEl.querySelectorAll('.map-btn').forEach(btn=>{
       btn.classList.toggle('active', btn.dataset.name === activeName);
     });
+    // variant buttons highlight
+    [...variantBar.querySelectorAll('.seg-btn')].forEach(b=>{
+      b.classList.toggle('active', b.dataset.seg === activeVariant);
+    });
   }
 
-  function selectName(name){
+  function getCurrentURL(name, variant){
+    if (isHPMap(name) && HP_VARIANTS[name] && HP_VARIANTS[name][variant]) {
+      return HP_VARIANTS[name][variant];
+    }
     const m = findGlobalMap(name);
-    if (!m) return;
-    activeName = m.name;
-    titleEl.textContent = m.name;
-    imgEl.src = m.url;
-    imgEl.alt = `${m.name} map layout`;
-    openLink.href = m.url;
-    downloadLink.href = m.url;
+    return m ? m.url : '';
+  }
+
+  function renderVariantButtons(name){
+    // show only for HP maps with known variants
+    if (!isHPMap(name) || !HP_VARIANTS[name]) {
+      variantBar.style.display = 'none';
+      variantBar.innerHTML = '';
+      return;
+    }
+    const segments = ['All','P1','P2','P3','P4'].filter(s => HP_VARIANTS[name][s]);
+    variantBar.innerHTML = segments.map(seg =>
+      `<button class="seg-btn" data-seg="${seg}" title="${name} — ${seg}">${seg}</button>`
+    ).join('');
+    variantBar.style.display = '';
+    // wire events
+    [...variantBar.querySelectorAll('.seg-btn')].forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        activeVariant = btn.dataset.seg || 'All';
+        const url = getCurrentURL(activeName, activeVariant);
+        titleEl.textContent = `${activeName} — ${activeVariant}`;
+        imgEl.src = url;
+        imgEl.alt = `${activeName} ${activeVariant} layout`;
+        openLink.href = url;
+        dlLink.href = url;
+        applyActiveStyle();
+      });
+    });
     applyActiveStyle();
   }
 
-  // When image loads, capture intrinsic size then fit to view
+  function selectName(name, variant='All'){
+    const base = findGlobalMap(name);
+    if (!base) return;
+
+    activeName = base.name;
+    activeVariant = variant;
+
+    renderVariantButtons(activeName);
+
+    const url = getCurrentURL(activeName, activeVariant);
+    titleEl.textContent = isHPMap(activeName) ? `${activeName} — ${activeVariant}` : activeName;
+    imgEl.src = url;
+    imgEl.alt = `${activeName} map layout`;
+    openLink.href = url;
+    dlLink.href = url;
+    applyActiveStyle();
+  }
+
+  // On image load, capture intrinsic size then fit
   imgEl.addEventListener('load', ()=>{
-    // Sometimes naturalWidth/Height may be 0 at first layout — retry on next frame
     requestAnimationFrame(()=>{
       naturalW = imgEl.naturalWidth || imgEl.width;
       naturalH = imgEl.naturalHeight || imgEl.height;
@@ -500,21 +508,23 @@
   // Keyboard navigation across filtered order
   window.addEventListener('keydown', (e)=>{
     if (!flatFiltered.length) return;
-    if (e.ctrlKey || e.metaKey) return; // let zoom shortcuts handle
+    if (e.ctrlKey || e.metaKey) return;
     const idx = flatFiltered.indexOf(activeName);
     if (['ArrowDown','ArrowRight'].includes(e.key)){
       e.preventDefault();
       const next = (idx + 1 + flatFiltered.length) % flatFiltered.length;
-      selectName(flatFiltered[next]);
+      selectName(flatFiltered[next], 'All');
     } else if (['ArrowUp','ArrowLeft'].includes(e.key)){
       e.preventDefault();
       const prev = (idx - 1 + flatFiltered.length) % flatFiltered.length;
-      selectName(flatFiltered[prev]);
+      selectName(flatFiltered[prev], 'All');
     }
   });
 
-  // Preload (best-effort)
-  MAPS.forEach(m => { const im = new Image(); im.src = m.url; });
+  // Preload defaults and HP variants
+  [...MAPS.map(m=>m.url),
+   ...Object.values(HP_VARIANTS).flatMap(obj=>Object.values(obj))
+  ].forEach(src => { const im = new Image(); im.src = src; });
 
   // Search wiring
   q.addEventListener('input', renderGroups);
@@ -522,7 +532,7 @@
 
   // Initial render
   renderGroups();
-  if (flatFiltered.length) selectName(flatFiltered[0]);
+  if (flatFiltered.length) selectName(flatFiltered[0], 'All');
 </script>
 </body>
 </html>
