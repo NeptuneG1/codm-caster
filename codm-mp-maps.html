@@ -10,6 +10,7 @@
     --bg:#0d1014; --panel:#1b2130; --panel2:#121724;
     --ink:#eef3fb; --muted:#b6c0ce; --line:#343c4b;
     --brand:#ffe93b; --accent:#7fd2ff;
+    --sidebar-w: 240px; /* Sidebar width */
   }
   *{box-sizing:border-box}
   html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif}
@@ -31,7 +32,7 @@
     grid-template-areas: "viewer" "maps";
   }
   @media (min-width:768px){
-    .grid{ grid-template-columns:360px 1fr; grid-template-areas:"maps viewer"; }
+    .grid{ grid-template-columns: var(--sidebar-w) 1fr; grid-template-areas:"maps viewer"; }
   }
   .panel{ grid-area: maps; }
   .viewer{ grid-area: viewer; }
