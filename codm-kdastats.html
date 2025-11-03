@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>COD:M — Player KDA</title>
+<meta name="theme-color" content="#0d1014"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  :root{
+    --bg:#0d1014; --panel:#292d42; --panel2:#1e2432;
+    --ink:#f3f6fa; --muted:#b8c0cc; --brand:#ffe93b; --brandText:#0b0d0e;
+    --brand2:#ffffff; --line:#4c525d; --chip:#213830;
+    --good:#62e887; --bad:#ff6b6b; --warn:#ffe93b;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif}
+  a{color:var(--brand);text-decoration:none}
+  a:hover{text-decoration:underline}
+  header{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,#141a23 0%,#0d1014 100%);border-bottom:2px solid var(--brand)}
+  .head{display:flex;align-items:center;gap:14px;max-width:1240px;margin:0 auto;padding:12px 14px}
+  .logo{width:36px;height:36px;border-radius:8px;object-fit:contain;background:#0d1014;border:1px solid #2a3144;box-shadow:0 6px 16px rgba(0,0,0,.35)}
+  h1{margin:0;font-size:1.1rem;letter-spacing:.4px;color:var(--brand)}
+  .push{margin-left:auto}
+
+  .shell{max-width:1240px;margin:18px auto;padding:0 12px}
+  .block{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+  .block h2{margin:0 0 8px 0;color:var(--brand2)}
+  .muted{color:var(--muted)}
+
+  .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .chip{background:var(--chip);border:1px solid var(--line);color:#d2efe1;border-radius:999px;padding:6px 10px;display:flex;gap:6px;align-items:center}
+  .btn{background:var(--brand);color:#0c0e10;border:0;border-radius:10px;padding:8px 12px;font-weight:800;cursor:pointer}
+  .btn.secondary{background:#1a2030;color:#d6dbe6;border:1px solid var(--line)}
+  .controls input,.controls select{background:#151b26;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:.9rem}
+
+  .grid3{display:grid;grid-template-columns:1fr;gap:12px}
+  @media(min-width:1100px){ .grid3{grid-template-columns:1fr 1fr 1fr} }
+
+  .compact table{width:100%;border-collapse:collapse;font-size:.86rem;line-height:1.15}
+  .compact thead th{background:#141a1f;position:sticky;top:0;z-index:1}
+  .compact th,.compact td{border-bottom:1px solid #3a4255;padding:6px 8px;vertical-align:middle}
+  .right{text-align:right}
+  .nowrap{white-space:nowrap}
+
+  details.fold{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px;margin-top:10px}
+  details.fold>summary{cursor:pointer;color:#e7ecf5}
+</style>
+</head>
+<body>
+<header>
+  <div class="head">
+    <img src="https://i.imgur.com/K0TTjUC.png" alt="COD:M Logo" class="logo">
+    <h1>COD:M — Player KDA</h1>
+    <a class="btn secondary push" href="#" id="resetBtn">Reset</a>
+  </div>
+</header>
+
+<div class="shell">
+
+  <!-- FILTERS -->
+  <section class="block">
+    <h2>Filters</h2>
+    <div class="controls">
+      <label class="chip">Team
+        <select id="fTeam"></select>
+      </label>
+      <label class="chip">Mode
+        <select id="fMode">
+          <option value="ALL">All</option>
+          <option value="HP">HP</option>
+          <option value="SND">SND</option>
+          <option value="CTL">CTL</option>
+        </select>
+      </label>
+      <label class="chip">Map
+        <select id="fMap"></select>
+      </label>
+      <button class="btn" id="applyBtn">Apply</button>
+      <button class="btn secondary" id="exportBtn">Export CSV</button>
+    </div>
+    <div class="muted" id="meta">—</div>
+  </section>
+
+  <!-- OVERALL -->
+  <section class="block compact">
+    <h2>Player Overall (selected team & scope)</h2>
+    <div id="overallTbl"></div>
+  </section>
+
+  <!-- PER MODE -->
+  <section class="block compact">
+    <h2>Per Mode</h2>
+    <div class="grid3">
+      <div>
+        <h3>HP</h3>
+        <div id="modeHP"></div>
+      </div>
+      <div>
+        <h3>SND</h3>
+        <div id="modeSND"></div>
+      </div>
+      <div>
+        <h3>CTL</h3>
+        <div id="modeCTL"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PER MAP -->
+  <section class="block compact">
+    <h2>Per Map</h2>
+    <div class="controls" style="margin-bottom:8px">
+      <label class="chip">Mode
+        <select id="pmMode">
+          <option value="ALL">All</option>
+          <option value="HP">HP</option>
+          <option value="SND">SND</option>
+          <option value="CTL">CTL</option>
+        </select>
+      </label>
+      <label class="chip">Map
+        <select id="pmMap"></select>
+      </label>
+      <button id="pmApply" class="btn">Apply</button>
+    </div>
+    <div id="perMapTbl"></div>
+  </section>
+
+  <!-- RAW ROWS -->
+  <section class="block compact">
+    <details class="fold">
+      <summary>Rows</summary>
+      <div id="rowsTbl" style="margin-top:8px"></div>
+    </details>
+  </section>
+</div>
+
+<script>
+/* ===== Supabase (use your existing project credentials) ===== */
+const SUPA_URL = 'https://fjdyppkanjnvyscqrfum.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqZHlwcGthbmpudnlzY3FyZnVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAzNDU1NzIsImV4cCI6MjA3NTkyMTU3Mn0.ssEN7uA9BVm9AkhsjkWxhPzV1-VQVxc4-u7LS2wt4Aw';
+const client = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+/* ===== Helpers ===== */
+const el = id => document.getElementById(id);
+const n  = v => { if(v==null||v==='') return 0; const t=Number(v); return isNaN(t)?0:t; };
+const norm= v => (v==null ? '' : String(v)).trim();
+const key = v => norm(v).toLowerCase();
+const sum = (arr, k) => arr.reduce((a,r)=>a+n(typeof k==='function'?k(r):r[k]),0);
+
+function distinct(rows,col){
+  return Array.from(new Set(rows.map(r=>norm(r[col])).filter(Boolean)))
+         .sort((a,b)=>a.localeCompare(b));
+}
+
+function groupBy(rows, keyFn){
+  return rows.reduce((m,r)=>{ const k = keyFn(r); (m[k] ||= []).push(r); return m; },{});
+}
+
+function toMMSS(sec){
+  const s = Math.max(0, Math.floor(n(sec))); const m = Math.floor(s/60); const ss=(s%60).toString().padStart(2,'0');
+  return `${m}:${ss}`;
+}
+
+function fmt(x, d=2){ return (x==null || isNaN(x)) ? '0.00' : Number(x).toFixed(d); }
+function ratio(a,b){ return b ? (a/b) : 0; }
+
+/* ===== Data state ===== */
+let RAW = [];
+let SCOPE = [];
+let TEAM_NAME = '';
+
+/* ===== Fetch (with pagination safety) ===== */
+async function fetchAllKDA(){
+  const step = 1000; let from = 0; const out = [];
+  for(;;){
+    const { data, error } = await client
+      .from('kda_stats')
+      .select('*')
+      .order('id', { ascending:true })
+      .range(from, from+step-1);
+    if (error){ console.error(error); alert('Failed to load kda_stats: '+error.message); break; }
+    const rows = data || [];
+    out.push(...rows);
+    if (rows.length < step) break;
+    from += rows.length;
+  }
+  return out;
+}
+
+/* ===== Normalize one row ===== */
+function coerceRow(r){
+  // Accept common casing variations
+  const _mode = norm(r.mode || r.Mode);
+  function normalizeMode(m){
+    const s = key(m);
+    if (s.includes('hp') || s.includes('hardpoint')) return 'HP';
+    if (s.includes('snd') || s.includes('search')) return 'SND';
+    if (s.includes('ctl') || s.includes('control')) return 'CTL';
+    return _mode || '';
+  }
+  return {
+    ...r,
+    Team: norm(r.Team || r.team),
+    Opponent: norm(r.Opponent || r.opponent),
+    Map: norm(r.Map || r.map),
+    mode: normalizeMode(_mode),
+    IGN: norm(r.IGN || r.player || r.name),
+    Kills: n(r.Kills ?? r.kills),
+    Death: n(r.Death ?? r.deaths ?? r.DeathCount),
+    Assist: n(r.Assist ?? r.assists),
+    Score: n(r.Score ?? r.score),
+    hill_Time: n(r.hill_Time ?? r.hill_time ?? r.hillSeconds ?? r.hill),
+    Region: norm(r.Region || r.region),
+    Day: norm(r.Day || r.day),
+    ['Game-Match']: norm(r['Game-Match'] || r.GameMatch || r.gamematch || r.game),
+    Role: norm(r.Role || r.role),
+    id: r.id
+  };
+}
+
+/* ===== Filters & dropdowns ===== */
+function populateDropdowns(){
+  const teams = distinct(RAW, 'Team');
+  el('fTeam').innerHTML = teams.map(t=>`<option value="${t}">${t}</option>`).join('');
+
+  const maps = distinct(RAW, 'Map');
+  const mapOpts = `<option value="ALL">All</option>` + maps.map(m=>`<option value="${m}">${m}</option>`).join('');
+  el('fMap').innerHTML = mapOpts;
+  el('pmMap').innerHTML = mapOpts;
+}
+
+function applyFilters(){
+  const team = el('fTeam').value;
+  const mode = el('fMode').value;
+  const map  = el('fMap').value;
+  TEAM_NAME = team;
+
+  let rows = RAW.filter(r => r.Team === team);
+  if (mode !== 'ALL') rows = rows.filter(r => r.mode === mode);
+  if (map  !== 'ALL') rows = rows.filter(r => r.Map  === map);
+
+  SCOPE = rows;
+
+  el('meta').textContent =
+    `Rows: ${SCOPE.length} • Team: ${TEAM_NAME || '—'} • Modes: ${distinct(SCOPE,'mode').join(', ') || '—'} • Maps: ${distinct(SCOPE,'Map').length}`;
+}
+
+/* ===== Aggregations ===== */
+function aggRows(list){
+  const games = list.length;
+  const kills = sum(list,'Kills');
+  const deaths= sum(list,'Death');
+  const assists = sum(list,'Assist');
+  const scoreSum = sum(list,'Score');
+  const kd = ratio(kills, deaths);
+  const kda = ratio(kills + assists, Math.max(1,deaths));
+  const hpHill = sum(list.filter(r => r.mode==='HP'), 'hill_Time');
+  return { games, kills, deaths, assists, kd, kda, scoreSum, hpHill };
+}
+
+function aggByPlayer(rows){
+  const g = groupBy(rows, r=>r.IGN);
+  const out = Object.entries(g).map(([ign, list])=>{
+    const a = aggRows(list);
+    return {
+      IGN: ign,
+      games: a.games,
+      kills: a.kills,
+      deaths:a.deaths,
+      assists:a.assists,
+      kd:a.kd,
+      kda:a.kda,
+      score:a.scoreSum,
+      hill:a.hpHill
+    };
+  });
+  return out.sort((x,y)=> (y.kda-x.kda) || (y.kd-x.kd) || (y.games-x.games));
+}
+
+function aggByPlayerMode(rows, modeCode){
+  const subset = rows.filter(r=>r.mode===modeCode);
+  const g = groupBy(subset, r=>r.IGN);
+  const out = Object.entries(g).map(([ign, list])=>{
+    const a = aggRows(list);
+    return {
+      IGN: ign,
+      games:a.games, kills:a.kills, deaths:a.deaths, assists:a.assists,
+      kd:a.kd, kda:a.kda, score:a.scoreSum, hill:a.hpHill
+    };
+  });
+  return out.sort((x,y)=> (y.kda-x.kda) || (y.kd-x.kd) || (y.games-x.games));
+}
+
+function aggPerMap(rows, modeSel='ALL', mapSel='ALL'){
+  let r = rows;
+  if (modeSel!=='ALL') r = r.filter(x=>x.mode===modeSel);
+  if (mapSel!=='ALL')  r = r.filter(x=>x.Map===mapSel);
+  const g = groupBy(r, x=>`${x.IGN}||${x.Map}`);
+  const out = Object.entries(g).map(([k,list])=>{
+    const [ign,map] = k.split('||');
+    const a = aggRows(list);
+    return {
+      IGN: ign, Map: map,
+      games:a.games, kills:a.kills, deaths:a.deaths, assists:a.assists,
+      kd:a.kd, kda:a.kda, score:a.scoreSum, hill:a.hpHill
+    };
+  });
+  return out.sort((x,y)=> x.IGN.localeCompare(y.IGN) || (y.kda-x.kda) || (y.kd-x.kd) || (y.games-x.games));
+}
+
+/* ===== Rendering ===== */
+function renderTable(hostId, rows, cols, empty='No rows.'){
+  const host = el(hostId);
+  if (!rows.length){ host.innerHTML = `<div class="muted">${empty}</div>`; return; }
+  const thead = `<thead><tr>${cols.map(c=>`<th class="${c.right?'right':''} ${c.nowrap?'nowrap':''}">${c.label}</th>`).join('')}</tr></thead>`;
+  const tbody = `<tbody>${
+    rows.map(r=>`<tr>${cols.map(c=>{
+      let v = (typeof c.value==='function') ? c.value(r) : r[c.key];
+      if (c.format==='num') v = fmt(v, c.dp ?? 2);
+      if (c.format==='mmss') v = toMMSS(v);
+      return `<td class="${c.right?'right':''} ${c.nowrap?'nowrap':''}">${v ?? '—'}</td>`;
+    }).join('')}</tr>`).join('')
+  }</tbody>`;
+  host.innerHTML = `<table>${thead}${tbody}</table>`;
+}
+
+function renderAll(){
+  // Overall
+  renderTable('overallTbl', aggByPlayer(SCOPE), [
+    {label:'Player', key:'IGN'},
+    {label:'G', key:'games', right:true},
+    {label:'K', key:'kills', right:true},
+    {label:'D', key:'deaths', right:true},
+    {label:'A', key:'assists', right:true},
+    {label:'K/D', key:'kd', right:true, format:'num'},
+    {label:'KDA', key:'kda', right:true, format:'num'},
+    {label:'Score Σ', key:'score', right:true, format:'num', dp:0},
+    {label:'HP Hill (mm:ss)', key:'hill', right:true, format:'mmss', nowrap:true},
+  ], '—');
+
+  // Per Mode
+  renderTable('modeHP',  aggByPlayerMode(SCOPE,'HP'), [
+    {label:'Player', key:'IGN'},
+    {label:'G', key:'games', right:true},
+    {label:'K', key:'kills', right:true},
+    {label:'D', key:'deaths', right:true},
+    {label:'A', key:'assists', right:true},
+    {label:'K/D', key:'kd', right:true, format:'num'},
+    {label:'KDA', key:'kda', right:true, format:'num'},
+    {label:'Hill (mm:ss)', key:'hill', right:true, format:'mmss', nowrap:true},
+  ], '—');
+
+  renderTable('modeSND', aggByPlayerMode(SCOPE,'SND'), [
+    {label:'Player', key:'IGN'},
+    {label:'G', key:'games', right:true},
+    {label:'K', key:'kills', right:true},
+    {label:'D', key:'deaths', right:true},
+    {label:'A', key:'assists', right:true},
+    {label:'K/D', key:'kd', right:true, format:'num'},
+    {label:'KDA', key:'kda', right:true, format:'num'},
+  ], '—');
+
+  renderTable('modeCTL', aggByPlayerMode(SCOPE,'CTL'), [
+    {label:'Player', key:'IGN'},
+    {label:'G', key:'games', right:true},
+    {label:'K', key:'kills', right:true},
+    {label:'D', key:'deaths', right:true},
+    {label:'A', key:'assists', right:true},
+    {label:'K/D', key:'kd', right:true, format:'num'},
+    {label:'KDA', key:'kda', right:true, format:'num'},
+  ], '—');
+
+  // Per Map
+  renderPerMap();
+  renderRows();
+}
+
+function renderPerMap(){
+  const mm = el('pmMode').value || 'ALL';
+  const mp = el('pmMap').value || 'ALL';
+  renderTable('perMapTbl', aggPerMap(SCOPE, mm, mp), [
+    {label:'Player', key:'IGN'},
+    {label:'Map', key:'Map'},
+    {label:'G', key:'games', right:true},
+    {label:'K', key:'kills', right:true},
+    {label:'D', key:'deaths', right:true},
+    {label:'A', key:'assists', right:true},
+    {label:'K/D', key:'kd', right:true, format:'num'},
+    {label:'KDA', key:'kda', right:true, format:'num'},
+    {label:'HP Hill (mm:ss)', key:'hill', right:true, format:'mmss', nowrap:true},
+  ], '—');
+}
+
+function renderRows(){
+  renderTable('rowsTbl', SCOPE.slice(0,1200), [
+    {label:'id', key:'id', right:true},
+    {label:'Team', key:'Team'},
+    {label:'Opponent', key:'Opponent'},
+    {label:'Map', key:'Map'},
+    {label:'Mode', key:'mode'},
+    {label:'IGN', key:'IGN'},
+    {label:'Score', key:'Score', right:true, format:'num', dp:0},
+    {label:'K', key:'Kills', right:true},
+    {label:'D', key:'Death', right:true},
+    {label:'A', key:'Assist', right:true},
+    {label:'Hill (mm:ss)', key:'hill_Time', right:true, format:'mmss', nowrap:true},
+    {label:'Day', key:'Day', right:true},
+    {label:'Game', key:'Game-Match'},
+  ], 'No rows.');
+}
+
+/* ===== Export current "Overall" aggregation ===== */
+function toCSV(rows){
+  if(!rows.length) return '';
+  const cols = Object.keys(rows[0]);
+  const head = cols.join(',');
+  const body = rows.map(r => cols.map(c=>{
+    const s = r[c]==null ? '' : String(r[c]);
+    return /(,|\n|\"|\r)/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
+  }).join(',')).join('\n');
+  return head+'\n'+body;
+}
+function download(name, text){
+  const blob = new Blob([text], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1200);
+}
+
+/* ===== Wire up ===== */
+el('applyBtn').onclick = ()=>{ applyFilters(); renderAll(); };
+el('resetBtn').onclick = (e)=>{
+  e.preventDefault();
+  if(!RAW.length) return;
+  populateDropdowns();
+  el('fMode').value = 'ALL';
+  el('fMap').value  = 'ALL';
+  el('pmMode').value= 'ALL';
+  el('pmMap').value = 'ALL';
+  TEAM_NAME = distinct(RAW,'Team')[0] || '';
+  el('fTeam').value = TEAM_NAME || 'ALL';
+  applyFilters(); renderAll();
+};
+el('pmApply').onclick = ()=> renderPerMap();
+el('exportBtn').onclick = ()=>{
+  const rows = aggByPlayer(SCOPE).map(r => ({
+    Team: TEAM_NAME, Player:r.IGN,
+    Games:r.games, Kills:r.kills, Deaths:r.deaths, Assists:r.assists,
+    KD:fmt(r.kd), KDA:fmt(r.kda), Score_Sum:Math.round(r.score),
+    HP_Hill_sec: Math.round(r.hill)
+  }));
+  download(`player_overall_${TEAM_NAME||'team'}.csv`, toCSV(rows));
+};
+
+/* ===== Boot ===== */
+(async function init(){
+  const raw = await fetchAllKDA();
+  RAW = raw.map(coerceRow).filter(r => r.Team && r.IGN && r.mode && r.Map);
+  populateDropdowns();
+  TEAM_NAME = (distinct(RAW,'Team')[0] || '');
+  el('fTeam').value = TEAM_NAME || 'ALL';
+  el('fMode').value = 'ALL';
+  el('fMap').value  = 'ALL';
+  el('pmMode').value= 'ALL';
+  el('pmMap').value = 'ALL';
+  applyFilters(); renderAll();
+})();
+</script>
+</body>
+</html>
