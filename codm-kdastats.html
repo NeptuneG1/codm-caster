@@ -42,9 +42,8 @@
   .panel-title{display:flex;align-items:center;gap:10px;margin:0 0 8px 0}
   .tag{font-size:.75rem;border:1px solid var(--line);padding:2px 8px;border-radius:999px;background:#111827;color:#e8ecf5}
 
-  /* side-by-side tables inside each section */
-  .pair{display:grid;grid-template-columns:1fr;gap:10px}
-  @media(min-width:950px){ .pair{grid-template-columns:1fr 1fr} }
+  /* STACK totals then averages to save width */
+  .stack{display:grid;grid-template-columns:1fr;gap:10px}
 
   /* compact table */
   .compact table{width:100%;border-collapse:collapse;font-size:.86rem;line-height:1.15}
@@ -80,7 +79,7 @@
           <option value="ALL">All</option>
           <option value="HP">HP</option>
           <option value="SND">SND</option>
-          <option value="CTL">CTL</option>
+          <option value="CTRL">CTRL</option>
         </select>
       </label>
       <label class="chip">Map
@@ -104,13 +103,13 @@
         <!-- OVERALL -->
         <div class="compact">
           <h3>Player Overall</h3>
-          <div class="pair">
+          <div class="stack">
             <div>
               <h4 style="margin:4px 0 6px">Totals</h4>
               <div id="overallA_tot"></div>
             </div>
             <div>
-              <h4 style="margin:4px 0 6px">Averages</h4>
+              <h4 style="margin:12px 0 6px">Averages</h4>
               <div id="overallA_avg"></div>
             </div>
           </div>
@@ -122,7 +121,7 @@
 
           <div style="margin-top:8px">
             <strong>HP</strong>
-            <div class="pair" style="margin-top:6px">
+            <div class="stack" style="margin-top:6px">
               <div><div id="modeA_HP_tot"></div></div>
               <div><div id="modeA_HP_avg"></div></div>
             </div>
@@ -130,17 +129,17 @@
 
           <div style="margin-top:12px">
             <strong>SND</strong>
-            <div class="pair" style="margin-top:6px">
+            <div class="stack" style="margin-top:6px">
               <div><div id="modeA_SND_tot"></div></div>
               <div><div id="modeA_SND_avg"></div></div>
             </div>
           </div>
 
           <div style="margin-top:12px">
-            <strong>CTL</strong>
-            <div class="pair" style="margin-top:6px">
-              <div><div id="modeA_CTL_tot"></div></div>
-              <div><div id="modeA_CTL_avg"></div></div>
+            <strong>CTRL</strong>
+            <div class="stack" style="margin-top:6px">
+              <div><div id="modeA_CTRL_tot"></div></div>
+              <div><div id="modeA_CTRL_avg"></div></div>
             </div>
           </div>
         </div>
@@ -153,13 +152,13 @@
         <!-- OVERALL -->
         <div class="compact">
           <h3>Player Overall</h3>
-          <div class="pair">
+          <div class="stack">
             <div>
               <h4 style="margin:4px 0 6px">Totals</h4>
               <div id="overallB_tot"></div>
             </div>
             <div>
-              <h4 style="margin:4px 0 6px">Averages</h4>
+              <h4 style="margin:12px 0 6px">Averages</h4>
               <div id="overallB_avg"></div>
             </div>
           </div>
@@ -171,7 +170,7 @@
 
           <div style="margin-top:8px">
             <strong>HP</strong>
-            <div class="pair" style="margin-top:6px">
+            <div class="stack" style="margin-top:6px">
               <div><div id="modeB_HP_tot"></div></div>
               <div><div id="modeB_HP_avg"></div></div>
             </div>
@@ -179,17 +178,17 @@
 
           <div style="margin-top:12px">
             <strong>SND</strong>
-            <div class="pair" style="margin-top:6px">
+            <div class="stack" style="margin-top:6px">
               <div><div id="modeB_SND_tot"></div></div>
               <div><div id="modeB_SND_avg"></div></div>
             </div>
           </div>
 
           <div style="margin-top:12px">
-            <strong>CTL</strong>
-            <div class="pair" style="margin-top:6px">
-              <div><div id="modeB_CTL_tot"></div></div>
-              <div><div id="modeB_CTL_avg"></div></div>
+            <strong>CTRL</strong>
+            <div class="stack" style="margin-top:6px">
+              <div><div id="modeB_CTRL_tot"></div></div>
+              <div><div id="modeB_CTRL_avg"></div></div>
             </div>
           </div>
         </div>
@@ -200,7 +199,7 @@
 </div>
 
 <script>
-/* ===== Supabase (same project creds) ===== */
+/* ===== Supabase ===== */
 const SUPA_URL = 'https://fjdyppkanjnvyscqrfum.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqZHlwcGthbmpudnlzY3FyZnVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAzNDU1NzIsImV4cCI6MjA3NTkyMTU3Mn0.ssEN7uA9BVm9AkhsjkWxhPzV1-VQVxc4-u7LS2wt4Aw';
 const client = supabase.createClient(SUPA_URL, SUPA_KEY);
@@ -256,7 +255,7 @@ function coerceRow(r){
     const s = key(m);
     if (s.includes('hp') || s.includes('hardpoint')) return 'HP';
     if (s.includes('snd') || s.includes('search')) return 'SND';
-    if (s.includes('ctl') || s.includes('control')) return 'CTL';
+    if (s.includes('ctrl') || s.includes('CTRL') || s.includes('control')) return 'CTRL';
     return _mode || '';
   }
   return {
@@ -379,7 +378,7 @@ function renderPanel(which, teamName, rows){
   // Title
   el(which==='A' ? 'titleA' : 'titleB').textContent = `${teamName||'—'}`;
 
-  // Overall (Totals & Averages)
+  // Overall (Totals then Averages)
   const overall = aggByPlayer(rows);
   const colsTotals = [
     {label:'Player', key:'IGN'},
@@ -404,10 +403,10 @@ function renderPanel(which, teamName, rows){
   renderTable(which==='A' ? 'overallA_tot' : 'overallB_tot', overall, colsTotals, '—');
   renderTable(which==='A' ? 'overallA_avg' : 'overallB_avg', overall, colsAverages, '—');
 
-  // Per Mode (HP/SND/CTL) — split Totals & Averages
-  const byHP  = aggByPlayerMode(rows,'HP');
-  const bySND = aggByPlayerMode(rows,'SND');
-  const byCTL = aggByPlayerMode(rows,'CTL');
+  // Per Mode (HP/SND/CTRL) — Totals then Averages stacked
+  const byHP   = aggByPlayerMode(rows,'HP');
+  const bySND  = aggByPlayerMode(rows,'SND');
+  const byCTRL = aggByPlayerMode(rows,'CTRL');
 
   const colsTotalsNoHill = [
     {label:'Player', key:'IGN'},
@@ -427,18 +426,18 @@ function renderPanel(which, teamName, rows){
     {label:'Avg A', key:'avgA', right:true, format:'num'},
     {label:'Avg Score', key:'avgScore', right:true, format:'num'},
   ];
-  const colsTotalsHP = colsTotalsNoHill.concat([{label:'Hill Σ', key:'hill_sum', right:true, format:'mmss', nowrap:true}]);
+  const colsTotalsHP   = colsTotalsNoHill.concat([{label:'Hill Σ', key:'hill_sum', right:true, format:'mmss', nowrap:true}]);
   const colsAveragesHP = colsAveragesNoHill.concat([{label:'Avg Hill', key:'avgHill', right:true, format:'mmss', nowrap:true}]);
 
   // HP
-  renderTable(which==='A' ? 'modeA_HP_tot'  : 'modeB_HP_tot',  byHP,  colsTotalsHP, '—');
-  renderTable(which==='A' ? 'modeA_HP_avg'  : 'modeB_HP_avg',  byHP,  colsAveragesHP, '—');
+  renderTable(which==='A' ? 'modeA_HP_tot'  : 'modeB_HP_tot',  byHP,   colsTotalsHP, '—');
+  renderTable(which==='A' ? 'modeA_HP_avg'  : 'modeB_HP_avg',  byHP,   colsAveragesHP, '—');
   // SND
-  renderTable(which==='A' ? 'modeA_SND_tot' : 'modeB_SND_tot', bySND, colsTotalsNoHill, '—');
-  renderTable(which==='A' ? 'modeA_SND_avg' : 'modeB_SND_avg', bySND, colsAveragesNoHill, '—');
-  // CTL
-  renderTable(which==='A' ? 'modeA_CTL_tot' : 'modeB_CTL_tot', byCTL, colsTotalsNoHill, '—');
-  renderTable(which==='A' ? 'modeA_CTL_avg' : 'modeB_CTL_avg', byCTL, colsAveragesNoHill, '—');
+  renderTable(which==='A' ? 'modeA_SND_tot' : 'modeB_SND_tot', bySND,  colsTotalsNoHill, '—');
+  renderTable(which==='A' ? 'modeA_SND_avg' : 'modeB_SND_avg', bySND,  colsAveragesNoHill, '—');
+  // CTRL
+  renderTable(which==='A' ? 'modeA_CTRL_tot': 'modeB_CTRL_tot', byCTRL, colsTotalsNoHill, '—');
+  renderTable(which==='A' ? 'modeA_CTRL_avg': 'modeB_CTRL_avg', byCTRL, colsAveragesNoHill, '—');
 }
 
 /* ===== Export helpers (overall aggregates) ===== */
