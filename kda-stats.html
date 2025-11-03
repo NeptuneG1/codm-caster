@@ -46,8 +46,8 @@
   .stack{display:grid;grid-template-columns:1fr;gap:10px}
 
   /* foldables */
-  details.fold{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px;margin-top:10px}
-  details.fold>summary{cursor:pointer;color:#e7ecf5}
+  details.fold{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px;margin-top:10px}
+  details.fold>summary{cursor:pointer;color:#e7ecf5;font-weight:700}
 
   /* compact table */
   .compact table{width:100%;border-collapse:collapse;font-size:.86rem;line-height:1.15}
@@ -96,17 +96,14 @@
     <div class="muted" id="meta">—</div>
   </section>
 
-  <!-- TWO PANELS -->
+  <!-- OVERALL SECTION -->
   <section class="block">
+    <h2>Overall</h2>
     <div class="grid2">
-
       <!-- Panel A -->
       <div class="panel">
-        <h2 class="panel-title"><span id="titleA">Team A</span> <span class="tag">Left</span></h2>
-
-        <!-- OVERALL -->
+        <h3 class="panel-title"><span id="titleA">Team A</span> <span class="tag">Left</span></h3>
         <div class="compact">
-          <h3>Overall</h3>
           <div class="stack">
             <div>
               <h4 style="margin:4px 0 6px">Totals</h4>
@@ -118,44 +115,11 @@
             </div>
           </div>
         </div>
-
-        <!-- PER MODE (collapsible per mode) -->
-        <div class="compact" style="margin-top:12px">
-          <h3>Per Mode</h3>
-
-          <details class="fold">
-            <summary>HP</summary>
-            <div class="stack" style="margin-top:6px">
-              <div><div id="modeA_HP_tot"></div></div>
-              <div><div id="modeA_HP_avg"></div></div>
-            </div>
-          </details>
-
-          <details class="fold">
-            <summary>SND</summary>
-            <div class="stack" style="margin-top:6px">
-              <div><div id="modeA_SND_tot"></div></div>
-              <div><div id="modeA_SND_avg"></div></div>
-            </div>
-          </details>
-
-          <details class="fold">
-            <summary>CTRL</summary>
-            <div class="stack" style="margin-top:6px">
-              <div><div id="modeA_CTRL_tot"></div></div>
-              <div><div id="modeA_CTRL_avg"></div></div>
-            </div>
-          </details>
-        </div>
       </div>
-
       <!-- Panel B -->
       <div class="panel">
-        <h2 class="panel-title"><span id="titleB">Team B</span> <span class="tag">Right</span></h2>
-
-        <!-- OVERALL -->
+        <h3 class="panel-title"><span id="titleB">Team B</span> <span class="tag">Right</span></h3>
         <div class="compact">
-          <h3>Overall</h3>
           <div class="stack">
             <div>
               <h4 style="margin:4px 0 6px">Totals</h4>
@@ -167,39 +131,84 @@
             </div>
           </div>
         </div>
-
-        <!-- PER MODE (collapsible per mode) -->
-        <div class="compact" style="margin-top:12px">
-          <h3>Per Mode</h3>
-
-          <details class="fold">
-            <summary>HP</summary>
-            <div class="stack" style="margin-top:6px">
-              <div><div id="modeB_HP_tot"></div></div>
-              <div><div id="modeB_HP_avg"></div></div>
-            </div>
-          </details>
-
-          <details class="fold">
-            <summary>SND</summary>
-            <div class="stack" style="margin-top:6px">
-              <div><div id="modeB_SND_tot"></div></div>
-              <div><div id="modeB_SND_avg"></div></div>
-            </div>
-          </details>
-
-          <details class="fold">
-            <summary>CTRL</summary>
-            <div class="stack" style="margin-top:6px">
-              <div><div id="modeB_CTRL_tot"></div></div>
-              <div><div id="modeB_CTRL_avg"></div></div>
-            </div>
-          </details>
-        </div>
       </div>
-
     </div>
   </section>
+
+  <!-- PER MODE: HP -->
+  <details class="fold">
+    <summary>Per Mode — HP</summary>
+    <div class="grid2" style="margin-top:10px">
+      <div class="panel">
+        <h3 class="panel-title"><span id="titleA_HP">Team A</span> <span class="tag">HP</span></h3>
+        <div class="compact">
+          <div class="stack">
+            <div><h4 style="margin:4px 0 6px">Totals</h4><div id="modeA_HP_tot"></div></div>
+            <div><h4 style="margin:12px 0 6px">Averages</h4><div id="modeA_HP_avg"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3 class="panel-title"><span id="titleB_HP">Team B</span> <span class="tag">HP</span></h3>
+        <div class="compact">
+          <div class="stack">
+            <div><h4 style="margin:4px 0 6px">Totals</h4><div id="modeB_HP_tot"></div></div>
+            <div><h4 style="margin:12px 0 6px">Averages</h4><div id="modeB_HP_avg"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- PER MODE: SND -->
+  <details class="fold">
+    <summary>Per Mode — SND</summary>
+    <div class="grid2" style="margin-top:10px">
+      <div class="panel">
+        <h3 class="panel-title"><span id="titleA_SND">Team A</span> <span class="tag">SND</span></h3>
+        <div class="compact">
+          <div class="stack">
+            <div><h4 style="margin:4px 0 6px">Totals</h4><div id="modeA_SND_tot"></div></div>
+            <div><h4 style="margin:12px 0 6px">Averages</h4><div id="modeA_SND_avg"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3 class="panel-title"><span id="titleB_SND">Team B</span> <span class="tag">SND</span></h3>
+        <div class="compact">
+          <div class="stack">
+            <div><h4 style="margin:4px 0 6px">Totals</h4><div id="modeB_SND_tot"></div></div>
+            <div><h4 style="margin:12px 0 6px">Averages</h4><div id="modeB_SND_avg"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- PER MODE: CTRL -->
+  <details class="fold">
+    <summary>Per Mode — CTRL</summary>
+    <div class="grid2" style="margin-top:10px">
+      <div class="panel">
+        <h3 class="panel-title"><span id="titleA_CTRL">Team A</span> <span class="tag">CTRL</span></h3>
+        <div class="compact">
+          <div class="stack">
+            <div><h4 style="margin:4px 0 6px">Totals</h4><div id="modeA_CTRL_tot"></div></div>
+            <div><h4 style="margin:12px 0 6px">Averages</h4><div id="modeA_CTRL_avg"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3 class="panel-title"><span id="titleB_CTRL">Team B</span> <span class="tag">CTRL</span></h3>
+        <div class="compact">
+          <div class="stack">
+            <div><h4 style="margin:4px 0 6px">Totals</h4><div id="modeB_CTRL_tot"></div></div>
+            <div><h4 style="margin:12px 0 6px">Averages</h4><div id="modeB_CTRL_avg"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </details>
 </div>
 
 <script>
@@ -381,7 +390,7 @@ function renderTable(hostId, rows, cols, empty='No rows.'){
   host.innerHTML = `<table>${colgroup}${thead}${tbody}</table>`;
 }
 
-/* ===== Column width sync (align row headers + all columns across a section) ===== */
+/* ===== Column width sync (align first column + all cols per section) ===== */
 function _maxColNaturalWidth(tbl, colIdx){
   if (!tbl) return 0;
   const head = tbl.tHead?.rows?.[0];
@@ -394,7 +403,7 @@ function _maxColNaturalWidth(tbl, colIdx){
     if (!td) continue;
     const w = td.getBoundingClientRect().width;
     if (w > max) max = w;
-    if (i > 50) break; // cap for perf
+    if (i > 50) break; // perf cap
   }
   return Math.max(48, Math.ceil(max));
 }
@@ -406,58 +415,42 @@ function _applyWidths(tbl, widths){
   const cols = tbl?.querySelectorAll('colgroup col') || [];
   widths.forEach((w,i)=> { if (cols[i]) cols[i].style.width = `${w}px`; });
 }
+function _getTables(ids){ return ids.map(id => el(id)?.querySelector('table')).filter(Boolean); }
 
-function _getTables(ids){
-  return ids.map(id => el(id)?.querySelector('table')).filter(Boolean);
-}
-
-/* Sync a whole group (e.g., Overall totals+avgs both sides) */
 function syncGroup(ids){
   const tables = _getTables(ids);
   if (!tables.length) return;
-
-  // Reset widths first
   tables.forEach(_clearColgroupWidths);
-
-  // Use min column count across tables (all sections share same columns)
   const cols = Math.min(...tables.map(t => t.tHead?.rows?.[0]?.cells?.length || 0));
   if (!cols) return;
-
-  // Measure per-column max across ALL tables in the group
   const widths = [];
   for (let i=0; i<cols; i++){
-    let w = 0;
-    tables.forEach(t => { w = Math.max(w, _maxColNaturalWidth(t, i)); });
+    let w = 0; tables.forEach(t => { w = Math.max(w, _maxColNaturalWidth(t, i)); });
     widths.push(w);
   }
-
-  // Apply to all tables in the group
   tables.forEach(t => _applyWidths(t, widths));
 }
 
-/* Define groups so row headers (Player) align across Totals & Averages and L/R */
+/* Section groups: Overall, HP, SND, CTRL */
 function syncAllGroups(){
   const GROUPS = [
-    // Overall: A_tot + A_avg + B_tot + B_avg
     ['overallA_tot','overallA_avg','overallB_tot','overallB_avg'],
-    // HP
     ['modeA_HP_tot','modeA_HP_avg','modeB_HP_tot','modeB_HP_avg'],
-    // SND
     ['modeA_SND_tot','modeA_SND_avg','modeB_SND_tot','modeB_SND_avg'],
-    // CTRL
     ['modeA_CTRL_tot','modeA_CTRL_avg','modeB_CTRL_tot','modeB_CTRL_avg'],
   ];
-  // Wait a frame so layout is final
   requestAnimationFrame(()=> GROUPS.forEach(syncGroup));
 }
 
 /* ===== Panel rendering ===== */
-function renderPanel(which, teamName, rows){
-  // Title
-  el(which==='A' ? 'titleA' : 'titleB').textContent = `${teamName||'—'}`;
+function renderOverallPanels(rowsA, rowsB){
+  // Titles
+  el('titleA').textContent = TEAM_A || '—';
+  el('titleB').textContent = TEAM_B || '—';
 
-  // Overall
-  const overall = aggByPlayer(rows);
+  const overallA = aggByPlayer(rowsA);
+  const overallB = aggByPlayer(rowsB);
+
   const colsTotals = [
     {label:'Player', key:'IGN'},
     {label:'G', key:'games', right:true},
@@ -478,13 +471,21 @@ function renderPanel(which, teamName, rows){
     {label:'Avg Score', key:'avgScore', right:true, format:'num'},
     {label:'Avg Hill', key:'avgHill', right:true, format:'mmss', nowrap:true},
   ];
-  renderTable(which==='A' ? 'overallA_tot' : 'overallB_tot', overall, colsTotals, '—');
-  renderTable(which==='A' ? 'overallA_avg' : 'overallB_avg', overall, colsAverages, '—');
 
-  // Per Mode (collapsible per mode)
-  const byHP   = aggByPlayerMode(rows,'HP');
-  const bySND  = aggByPlayerMode(rows,'SND');
-  const byCTRL = aggByPlayerMode(rows,'CTRL');
+  renderTable('overallA_tot', overallA, colsTotals, '—');
+  renderTable('overallA_avg', overallA, colsAverages, '—');
+  renderTable('overallB_tot', overallB, colsTotals, '—');
+  renderTable('overallB_avg', overallB, colsAverages, '—');
+}
+
+function renderModePanels(rowsA, rowsB, mode){
+  // Titles per mode
+  if (mode==='HP'){ el('titleA_HP').textContent = TEAM_A; el('titleB_HP').textContent = TEAM_B; }
+  if (mode==='SND'){ el('titleA_SND').textContent = TEAM_A; el('titleB_SND').textContent = TEAM_B; }
+  if (mode==='CTRL'){ el('titleA_CTRL').textContent = TEAM_A; el('titleB_CTRL').textContent = TEAM_B; }
+
+  const byA = aggByPlayerMode(rowsA, mode);
+  const byB = aggByPlayerMode(rowsB, mode);
 
   const colsTotalsNoHill = [
     {label:'Player', key:'IGN'},
@@ -504,18 +505,25 @@ function renderPanel(which, teamName, rows){
     {label:'Avg A', key:'avgA', right:true, format:'num'},
     {label:'Avg Score', key:'avgScore', right:true, format:'num'},
   ];
-  const colsTotalsHP   = colsTotalsNoHill.concat([{label:'Hill Σ', key:'hill_sum', right:true, format:'mmss', nowrap:true}]);
-  const colsAveragesHP = colsAveragesNoHill.concat([{label:'Avg Hill', key:'avgHill', right:true, format:'mmss', nowrap:true}]);
 
-  // HP
-  renderTable(which==='A' ? 'modeA_HP_tot'  : 'modeB_HP_tot',  byHP,   colsTotalsHP, '—');
-  renderTable(which==='A' ? 'modeA_HP_avg'  : 'modeB_HP_avg',  byHP,   colsAveragesHP, '—');
-  // SND
-  renderTable(which==='A' ? 'modeA_SND_tot' : 'modeB_SND_tot', bySND,  colsTotalsNoHill, '—');
-  renderTable(which==='A' ? 'modeA_SND_avg' : 'modeB_SND_avg', bySND,  colsAveragesNoHill, '—');
-  // CTRL
-  renderTable(which==='A' ? 'modeA_CTRL_tot': 'modeB_CTRL_tot', byCTRL, colsTotalsNoHill, '—');
-  renderTable(which==='A' ? 'modeA_CTRL_avg': 'modeB_CTRL_avg', byCTRL, colsAveragesNoHill, '—');
+  if (mode==='HP'){
+    const colsTotalsHP   = colsTotalsNoHill.concat([{label:'Hill Σ', key:'hill_sum', right:true, format:'mmss', nowrap:true}]);
+    const colsAveragesHP = colsAveragesNoHill.concat([{label:'Avg Hill', key:'avgHill', right:true, format:'mmss', nowrap:true}]);
+    renderTable('modeA_HP_tot', byA, colsTotalsHP, '—');
+    renderTable('modeA_HP_avg', byA, colsAveragesHP, '—');
+    renderTable('modeB_HP_tot', byB, colsTotalsHP, '—');
+    renderTable('modeB_HP_avg', byB, colsAveragesHP, '—');
+  } else if (mode==='SND'){
+    renderTable('modeA_SND_tot', byA, colsTotalsNoHill, '—');
+    renderTable('modeA_SND_avg', byA, colsAveragesNoHill, '—');
+    renderTable('modeB_SND_tot', byB, colsTotalsNoHill, '—');
+    renderTable('modeB_SND_avg', byB, colsAveragesNoHill, '—');
+  } else if (mode==='CTRL'){
+    renderTable('modeA_CTRL_tot', byA, colsTotalsNoHill, '—');
+    renderTable('modeA_CTRL_avg', byA, colsAveragesNoHill, '—');
+    renderTable('modeB_CTRL_tot', byB, colsTotalsNoHill, '—');
+    renderTable('modeB_CTRL_avg', byB, colsAveragesNoHill, '—');
+  }
 }
 
 /* ===== Export helpers (overall aggregates) ===== */
@@ -558,8 +566,12 @@ el('applyBtn').onclick = ()=>{
 
   const rowsA = currentScopeRows(TEAM_A);
   const rowsB = currentScopeRows(TEAM_B);
-  renderPanel('A', TEAM_A, rowsA);
-  renderPanel('B', TEAM_B, rowsB);
+
+  renderOverallPanels(rowsA, rowsB);
+  renderModePanels(rowsA, rowsB, 'HP');
+  renderModePanels(rowsA, rowsB, 'SND');
+  renderModePanels(rowsA, rowsB, 'CTRL');
+
   el('meta').textContent = `Scope — Mode: ${MODE_SEL} • Map: ${MAP_SEL==='ALL'?'All':MAP_SEL} • A rows: ${rowsA.length} • B rows: ${rowsB.length}`;
   syncAllGroups();
 };
@@ -572,10 +584,15 @@ el('resetBtn').onclick = (e)=>{
   el('fMode').value = 'ALL';
   el('fMap').value  = 'ALL';
   MODE_SEL = 'ALL'; MAP_SEL = 'ALL';
+
   const rowsA = currentScopeRows(TEAM_A);
   const rowsB = currentScopeRows(TEAM_B);
-  renderPanel('A', TEAM_A, rowsA);
-  renderPanel('B', TEAM_B, rowsB);
+
+  renderOverallPanels(rowsA, rowsB);
+  renderModePanels(rowsA, rowsB, 'HP');
+  renderModePanels(rowsA, rowsB, 'SND');
+  renderModePanels(rowsA, rowsB, 'CTRL');
+
   el('meta').textContent = `Scope — Mode: All • Map: All • A rows: ${rowsA.length} • B rows: ${rowsB.length}`;
   syncAllGroups();
 };
@@ -601,8 +618,12 @@ document.addEventListener('toggle', (e)=>{
 
   const rowsA = currentScopeRows(TEAM_A);
   const rowsB = currentScopeRows(TEAM_B);
-  renderPanel('A', TEAM_A, rowsA);
-  renderPanel('B', TEAM_B, rowsB);
+
+  renderOverallPanels(rowsA, rowsB);
+  renderModePanels(rowsA, rowsB, 'HP');
+  renderModePanels(rowsA, rowsB, 'SND');
+  renderModePanels(rowsA, rowsB, 'CTRL');
+
   el('meta').textContent = `Scope — Mode: All • Map: All • A rows: ${rowsA.length} • B rows: ${rowsB.length}`;
   syncAllGroups();
 })();
