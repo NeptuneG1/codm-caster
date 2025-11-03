@@ -12,12 +12,12 @@
     --bg:#0d1014; --panel:#292d42; --panel2:#1e2432;
     --ink:#f3f6fa; --muted:#b8c0cc; --brand:#ffe93b; --brandText:#0b0d0e;
     --brand2:#ffffff; --line:#4c525d; --chip:#213830;
-    --good:#62e887; --bad:#ff6b6b; --warn:#ffe93b;
   }
   *{box-sizing:border-box}
   html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif}
   a{color:var(--brand);text-decoration:none}
   a:hover{text-decoration:underline}
+
   header{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,#141a23 0%,#0d1014 100%);border-bottom:2px solid var(--brand)}
   .head{display:flex;align-items:center;gap:14px;max-width:1240px;margin:0 auto;padding:12px 14px}
   .logo{width:36px;height:36px;border-radius:8px;object-fit:contain;background:#0d1014;border:1px solid #2a3144;box-shadow:0 6px 16px rgba(0,0,0,.35)}
@@ -35,20 +35,23 @@
   .btn.secondary{background:#1a2030;color:#d6dbe6;border:1px solid var(--line)}
   .controls input,.controls select{background:#151b26;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:.9rem}
 
+  /* layout */
   .grid2{display:grid;grid-template-columns:1fr;gap:14px}
   @media(min-width:1100px){ .grid2{grid-template-columns:1fr 1fr} }
-
+  .panel{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px}
   .panel-title{display:flex;align-items:center;gap:10px;margin:0 0 8px 0}
-  .panel-title .tag{font-size:.75rem;border:1px solid var(--line);padding:2px 8px;border-radius:999px;background:#111827;color:#e8ecf5}
-  .panel{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px}
+  .tag{font-size:.75rem;border:1px solid var(--line);padding:2px 8px;border-radius:999px;background:#111827;color:#e8ecf5}
 
+  /* side-by-side tables inside each section */
+  .pair{display:grid;grid-template-columns:1fr;gap:10px}
+  @media(min-width:950px){ .pair{grid-template-columns:1fr 1fr} }
+
+  /* compact table */
   .compact table{width:100%;border-collapse:collapse;font-size:.86rem;line-height:1.15}
   .compact thead th{background:#141a1f;position:sticky;top:0;z-index:1}
   .compact th,.compact td{border-bottom:1px solid #3a4255;padding:6px 8px;vertical-align:middle}
   .right{text-align:right}
   .nowrap{white-space:nowrap}
-  details.fold{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:8px;margin-top:10px}
-  details.fold>summary{cursor:pointer;color:#e7ecf5}
 </style>
 </head>
 <body>
@@ -93,66 +96,111 @@
   <!-- TWO PANELS -->
   <section class="block">
     <div class="grid2">
+
       <!-- Panel A -->
       <div class="panel">
         <h2 class="panel-title"><span id="titleA">Team A</span> <span class="tag">Left</span></h2>
 
+        <!-- OVERALL -->
         <div class="compact">
-          <h3>Player Overall — Totals & Averages</h3>
-          <div id="overallA"></div>
+          <h3>Player Overall</h3>
+          <div class="pair">
+            <div>
+              <h4 style="margin:4px 0 6px">Totals</h4>
+              <div id="overallA_tot"></div>
+            </div>
+            <div>
+              <h4 style="margin:4px 0 6px">Averages</h4>
+              <div id="overallA_avg"></div>
+            </div>
+          </div>
         </div>
 
-        <div class="compact" style="margin-top:10px">
+        <!-- PER MODE -->
+        <div class="compact" style="margin-top:12px">
           <h3>Per Mode</h3>
-          <div id="modeA_HP" style="margin-top:6px"></div>
-          <div id="modeA_SND" style="margin-top:10px"></div>
-          <div id="modeA_CTL" style="margin-top:10px"></div>
-        </div>
 
-        <div class="compact" style="margin-top:10px">
-          <h3>Per Map (Player × Map)</h3>
-          <div id="perMapA"></div>
-        </div>
+          <div style="margin-top:8px">
+            <strong>HP</strong>
+            <div class="pair" style="margin-top:6px">
+              <div><div id="modeA_HP_tot"></div></div>
+              <div><div id="modeA_HP_avg"></div></div>
+            </div>
+          </div>
 
-        <details class="fold" style="margin-top:10px">
-          <summary>Raw rows (A)</summary>
-          <div id="rowsA" style="margin-top:8px"></div>
-        </details>
+          <div style="margin-top:12px">
+            <strong>SND</strong>
+            <div class="pair" style="margin-top:6px">
+              <div><div id="modeA_SND_tot"></div></div>
+              <div><div id="modeA_SND_avg"></div></div>
+            </div>
+          </div>
+
+          <div style="margin-top:12px">
+            <strong>CTL</strong>
+            <div class="pair" style="margin-top:6px">
+              <div><div id="modeA_CTL_tot"></div></div>
+              <div><div id="modeA_CTL_avg"></div></div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Panel B -->
       <div class="panel">
         <h2 class="panel-title"><span id="titleB">Team B</span> <span class="tag">Right</span></h2>
 
+        <!-- OVERALL -->
         <div class="compact">
-          <h3>Player Overall — Totals & Averages</h3>
-          <div id="overallB"></div>
+          <h3>Player Overall</h3>
+          <div class="pair">
+            <div>
+              <h4 style="margin:4px 0 6px">Totals</h4>
+              <div id="overallB_tot"></div>
+            </div>
+            <div>
+              <h4 style="margin:4px 0 6px">Averages</h4>
+              <div id="overallB_avg"></div>
+            </div>
+          </div>
         </div>
 
-        <div class="compact" style="margin-top:10px">
+        <!-- PER MODE -->
+        <div class="compact" style="margin-top:12px">
           <h3>Per Mode</h3>
-          <div id="modeB_HP" style="margin-top:6px"></div>
-          <div id="modeB_SND" style="margin-top:10px"></div>
-          <div id="modeB_CTL" style="margin-top:10px"></div>
-        </div>
 
-        <div class="compact" style="margin-top:10px">
-          <h3>Per Map (Player × Map)</h3>
-          <div id="perMapB"></div>
-        </div>
+          <div style="margin-top:8px">
+            <strong>HP</strong>
+            <div class="pair" style="margin-top:6px">
+              <div><div id="modeB_HP_tot"></div></div>
+              <div><div id="modeB_HP_avg"></div></div>
+            </div>
+          </div>
 
-        <details class="fold" style="margin-top:10px">
-          <summary>Raw rows (B)</summary>
-          <div id="rowsB" style="margin-top:8px"></div>
-        </details>
+          <div style="margin-top:12px">
+            <strong>SND</strong>
+            <div class="pair" style="margin-top:6px">
+              <div><div id="modeB_SND_tot"></div></div>
+              <div><div id="modeB_SND_avg"></div></div>
+            </div>
+          </div>
+
+          <div style="margin-top:12px">
+            <strong>CTL</strong>
+            <div class="pair" style="margin-top:6px">
+              <div><div id="modeB_CTL_tot"></div></div>
+              <div><div id="modeB_CTL_avg"></div></div>
+            </div>
+          </div>
+        </div>
       </div>
+
     </div>
   </section>
-
 </div>
 
 <script>
-/* ===== Supabase (same project as your MP Analyzer) ===== */
+/* ===== Supabase (same project creds) ===== */
 const SUPA_URL = 'https://fjdyppkanjnvyscqrfum.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqZHlwcGthbmpudnlzY3FyZnVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAzNDU1NzIsImV4cCI6MjA3NTkyMTU3Mn0.ssEN7uA9BVm9AkhsjkWxhPzV1-VQVxc4-u7LS2wt4Aw';
 const client = supabase.createClient(SUPA_URL, SUPA_KEY);
@@ -179,11 +227,11 @@ function fmt(x, d=2){ return (x==null || isNaN(x)) ? '0.00' : Number(x).toFixed(
 function ratio(a,b){ return b ? (a/b) : 0; }
 
 /* ===== Data state ===== */
-let RAW = [];  // all rows
-let TEAM_A = '', TEAM_B = ''; // selected teams
+let RAW = [];
+let TEAM_A = '', TEAM_B = '';
 let MODE_SEL = 'ALL', MAP_SEL = 'ALL';
 
-/* ===== Fetch all rows (paged) ===== */
+/* ===== Fetch (paged) ===== */
 async function fetchAllKDA(){
   const step = 1000; let from = 0; const out = [];
   for(;;){
@@ -241,13 +289,11 @@ function populateDropdowns(){
   const mapOpts = `<option value="ALL">All</option>` + maps.map(m=>`<option value="${m}">${m}</option>`).join('');
   el('fMap').innerHTML = mapOpts;
 
-  // defaults
   TEAM_A = teams[0] || '';
   TEAM_B = teams[1] || teams[0] || '';
   el('teamA').value = TEAM_A;
   el('teamB').value = TEAM_B;
 }
-
 function currentScopeRows(team){
   let rows = RAW.filter(r => r.Team === team);
   if (MODE_SEL !== 'ALL') rows = rows.filter(r => r.mode === MODE_SEL);
@@ -255,13 +301,14 @@ function currentScopeRows(team){
   return rows;
 }
 
-/* ===== Aggregations (totals + per-game averages) ===== */
+/* ===== Aggregations (totals + per-game avgs) ===== */
 function aggRows(list){
   const games = list.length;
   const kills = sum(list,'Kills');
   const deaths= sum(list,'Death');
   const assists = sum(list,'Assist');
   const scoreSum = sum(list,'Score');
+
   const kd = ratio(kills, deaths);
   const kda = ratio(kills + assists, Math.max(1,deaths));
 
@@ -273,14 +320,13 @@ function aggRows(list){
 
   return {
     games, kills, deaths, assists, kd, kda, scoreSum,
-    hpHillSum, hpGames, avgHill,
+    hillSum: hpHillSum, avgHill,
     avgK: games ? kills/games : 0,
     avgD: games ? deaths/games : 0,
     avgA: games ? assists/games : 0,
     avgScore: games ? scoreSum/games : 0
   };
 }
-
 function aggByPlayer(rows){
   const g = groupBy(rows, r=>r.IGN);
   const out = Object.entries(g).map(([ign, list])=>{
@@ -288,19 +334,15 @@ function aggByPlayer(rows){
     return {
       IGN: ign,
       games: a.games,
+      // totals
       kills: a.kills, deaths: a.deaths, assists: a.assists,
-      kd: a.kd, kda: a.kda,
-      score: a.scoreSum,
-      hill_sum: a.hpHillSum,
-      avgK: a.avgK, avgD: a.avgD, avgA: a.avgA,
-      avgScore: a.avgScore,
-      avgHill: a.avgHill
+      kd: a.kd, kda: a.kda, score: a.scoreSum, hill_sum: a.hillSum,
+      // avgs
+      avgK: a.avgK, avgD: a.avgD, avgA: a.avgA, avgScore: a.avgScore, avgHill: a.avgHill
     };
   });
-  // sort by KDA desc, KD desc, games desc
   return out.sort((x,y)=> (y.kda-x.kda) || (y.kd-x.kd) || (y.games-x.games));
 }
-
 function aggByPlayerMode(rows, modeCode){
   const subset = rows.filter(r => r.mode===modeCode);
   const g = groupBy(subset, r=>r.IGN);
@@ -310,35 +352,11 @@ function aggByPlayerMode(rows, modeCode){
       IGN: ign,
       games: a.games,
       kills: a.kills, deaths: a.deaths, assists: a.assists,
-      kd: a.kd, kda: a.kda,
-      score: a.scoreSum,
-      hill_sum: a.hpHillSum,
-      avgK: a.avgK, avgD: a.avgD, avgA: a.avgA,
-      avgScore: a.avgScore,
-      avgHill: a.avgHill
+      kd: a.kd, kda: a.kda, score: a.scoreSum, hill_sum: a.hillSum,
+      avgK: a.avgK, avgD: a.avgD, avgA: a.avgA, avgScore: a.avgScore, avgHill: a.avgHill
     };
   });
   return out.sort((x,y)=> (y.kda-x.kda) || (y.kd-x.kd) || (y.games-x.games));
-}
-
-function aggPerMap(rows){
-  const g = groupBy(rows, x => `${x.IGN}||${x.Map}`);
-  const out = Object.entries(g).map(([k, list])=>{
-    const [ign, map] = k.split('||');
-    const a = aggRows(list);
-    return {
-      IGN: ign, Map: map,
-      games: a.games,
-      kills: a.kills, deaths: a.deaths, assists: a.assists,
-      kd: a.kd, kda: a.kda,
-      score: a.scoreSum,
-      hill_sum: a.hpHillSum,
-      avgK: a.avgK, avgD: a.avgD, avgA: a.avgA,
-      avgScore: a.avgScore,
-      avgHill: a.avgHill
-    };
-  });
-  return out.sort((x,y)=> x.IGN.localeCompare(y.IGN) || (y.kda-x.kda) || (y.kd-x.kd) || (y.games-x.games));
 }
 
 /* ===== Rendering ===== */
@@ -361,8 +379,9 @@ function renderPanel(which, teamName, rows){
   // Title
   el(which==='A' ? 'titleA' : 'titleB').textContent = `${teamName||'—'}`;
 
-  // Overall — totals + averages
-  renderTable(which==='A' ? 'overallA' : 'overallB', aggByPlayer(rows), [
+  // Overall (Totals & Averages)
+  const overall = aggByPlayer(rows);
+  const colsTotals = [
     {label:'Player', key:'IGN'},
     {label:'G', key:'games', right:true},
     {label:'K', key:'kills', right:true},
@@ -372,47 +391,26 @@ function renderPanel(which, teamName, rows){
     {label:'KDA', key:'kda', right:true, format:'num'},
     {label:'Score Σ', key:'score', right:true, format:'num', dp:0},
     {label:'HP Hill Σ', key:'hill_sum', right:true, format:'mmss', nowrap:true},
+  ];
+  const colsAverages = [
+    {label:'Player', key:'IGN'},
+    {label:'G', key:'games', right:true},
     {label:'Avg K', key:'avgK', right:true, format:'num'},
     {label:'Avg D', key:'avgD', right:true, format:'num'},
     {label:'Avg A', key:'avgA', right:true, format:'num'},
     {label:'Avg Score', key:'avgScore', right:true, format:'num'},
     {label:'Avg Hill', key:'avgHill', right:true, format:'mmss', nowrap:true},
-  ], '—');
+  ];
+  renderTable(which==='A' ? 'overallA_tot' : 'overallB_tot', overall, colsTotals, '—');
+  renderTable(which==='A' ? 'overallA_avg' : 'overallB_avg', overall, colsAverages, '—');
 
-  // Per Mode
-  const byHP  = aggByPlayerMode(rows, 'HP');
-  const bySND = aggByPlayerMode(rows, 'SND');
-  const byCTL = aggByPlayerMode(rows, 'CTL');
+  // Per Mode (HP/SND/CTL) — split Totals & Averages
+  const byHP  = aggByPlayerMode(rows,'HP');
+  const bySND = aggByPlayerMode(rows,'SND');
+  const byCTL = aggByPlayerMode(rows,'CTL');
 
-  function colsMode(includeHill){
-    const base = [
-      {label:'Player', key:'IGN'},
-      {label:'G', key:'games', right:true},
-      {label:'K', key:'kills', right:true},
-      {label:'D', key:'deaths', right:true},
-      {label:'A', key:'assists', right:true},
-      {label:'K/D', key:'kd', right:true, format:'num'},
-      {label:'KDA', key:'kda', right:true, format:'num'},
-      {label:'Avg K', key:'avgK', right:true, format:'num'},
-      {label:'Avg D', key:'avgD', right:true, format:'num'},
-      {label:'Avg A', key:'avgA', right:true, format:'num'},
-      {label:'Avg Score', key:'avgScore', right:true, format:'num'},
-    ];
-    if (includeHill){
-      base.splice(8,0, {label:'Hill Σ', key:'hill_sum', right:true, format:'mmss', nowrap:true});
-      base.push({label:'Avg Hill', key:'avgHill', right:true, format:'mmss', nowrap:true});
-    }
-    return base;
-  }
-
-  renderTable(which==='A' ? 'modeA_HP'  : 'modeB_HP',  byHP,  colsMode(true),  '—');
-  renderTable(which==='A' ? 'modeA_SND' : 'modeB_SND', bySND, colsMode(false), '—');
-  renderTable(which==='A' ? 'modeA_CTL' : 'modeB_CTL', byCTL, colsMode(false), '—');
-
-  // Per Map
-  renderTable(which==='A' ? 'perMapA' : 'perMapB', aggPerMap(rows), [
+  const colsTotalsNoHill = [
     {label:'Player', key:'IGN'},
-    {label:'Map', key:'Map'},
     {label:'G', key:'games', right:true},
     {label:'K', key:'kills', right:true},
     {label:'D', key:'deaths', right:true},
@@ -420,32 +418,30 @@ function renderPanel(which, teamName, rows){
     {label:'K/D', key:'kd', right:true, format:'num'},
     {label:'KDA', key:'kda', right:true, format:'num'},
     {label:'Score Σ', key:'score', right:true, format:'num', dp:0},
-    {label:'HP Hill Σ', key:'hill_sum', right:true, format:'mmss', nowrap:true},
+  ];
+  const colsAveragesNoHill = [
+    {label:'Player', key:'IGN'},
+    {label:'G', key:'games', right:true},
     {label:'Avg K', key:'avgK', right:true, format:'num'},
     {label:'Avg D', key:'avgD', right:true, format:'num'},
     {label:'Avg A', key:'avgA', right:true, format:'num'},
     {label:'Avg Score', key:'avgScore', right:true, format:'num'},
-    {label:'Avg Hill', key:'avgHill', right:true, format:'mmss', nowrap:true},
-  ], '—');
+  ];
+  const colsTotalsHP = colsTotalsNoHill.concat([{label:'Hill Σ', key:'hill_sum', right:true, format:'mmss', nowrap:true}]);
+  const colsAveragesHP = colsAveragesNoHill.concat([{label:'Avg Hill', key:'avgHill', right:true, format:'mmss', nowrap:true}]);
 
-  // Raw rows
-  renderTable(which==='A' ? 'rowsA' : 'rowsB', rows.slice(0,1200), [
-    {label:'id', key:'id', right:true},
-    {label:'Team', key:'Team'},
-    {label:'Opponent', key:'Opponent'},
-    {label:'Map', key:'Map'},
-    {label:'Mode', key:'mode'},
-    {label:'IGN', key:'IGN'},
-    {label:'Score', key:'Score', right:true, format:'num', dp:0},
-    {label:'K', key:'Kills', right:true},
-    {label:'D', key:'Death', right:true},
-    {label:'A', key:'Assist', right:true},
-    {label:'Hill (mm:ss)', key:'hill_Time', right:true, format:'mmss', nowrap:true},
-    {label:'Game', key:'Game-Match'},
-  ], 'No rows.');
+  // HP
+  renderTable(which==='A' ? 'modeA_HP_tot'  : 'modeB_HP_tot',  byHP,  colsTotalsHP, '—');
+  renderTable(which==='A' ? 'modeA_HP_avg'  : 'modeB_HP_avg',  byHP,  colsAveragesHP, '—');
+  // SND
+  renderTable(which==='A' ? 'modeA_SND_tot' : 'modeB_SND_tot', bySND, colsTotalsNoHill, '—');
+  renderTable(which==='A' ? 'modeA_SND_avg' : 'modeB_SND_avg', bySND, colsAveragesNoHill, '—');
+  // CTL
+  renderTable(which==='A' ? 'modeA_CTL_tot' : 'modeB_CTL_tot', byCTL, colsTotalsNoHill, '—');
+  renderTable(which==='A' ? 'modeA_CTL_avg' : 'modeB_CTL_avg', byCTL, colsAveragesNoHill, '—');
 }
 
-/* ===== Export helpers ===== */
+/* ===== Export helpers (overall aggregates) ===== */
 function toCSV(rows){
   if(!rows.length) return '';
   const cols = Object.keys(rows[0]);
@@ -466,36 +462,31 @@ function exportPanel(team, rows){
   const agg = aggByPlayer(rows).map(r => ({
     Team: team, Player: r.IGN,
     Games: r.games,
+    // Totals
     Kills: r.kills, Deaths: r.deaths, Assists: r.assists,
-    KD: fmt(r.kd), KDA: fmt(r.kda),
-    Score_Sum: Math.round(r.score),
-    HP_Hill_Sec: Math.round(r.hill_sum),
+    KD: fmt(r.kd), KDA: fmt(r.kda), Score_Sum: Math.round(r.score), HP_Hill_Sec: Math.round(r.hill_sum),
+    // Averages
     AvgK: fmt(r.avgK), AvgD: fmt(r.avgD), AvgA: fmt(r.avgA),
     AvgScore: fmt(r.avgScore), AvgHill_Sec: Math.round(r.avgHill)
   }));
   download(`player_overall_${team||'team'}.csv`, toCSV(agg));
 }
 
-/* ===== Wiring ===== */
+/* ===== Wire up ===== */
 el('applyBtn').onclick = ()=>{
   TEAM_A = el('teamA').value;
   TEAM_B = el('teamB').value;
   MODE_SEL = el('fMode').value;
   MAP_SEL  = el('fMap').value;
+
   const rowsA = currentScopeRows(TEAM_A);
   const rowsB = currentScopeRows(TEAM_B);
   renderPanel('A', TEAM_A, rowsA);
   renderPanel('B', TEAM_B, rowsB);
   el('meta').textContent = `Scope — Mode: ${MODE_SEL} • Map: ${MAP_SEL==='ALL'?'All':MAP_SEL} • A rows: ${rowsA.length} • B rows: ${rowsB.length}`;
 };
-el('exportA').onclick = ()=>{
-  const rowsA = currentScopeRows(TEAM_A);
-  exportPanel(TEAM_A, rowsA);
-};
-el('exportB').onclick = ()=>{
-  const rowsB = currentScopeRows(TEAM_B);
-  exportPanel(TEAM_B, rowsB);
-};
+el('exportA').onclick = ()=> exportPanel(TEAM_A, currentScopeRows(TEAM_A));
+el('exportB').onclick = ()=> exportPanel(TEAM_B, currentScopeRows(TEAM_B));
 el('resetBtn').onclick = (e)=>{
   e.preventDefault();
   if(!RAW.length) return;
@@ -516,7 +507,7 @@ el('resetBtn').onclick = (e)=>{
   RAW = raw.map(coerceRow).filter(r => r.Team && r.IGN && r.mode && r.Map);
   populateDropdowns();
 
-  // Initial render with defaults
+  // Defaults
   el('fMode').value = 'ALL';
   el('fMap').value  = 'ALL';
   MODE_SEL = 'ALL'; MAP_SEL='ALL';
