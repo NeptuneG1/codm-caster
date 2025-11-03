@@ -91,12 +91,10 @@
         <select id="fMap"></select>
       </label>
       <button class="btn" id="applyBtn">Apply</button>
-      <button class="btn secondary" id="exportA">Export A (CSV)</button>
-      <button class="btn secondary" id="exportB">Export B (CSV)</button>
     </div>
     <div class="muted" id="meta">—</div>
 
-    <!-- 📌 New metrics note -->
+    <!-- 📌 Metrics note -->
     <details class="fold" style="margin-top:8px">
       <summary>What are K/D and KDA?</summary>
       <div class="muted" style="margin-top:6px; line-height:1.35">
@@ -539,37 +537,6 @@ function renderModePanels(rowsA, rowsB, mode){
   }
 }
 
-/* ===== Export helpers (overall aggregates) ===== */
-function toCSV(rows){
-  if(!rows.length) return '';
-  const cols = Object.keys(rows[0]);
-  const head = cols.join(',');
-  const body = rows.map(r => cols.map(c=>{
-    const s = r[c]==null ? '' : String(r[c]);
-    return /(,|\n|\"|\r)/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s;
-  }).join(',')).join('\n');
-  return head+'\n'+body;
-}
-function download(name, text){
-  const blob = new Blob([text], {type:'text/csv;charset=utf-8;'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob); a.download = name; a.click();
-  setTimeout(()=>URL.revokeObjectURL(a.href), 1200);
-}
-function exportPanel(team, rows){
-  const agg = aggByPlayer(rows).map(r => ({
-    Team: team, Player: r.IGN,
-    Games: r.games,
-    // Totals
-    Kills: r.kills, Deaths: r.deaths, Assists: r.assists,
-    KD: fmt(r.kd), KDA: fmt(r.kda), Score_Sum: Math.round(r.score), HP_Hill_Sec: Math.round(r.hill_sum),
-    // Averages
-    AvgK: fmt(r.avgK), AvgD: fmt(r.avgD), AvgA: fmt(r.avgA),
-    AvgScore: fmt(r.avgScore), AvgHill_Sec: Math.round(r.avgHill)
-  }));
-  download(`player_overall_${team||'team'}.csv`, toCSV(agg));
-}
-
 /* ===== Wire up ===== */
 el('applyBtn').onclick = ()=>{
   TEAM_A = el('teamA').value;
@@ -588,8 +555,6 @@ el('applyBtn').onclick = ()=>{
   el('meta').textContent = `Scope — Mode: ${MODE_SEL} • Map: ${MAP_SEL==='ALL'?'All':MAP_SEL} • A rows: ${rowsA.length} • B rows: ${rowsB.length}`;
   syncAllGroups();
 };
-el('exportA').onclick = ()=> exportPanel(TEAM_A, currentScopeRows(TEAM_A));
-el('exportB').onclick = ()=> exportPanel(TEAM_B, currentScopeRows(TEAM_B));
 el('resetBtn').onclick = (e)=>{
   e.preventDefault();
   if(!RAW.length) return;
