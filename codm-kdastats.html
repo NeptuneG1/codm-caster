@@ -71,7 +71,7 @@
           <option value="ALL">All</option>
           <option value="HP">HP</option>
           <option value="SND">SND</option>
-          <option value="CTL">CTL</option>
+          <option value="CTRL">CTRL</option>
         </select>
       </label>
       <label class="chip">Map
@@ -102,8 +102,8 @@
         <div id="modeSND"></div>
       </div>
       <div>
-        <h3>CTL</h3>
-        <div id="modeCTL"></div>
+        <h3>CTRL</h3>
+        <div id="modeCTRL"></div>
       </div>
     </div>
   </section>
@@ -117,7 +117,7 @@
           <option value="ALL">All</option>
           <option value="HP">HP</option>
           <option value="SND">SND</option>
-          <option value="CTL">CTL</option>
+          <option value="CTRL">CTRL</option>
         </select>
       </label>
       <label class="chip">Map
@@ -198,7 +198,7 @@ function coerceRow(r){
     const s = key(m);
     if (s.includes('hp') || s.includes('hardpoint')) return 'HP';
     if (s.includes('snd') || s.includes('search')) return 'SND';
-    if (s.includes('ctl') || s.includes('control')) return 'CTL';
+    if (s.includes('CTRL') || s.includes('control')) return 'CTRL';
     return _mode || '';
   }
   return {
@@ -363,7 +363,7 @@ function renderAll(){
     {label:'KDA', key:'kda', right:true, format:'num'},
   ], '—');
 
-  renderTable('modeCTL', aggByPlayerMode(SCOPE,'CTL'), [
+  renderTable('modeCTRL', aggByPlayerMode(SCOPE,'CTRL'), [
     {label:'Player', key:'IGN'},
     {label:'G', key:'games', right:true},
     {label:'K', key:'kills', right:true},
