@@ -89,7 +89,7 @@
 
 <section class="hero">
   <div class="title">Pick a dashboard</div>
-  <div class="sub">Multiplayer analytics, head-to-head tools, BR reference, and a split caster view.</div>
+  <div class="sub">Multiplayer analytics, head-to-head tools, BR reference, player KDA data, and a split caster view.</div>
 </section>
 
 <section class="grid">
@@ -196,10 +196,32 @@
     </div>
   </a>
 
+  <!-- 6) Player KDA (Data) -->
+  <a class="card" href="https://neptuneg1.github.io/codm-caster/kda-stats.html" aria-label="Open Player KDA data">
+    <div class="headrow">
+      <div class="icon" aria-hidden="true">
+        <!-- Bar/KDA icon -->
+        <svg viewBox="0 0 24 24" fill="none">
+          <rect x="4" y="10" width="3" height="8" rx="1" stroke="#ffe93b" stroke-width="1.4"/>
+          <rect x="10.5" y="6" width="3" height="12" rx="1" stroke="#cfd6e6" stroke-width="1.4"/>
+          <rect x="17" y="3" width="3" height="15" rx="1" stroke="#ffe93b" stroke-width="1.4"/>
+          <circle cx="12" cy="20.2" r="0.9" fill="#cfd6e6"/>
+        </svg>
+      </div>
+      <div class="name">Player KDA (Data)</div>
+    </div>
+    <div class="desc">Per-player totals &amp; averages, per-mode splits, HP hill time (mm:ss).</div>
+    <div class="chips">
+      <span class="chip">K/D/A</span>
+      <span class="chip">HP • SND • CTRL</span>
+      <span class="chip">CSV Export</span>
+    </div>
+  </a>
+
 </section>
 
 <footer>
-  <div>Pro tip: hit <span class="kbd">1</span>, <span class="kbd">2</span>, <span class="kbd">3</span>, <span class="kbd">4</span>, or <span class="kbd">5</span> to open a tile.</div>
+  <div>Pro tip: hit <span class="kbd">1</span>, <span class="kbd">2</span>, <span class="kbd">3</span>, <span class="kbd">4</span>, <span class="kbd">5</span>, or <span class="kbd">6</span> to open a tile.</div>
 </footer>
 
 <script>
@@ -209,10 +231,11 @@
     'https://neptuneg1.github.io/codm-caster/mp-teamcomp.html',    // 2
     'https://neptuneg1.github.io/codm-caster/codm-mp-maps.html',   // 3
     'https://neptuneg1.github.io/codm-caster/codm-br.html',        // 4
-    'https://neptuneg1.github.io/codm-caster/codm-split.html'      // 5
+    'https://neptuneg1.github.io/codm-caster/codm-split.html',     // 5
+    'https://neptuneg1.github.io/codm-caster/kda-stats.html'       // 6
   ];
   addEventListener('keydown', (e)=>{
-    if (['1','2','3','4','5'].includes(e.key)){
+    if (['1','2','3','4','5','6'].includes(e.key)){
       const i = Number(e.key)-1;
       window.location.href = links[i];
     }
