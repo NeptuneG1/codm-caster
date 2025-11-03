@@ -53,7 +53,7 @@
   .compact table{width:100%;border-collapse:collapse;font-size:.86rem;line-height:1.15}
   .compact thead th{background:#141a1f;position:sticky;top:0;z-index:1}
   .compact th,.compact td{border-bottom:1px solid #3a4255;padding:6px 8px;vertical-align:middle}
-  .right{text-align:right}
+  .right{ text-align:right; font-variant-numeric: tabular-nums; }
   .nowrap{white-space:nowrap}
 </style>
 </head>
@@ -362,22 +362,89 @@ function aggByPlayerMode(rows, modeCode){
   return out.sort((x,y)=> (y.kda-x.kda) || (y.kd-x.kd) || (y.games-x.games));
 }
 
-/* ===== Rendering ===== */
+/* ===== Rendering with <colgroup> for sync ===== */
 function renderTable(hostId, rows, cols, empty='No rows.'){
   const host = el(hostId);
   if (!rows.length){ host.innerHTML = `<div class="muted">${empty}</div>`; return; }
+
+  const colgroup = `<colgroup>${cols.map((_,i)=>`<col data-idx="${i}">`).join('')}</colgroup>`;
   const thead = `<thead><tr>${cols.map(c=>`<th class="${c.right?'right':''} ${c.nowrap?'nowrap':''}">${c.label}</th>`).join('')}</tr></thead>`;
   const tbody = `<tbody>${
     rows.map(r=>`<tr>${cols.map(c=>{
       let v = (typeof c.value==='function') ? c.value(r) : r[c.key];
-      if (c.format==='num') v = fmt(v, c.dp ?? 2);
+      if (c.format==='num')  v = (v==null||isNaN(v)) ? '0.00' : Number(v).toFixed(c.dp ?? 2);
       if (c.format==='mmss') v = toMMSS(v);
       return `<td class="${c.right?'right':''} ${c.nowrap?'nowrap':''}">${v ?? '—'}</td>`;
     }).join('')}</tr>`).join('')
   }</tbody>`;
-  host.innerHTML = `<table>${thead}${tbody}</table>`;
+
+  host.innerHTML = `<table>${colgroup}${thead}${tbody}</table>`;
 }
 
+/* ===== Column width sync (left/right) ===== */
+function _maxColNaturalWidth(tbl, colIdx){
+  if (!tbl) return 0;
+  const head = tbl.tHead?.rows?.[0];
+  const th = head?.cells?.[colIdx];
+  let max = th ? th.getBoundingClientRect().width : 0;
+
+  const rows = tbl.tBodies?.[0]?.rows || [];
+  for (let i=0; i<rows.length; i++){
+    const td = rows[i].cells[colIdx];
+    if (!td) continue;
+    const w = td.getBoundingClientRect().width;
+    if (w > max) max = w;
+    if (i > 50) break; // cap for perf
+  }
+  return Math.max(48, Math.ceil(max));
+}
+function _clearColgroupWidths(tbl){
+  const cols = tbl?.querySelectorAll('colgroup col') || [];
+  cols.forEach(c => c.style.width = '');
+}
+function _applyWidths(tbl, widths){
+  const cols = tbl?.querySelectorAll('colgroup col') || [];
+  widths.forEach((w,i)=> { if (cols[i]) cols[i].style.width = `${w}px`; });
+}
+function syncTablePair(leftHostId, rightHostId){
+  const leftTbl  = el(leftHostId)?.querySelector('table');
+  const rightTbl = el(rightHostId)?.querySelector('table');
+  if (!leftTbl || !rightTbl) return;
+
+  _clearColgroupWidths(leftTbl);
+  _clearColgroupWidths(rightTbl);
+
+  const cols = Math.min(
+    leftTbl.tHead?.rows?.[0]?.cells?.length || 0,
+    rightTbl.tHead?.rows?.[0]?.cells?.length || 0
+  );
+  if (!cols) return;
+
+  const widths = [];
+  for (let i=0; i<cols; i++){
+    const lw = _maxColNaturalWidth(leftTbl,  i);
+    const rw = _maxColNaturalWidth(rightTbl, i);
+    widths.push(Math.max(lw, rw));
+  }
+
+  _applyWidths(leftTbl,  widths);
+  _applyWidths(rightTbl, widths);
+}
+function syncAllPairs(){
+  const PAIRS = [
+    ['overallA_tot','overallB_tot'],
+    ['overallA_avg','overallB_avg'],
+    ['modeA_HP_tot','modeB_HP_tot'],
+    ['modeA_HP_avg','modeB_HP_avg'],
+    ['modeA_SND_tot','modeB_SND_tot'],
+    ['modeA_SND_avg','modeB_SND_avg'],
+    ['modeA_CTRL_tot','modeB_CTRL_tot'],
+    ['modeA_CTRL_avg','modeB_CTRL_avg'],
+  ];
+  requestAnimationFrame(()=> PAIRS.forEach(([a,b])=> syncTablePair(a,b)));
+}
+
+/* ===== Panel rendering ===== */
 function renderPanel(which, teamName, rows){
   // Title
   el(which==='A' ? 'titleA' : 'titleB').textContent = `${teamName||'—'}`;
@@ -433,10 +500,13 @@ function renderPanel(which, teamName, rows){
   const colsTotalsHP   = colsTotalsNoHill.concat([{label:'Hill Σ', key:'hill_sum', right:true, format:'mmss', nowrap:true}]);
   const colsAveragesHP = colsAveragesNoHill.concat([{label:'Avg Hill', key:'avgHill', right:true, format:'mmss', nowrap:true}]);
 
+  // HP
   renderTable(which==='A' ? 'modeA_HP_tot'  : 'modeB_HP_tot',  byHP,   colsTotalsHP, '—');
   renderTable(which==='A' ? 'modeA_HP_avg'  : 'modeB_HP_avg',  byHP,   colsAveragesHP, '—');
+  // SND
   renderTable(which==='A' ? 'modeA_SND_tot' : 'modeB_SND_tot', bySND,  colsTotalsNoHill, '—');
   renderTable(which==='A' ? 'modeA_SND_avg' : 'modeB_SND_avg', bySND,  colsAveragesNoHill, '—');
+  // CTRL
   renderTable(which==='A' ? 'modeA_CTRL_tot': 'modeB_CTRL_tot', byCTRL, colsTotalsNoHill, '—');
   renderTable(which==='A' ? 'modeA_CTRL_avg': 'modeB_CTRL_avg', byCTRL, colsAveragesNoHill, '—');
 }
@@ -484,6 +554,7 @@ el('applyBtn').onclick = ()=>{
   renderPanel('A', TEAM_A, rowsA);
   renderPanel('B', TEAM_B, rowsB);
   el('meta').textContent = `Scope — Mode: ${MODE_SEL} • Map: ${MAP_SEL==='ALL'?'All':MAP_SEL} • A rows: ${rowsA.length} • B rows: ${rowsB.length}`;
+  syncAllPairs();
 };
 el('exportA').onclick = ()=> exportPanel(TEAM_A, currentScopeRows(TEAM_A));
 el('exportB').onclick = ()=> exportPanel(TEAM_B, currentScopeRows(TEAM_B));
@@ -499,7 +570,16 @@ el('resetBtn').onclick = (e)=>{
   renderPanel('A', TEAM_A, rowsA);
   renderPanel('B', TEAM_B, rowsB);
   el('meta').textContent = `Scope — Mode: All • Map: All • A rows: ${rowsA.length} • B rows: ${rowsB.length}`;
+  syncAllPairs();
 };
+
+/* Re-sync on resize and when folds open/close */
+window.addEventListener('resize', ()=> { syncAllPairs(); });
+document.addEventListener('toggle', (e)=>{
+  if (e.target.tagName && e.target.tagName.toLowerCase() === 'details') {
+    setTimeout(syncAllPairs, 0);
+  }
+}, true);
 
 /* ===== Boot ===== */
 (async function init(){
@@ -517,6 +597,7 @@ el('resetBtn').onclick = (e)=>{
   renderPanel('A', TEAM_A, rowsA);
   renderPanel('B', TEAM_B, rowsB);
   el('meta').textContent = `Scope — Mode: All • Map: All • A rows: ${rowsA.length} • B rows: ${rowsB.length}`;
+  syncAllPairs();
 })();
 </script>
 </body>
