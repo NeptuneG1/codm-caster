@@ -405,11 +405,11 @@
     <header>
       <div>
         <h1>Tournament Bracketing — Settings</h1>
-        <span class="sub">Configure participants, generate bracket, and push to Supabase.</span>
+        <span class="sub">Configure participants, generate bracket, and push to database</span>
       </div>
       <div class="pill">
         <span class="dot"></span>
-        <span id="save-status-pill">Not saved to Supabase</span>
+        <span id="save-status-pill">Not saved to database</span>
       </div>
     </header>
 
@@ -480,12 +480,12 @@
             </button>
             <button class="primary" id="save-btn">
               <span class="icon">💾</span>
-              Save bracket to Supabase
+              Save bracket to database
             </button>
           </div>
 
           <p class="helper-text">
-            1) Add participants • 2) Pick seeding • 3) Generate bracket • 4) Report scores • 5) Save to Supabase.  
+            1) Add participants • 2) Pick seeding • 3) Generate bracket • 4) Report scores • 5) Save to database  
             Public can view on <code>bracket_view.html</code>.
           </p>
           <p id="save-status"></p>
@@ -990,14 +990,14 @@
     // ------- SAVE TO SUPABASE -------
     function renderSaveStatus(dirty){
       if(dirty){
-        saveStatus.textContent = 'Changes not yet saved to Supabase.';
+        saveStatus.textContent = 'Changes not yet saved to database.';
         saveStatusPill.textContent = 'Unsaved changes';
       }else if(state.lastSavedId){
         saveStatus.textContent = `Last saved as bracket #${state.lastSavedId}. Public page will show the latest saved bracket.`;
         saveStatusPill.textContent = `Saved: #${state.lastSavedId}`;
       }else{
-        saveStatus.textContent = 'Not yet saved to Supabase.';
-        saveStatusPill.textContent = 'Not saved to Supabase';
+        saveStatus.textContent = 'Not yet saved to database.';
+        saveStatusPill.textContent = 'Not saved to database';
       }
     }
 
@@ -1005,7 +1005,7 @@
       syncSettingsFromUI();
 
       if(!state.rounds.length){
-        alert('Generate a bracket before saving to Supabase.');
+        alert('Generate a bracket before saving to database.');
         return;
       }
 
@@ -1044,7 +1044,7 @@
         renderSaveStatus(true);
       }finally{
         saveBtn.disabled = false;
-        saveBtn.textContent = 'Save bracket to Supabase';
+        saveBtn.textContent = 'Save bracket to database';
       }
     }
 
