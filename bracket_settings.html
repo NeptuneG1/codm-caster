@@ -63,6 +63,30 @@
       color:var(--muted);
     }
 
+    .header-right{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+
+    #tournament-select{
+      background:var(--panel2);
+      border-radius:999px;
+      border:1px solid var(--line);
+      color:var(--ink);
+      padding:4px 8px;
+      font-size:.78rem;
+      max-width:260px;
+      cursor:pointer;
+    }
+    #tournament-select:focus{
+      outline:none;
+      border-color:var(--accent);
+      box-shadow:0 0 0 1px rgba(127,210,255,.3);
+    }
+
     main{
       display:grid;
       grid-template-columns:320px minmax(260px,360px) 1fr;
@@ -407,9 +431,14 @@
         <h1>Tournament Bracketing — Settings</h1>
         <span class="sub">Configure participants, generate bracket, and push to database</span>
       </div>
-      <div class="pill">
-        <span class="dot"></span>
-        <span id="save-status-pill">Not saved to database</span>
+      <div class="header-right">
+        <select id="tournament-select">
+          <option>Loading…</option>
+        </select>
+        <div class="pill">
+          <span class="dot"></span>
+          <span id="save-status-pill">Not saved to database</span>
+        </div>
       </div>
     </header>
 
@@ -485,7 +514,7 @@
           </div>
 
           <p class="helper-text">
-            1) Add participants • 2) Pick seeding • 3) Generate bracket • 4) Report scores • 5) Save to database.  
+            1) Select tournament (or create new) • 2) Add participants • 3) Generate bracket • 4) Report scores • 5) Save/update.  
             Public can view on <code>bracket_view.html</code>.
           </p>
           <p id="save-status"></p>
@@ -537,7 +566,7 @@
   <script>
     // ===== Supabase Setup =====
     const SUPABASE_URL = 'https://fjdyppkanjnvyscqrfum.supabase.co'; // your project URL
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqZHlwcGthbmpudnlzY3FyZnVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAzNDU1NzIsImV4cCI6MjA3NTkyMTU3Mn0.ssEN7uA9BVm9AkhsjkWxhPzV1-VQVxc4-u7LS2wt4Aw';              // TODO: paste your anon key here
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqZHlwcGthbmpudnlzY3FyZnVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAzNDU1NzIsImV4cCI6MjA3NTkyMTU3Mn0.ssEN7uA9BVm9AkhsjkWxhPzV1-VQVxc4-u7LS2wt4Aw';
 
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -551,7 +580,7 @@
       settings: {
         name: 'My Tournament',
         format: 'single',
-        bestOf: 1,
+        bestOf: 3,
         seedingMode: 'seeded',
         thirdPlace: false
       },
@@ -574,6 +603,7 @@
     const bracketMeta        = document.getElementById('bracket-meta');
     const saveStatus         = document.getElementById('save-status');
     const saveStatusPill     = document.getElementById('save-status-pill');
+    const tournamentSelect   = document.getElementById('tournament-select');
 
     let nextParticipantId = 1;
 
@@ -604,6 +634,12 @@
         const j = Math.floor(Math.random() * (i+1));
         [arr[i], arr[j]] = [arr[j], arr[i]];
       }
+    }
+
+    function getBracketIdFromURL(){
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get('id');
+      return id ? parseInt(id,10) : null;
     }
 
     // ------- PARTICIPANTS UI -------
@@ -983,7 +1019,7 @@
       scoreInput.type = 'number';
       scoreInput.min = '0';
       scoreInput.className = 'score-input';
-      scoreInput.value = slot === 1 ? match.s1 : match.s2;
+      scoreInput.value = slot === 1 ? (match.s1 ?? 0) : (match.s2 ?? 0);
 
       row.appendChild(seedSpan);
       row.appendChild(nameSpan);
@@ -992,13 +1028,186 @@
       return row;
     }
 
-    // ------- SAVE TO SUPABASE -------
+    // ------- TOURNAMENT LOADING / SWITCHING -------
+    function resetStateForNewTournament(){
+      nextParticipantId = 1;
+      state.participants = [];
+      state.bracketParticipants = [];
+      state.rounds = [];
+      state.matchById = {};
+      state.matchCounter = 0;
+      state.settings = {
+        name: 'My Tournament',
+        format: 'single',
+        bestOf: 3,
+        seedingMode: 'seeded',
+        thirdPlace: false
+      };
+      state.lastSavedId = null;
+
+      // Optional: seed demo participants for quick testing
+      const demoNames = ['Player 1','Player 2','Player 3','Player 4','Player 5','Player 6','Player 7','Player 8'];
+      demoNames.forEach(n => state.participants.push(createParticipant(n)));
+
+      // Update UI controls
+      nameInput.value = state.settings.name;
+      formatSelect.value = state.settings.format;
+      bestOfSelect.value = String(state.settings.bestOf);
+      seedingSelect.value = state.settings.seedingMode;
+      thirdPlaceToggle.checked = state.settings.thirdPlace;
+
+      renderParticipants();
+      renderEmptyBracket();
+      renderSaveStatus(false);
+    }
+
+    async function loadTournamentList(){
+      try{
+        const { data, error } = await client
+          .from('brackets')
+          .select('id,name,created_at')
+          .order('created_at', { ascending:false });
+
+        tournamentSelect.innerHTML = '';
+
+        // New tournament option
+        const newOpt = document.createElement('option');
+        newOpt.value = 'new';
+        newOpt.textContent = '+ New tournament';
+        tournamentSelect.appendChild(newOpt);
+
+        if(error){
+          console.error('Error loading tournament list:', error);
+          tournamentSelect.value = 'new';
+          resetStateForNewTournament();
+          return;
+        }
+
+        if(!data || !data.length){
+          tournamentSelect.value = 'new';
+          resetStateForNewTournament();
+          return;
+        }
+
+        data.forEach(row => {
+          const opt = document.createElement('option');
+          opt.value = String(row.id);
+          const name = row.name || 'Untitled';
+          const dt   = row.created_at ? new Date(row.created_at).toLocaleString() : '';
+          opt.textContent = `#${row.id} — ${name}${dt ? ' • ' + dt : ''}`;
+          tournamentSelect.appendChild(opt);
+        });
+
+        const urlId = getBracketIdFromURL();
+        let selectedVal;
+
+        if(urlId && data.some(r => r.id === urlId)){
+          selectedVal = String(urlId);
+        }else{
+          // default to latest saved
+          selectedVal = String(data[0].id);
+        }
+
+        tournamentSelect.value = selectedVal;
+        if(selectedVal === 'new'){
+          resetStateForNewTournament();
+        }else{
+          await loadTournament(parseInt(selectedVal,10));
+        }
+      }catch(err){
+        console.error('Unexpected error loading tournaments:', err);
+        tournamentSelect.innerHTML = '<option value="new">+ New tournament</option>';
+        tournamentSelect.value = 'new';
+        resetStateForNewTournament();
+      }
+    }
+
+    async function loadTournament(id){
+      try{
+        const { data, error } = await client
+          .from('brackets')
+          .select('*')
+          .eq('id', id)
+          .maybeSingle();
+
+        if(error){
+          console.error('Error loading bracket:', error);
+          alert('Error loading bracket: ' + error.message);
+          return;
+        }
+        if(!data){
+          alert('Bracket not found.');
+          return;
+        }
+
+        state.lastSavedId = data.id;
+        state.settings = data.settings || {
+          name: data.name || 'My Tournament',
+          format: 'single',
+          bestOf: 3,
+          seedingMode: 'seeded',
+          thirdPlace: false
+        };
+
+        const d = data.data || {};
+        state.participants        = d.participants || [];
+        state.bracketParticipants = d.bracketParticipants || [];
+        state.rounds              = d.rounds || [];
+
+        // Rebuild matchById and matchCounter
+        state.matchById = {};
+        state.matchCounter = 0;
+        state.rounds.forEach(round => {
+          round.forEach(m => {
+            state.matchById[m.id] = m;
+            const num = parseInt(String(m.id).replace('m',''),10);
+            if(!Number.isNaN(num) && num > state.matchCounter){
+              state.matchCounter = num;
+            }
+          });
+        });
+
+        // Update UI controls
+        nameInput.value = state.settings.name || '';
+        formatSelect.value = state.settings.format || 'single';
+        bestOfSelect.value = String(state.settings.bestOf || 1);
+        seedingSelect.value = state.settings.seedingMode || 'seeded';
+        thirdPlaceToggle.checked = !!state.settings.thirdPlace;
+
+        renderParticipants();
+        if(state.rounds.length){
+          renderBracket();
+        }else{
+          renderEmptyBracket();
+        }
+        renderSaveStatus(false);
+      }catch(err){
+        console.error('Unexpected error loading bracket:', err);
+        alert('Unexpected error loading bracket.');
+      }
+    }
+
+    if(tournamentSelect){
+      tournamentSelect.addEventListener('change', () => {
+        const val = tournamentSelect.value;
+        if(val === 'new'){
+          resetStateForNewTournament();
+        }else{
+          const id = parseInt(val,10);
+          if(!Number.isNaN(id)){
+            loadTournament(id);
+          }
+        }
+      });
+    }
+
+    // ------- SAVE TO DATABASE -------
     function renderSaveStatus(dirty){
       if(dirty){
         saveStatus.textContent = 'Changes not yet saved to database.';
         saveStatusPill.textContent = 'Unsaved changes';
       }else if(state.lastSavedId){
-        saveStatus.textContent = `Last saved as bracket #${state.lastSavedId}. Public page shows the latest saved bracket (or use ?id=${state.lastSavedId}).`;
+        saveStatus.textContent = `Last saved as bracket #${state.lastSavedId}. Public page shows any saved bracket (or use ?id=${state.lastSavedId}).`;
         saveStatusPill.textContent = `Saved: #${state.lastSavedId}`;
       }else{
         saveStatus.textContent = 'Not yet saved to database.';
@@ -1024,23 +1233,37 @@
         }
       };
 
+      const isNew = !state.lastSavedId || (tournamentSelect && tournamentSelect.value === 'new');
+
       try{
         saveBtn.disabled = true;
         saveBtn.textContent = 'Saving...';
         renderSaveStatus(true);
 
-        const { data, error } = await client
-          .from('brackets')
-          .insert(payload)
-          .select('id, created_at')
-          .single();
+        let data, error;
+
+        if(isNew){
+          ({ data, error } = await client
+            .from('brackets')
+            .insert(payload)
+            .select('id, created_at')
+            .single());
+        }else{
+          ({ data, error } = await client
+            .from('brackets')
+            .update(payload)
+            .eq('id', state.lastSavedId)
+            .select('id, created_at')
+            .single());
+        }
 
         if(error){
-          console.error('database insert error:', error);
+          console.error('database save error:', error);
           alert('Error saving bracket: ' + error.message);
           renderSaveStatus(true);
         }else{
           state.lastSavedId = data.id;
+          await loadTournamentList(); // refresh dropdown + reload bracket from DB
           renderSaveStatus(false);
         }
       }catch(err){
@@ -1057,15 +1280,10 @@
 
     // ------- INIT -------
     function init(){
-      // Seed with a few demo participants
-      const demoNames = ['Player 1','Player 2','Player 3','Player 4','Player 5','Player 6','Player 7','Player 8'];
-      demoNames.forEach(n => state.participants.push(createParticipant(n)));
-      renderParticipants();
-      nameInput.value = state.settings.name;
       renderEmptyBracket();
       renderSaveStatus(false);
-
       generateBtn.addEventListener('click', generateBracket);
+      loadTournamentList();
     }
 
     document.addEventListener('DOMContentLoaded', init);
