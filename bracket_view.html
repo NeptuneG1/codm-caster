@@ -61,6 +61,13 @@
       font-size:.75rem;
       color:var(--muted);
     }
+
+    .header-right{
+      display:flex;
+      align-items:center;
+      gap:6px;
+    }
+
     header button{
       border:none;
       border-radius:999px;
@@ -75,6 +82,22 @@
     }
     header button:hover{
       background:#20263a;
+    }
+
+    #tournament-select{
+      background:var(--panel2);
+      border-radius:999px;
+      border:1px solid var(--line);
+      color:var(--ink);
+      padding:4px 8px;
+      font-size:.78rem;
+      max-width:260px;
+      cursor:pointer;
+    }
+    #tournament-select:focus{
+      outline:none;
+      border-color:var(--accent);
+      box-shadow:0 0 0 1px rgba(127,210,255,.3);
     }
 
     main{
@@ -218,12 +241,17 @@
     <header>
       <div>
         <h1>Public Bracket View</h1>
-        <div class="meta" id="header-meta">Loading latest bracket…</div>
+        <div class="meta" id="header-meta">Loading tournaments…</div>
       </div>
-      <button id="refresh-btn">
-        <span>⟳</span>
-        <span>Refresh</span>
-      </button>
+      <div class="header-right">
+        <select id="tournament-select">
+          <option>Loading…</option>
+        </select>
+        <button id="refresh-btn">
+          <span>⟳</span>
+          <span>Refresh</span>
+        </button>
+      </div>
     </header>
 
     <main>
@@ -244,21 +272,24 @@
 
   <script>
     const SUPABASE_URL = 'https://fjdyppkanjnvyscqrfum.supabase.co'; // your project URL
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqZHlwcGthbmpudnlzY3FyZnVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAzNDU1NzIsImV4cCI6MjA3NTkyMTU3Mn0.ssEN7uA9BVm9AkhsjkWxhPzV1-VQVxc4-u7LS2wt4Aw';              // TODO: paste your anon key here
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqZHlwcGthbmpudnlzY3FyZnVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAzNDU1NzIsImV4cCI6MjA3NTkyMTU3Mn0.ssEN7uA9BVm9AkhsjkWxhPzV1-VQVxc4-u7LS2wt4Aw';
+
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    const headerMeta      = document.getElementById('header-meta');
-    const refreshBtn      = document.getElementById('refresh-btn');
-    const bracketTitleEl  = document.getElementById('bracket-title');
-    const bracketMetaEl   = document.getElementById('bracket-meta');
-    const bracketContainer= document.getElementById('bracket-container');
+    const headerMeta       = document.getElementById('header-meta');
+    const refreshBtn       = document.getElementById('refresh-btn');
+    const bracketTitleEl   = document.getElementById('bracket-title');
+    const bracketMetaEl    = document.getElementById('bracket-meta');
+    const bracketContainer = document.getElementById('bracket-container');
+    const tournamentSelect = document.getElementById('tournament-select');
 
     const state = {
       settings: null,
       participants: [],
       bracketParticipants: [],
       rounds: [],
-      bracketId: null
+      bracketId: null,
+      tournaments: [] // list of {id,name,created_at}
     };
 
     function getBracketIdFromURL(){
@@ -267,48 +298,138 @@
       return id ? parseInt(id,10) : null;
     }
 
-    async function loadBracket(){
+    async function loadTournamentList(){
+      headerMeta.textContent = 'Loading tournaments…';
+      tournamentSelect.innerHTML = '<option>Loading…</option>';
+
+      try{
+        const { data, error } = await client
+          .from('brackets')
+          .select('id,name,created_at')
+          .order('created_at', { ascending:false });
+
+        if(error){
+          console.error('Error loading tournament list:', error);
+          headerMeta.textContent = 'Error loading tournaments from database.';
+          tournamentSelect.innerHTML = '<option value="">Error loading</option>';
+          return;
+        }
+
+        state.tournaments = data || [];
+
+        tournamentSelect.innerHTML = '';
+
+        // "Latest" option
+        const latestOpt = document.createElement('option');
+        latestOpt.value = 'latest';
+        latestOpt.textContent = 'Latest saved';
+        tournamentSelect.appendChild(latestOpt);
+
+        state.tournaments.forEach(row => {
+          const opt = document.createElement('option');
+          opt.value = String(row.id);
+          const name = row.name || 'Untitled';
+          const dt = row.created_at ? new Date(row.created_at).toLocaleString() : '';
+          opt.textContent = `#${row.id} — ${name}${dt ? ' • ' + dt : ''}`;
+          tournamentSelect.appendChild(opt);
+        });
+
+        const urlId = getBracketIdFromURL();
+        if(urlId && state.tournaments.some(t => t.id === urlId)){
+          tournamentSelect.value = String(urlId);
+        }else{
+          tournamentSelect.value = 'latest';
+        }
+
+        headerMeta.textContent = 'Select a tournament or view the latest saved.';
+        await loadBracket(); // load based on select + URL
+      }catch(err){
+        console.error('Unexpected error loading tournaments:', err);
+        headerMeta.textContent = 'Unexpected error loading tournaments.';
+        tournamentSelect.innerHTML = '<option value="">Error</option>';
+      }
+    }
+
+    async function loadBracket(explicitId){
       const urlId = getBracketIdFromURL();
+      let idToLoad = explicitId ?? null;
+
+      const selVal = tournamentSelect ? tournamentSelect.value : null;
+      if(selVal && selVal !== 'latest'){
+        idToLoad = parseInt(selVal,10);
+      }else if(!explicitId && urlId){
+        idToLoad = urlId;
+      }
+
       headerMeta.textContent = 'Loading bracket from database…';
       bracketContainer.innerHTML = '<div class="empty-state">Loading bracket…</div>';
 
       try{
-        let query = client.from('brackets').select('*');
+        let data, error;
 
-        if(urlId){
-          query = query.eq('id', urlId).single();
+        if(idToLoad){
+          const res = await client
+            .from('brackets')
+            .select('*')
+            .eq('id', idToLoad)
+            .maybeSingle();
+          data = res.data;
+          error = res.error;
         }else{
-          query = query.order('created_at', { ascending:false }).limit(1).maybeSingle();
+          const res = await client
+            .from('brackets')
+            .select('*')
+            .order('created_at', { ascending:false })
+            .limit(1)
+            .maybeSingle();
+          data = res.data;
+          error = res.error;
         }
 
-        const { data, error } = await query;
-
         if(error){
-          console.error(error);
+          console.error('Error loading bracket:', error);
           headerMeta.textContent = 'Error loading bracket from database.';
           bracketContainer.innerHTML = '<div class="empty-state">Error loading bracket. Check console.</div>';
+          bracketTitleEl.textContent = 'Error';
+          bracketMetaEl.textContent = '';
           return;
         }
 
         if(!data){
           headerMeta.textContent = 'No brackets saved yet.';
           bracketContainer.innerHTML = '<div class="empty-state">No brackets found. Ask admin to save one from settings page.</div>';
+          bracketTitleEl.textContent = 'No bracket';
+          bracketMetaEl.textContent = '';
           return;
         }
 
-        state.bracketId          = data.id;
-        state.settings           = data.settings || {};
-        const d                  = data.data || {};
-        state.participants       = d.participants || [];
-        state.bracketParticipants= d.bracketParticipants || [];
-        state.rounds             = d.rounds || [];
+        state.bracketId           = data.id;
+        state.settings            = data.settings || {};
+        const d                   = data.data || {};
+        state.participants        = d.participants || [];
+        state.bracketParticipants = d.bracketParticipants || [];
+        state.rounds              = d.rounds || [];
 
-        headerMeta.textContent   = `Showing bracket #${data.id} • Updated ${new Date(data.created_at).toLocaleString()}`;
+        // Sync dropdown to the bracket we actually loaded
+        if(tournamentSelect){
+          const valStr = String(data.id);
+          if(tournamentSelect.value !== valStr){
+            const exists = [...tournamentSelect.options].some(o => o.value === valStr);
+            if(exists){
+              tournamentSelect.value = valStr;
+            }
+          }
+        }
+
+        const bracketName = state.settings.name || data.name || 'Tournament Bracket';
+        headerMeta.textContent = `Showing #${data.id} — ${bracketName} • Updated ${new Date(data.created_at).toLocaleString()}`;
         renderBracket();
       }catch(err){
-        console.error(err);
+        console.error('Unexpected error loading bracket:', err);
         headerMeta.textContent = 'Unexpected error loading bracket.';
         bracketContainer.innerHTML = '<div class="empty-state">Unexpected error loading bracket.</div>';
+        bracketTitleEl.textContent = 'Error';
+        bracketMetaEl.textContent = '';
       }
     }
 
@@ -424,9 +545,12 @@
       return row;
     }
 
-    refreshBtn.addEventListener('click', loadBracket);
+    refreshBtn.addEventListener('click', () => loadBracket());
+    tournamentSelect.addEventListener('change', () => loadBracket());
 
-    document.addEventListener('DOMContentLoaded', loadBracket);
+    document.addEventListener('DOMContentLoaded', () => {
+      loadTournamentList();
+    });
   </script>
 </body>
 </html>
