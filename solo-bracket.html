@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Tournament Bracketing — Mini Challonge Style</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+  <style>
+    :root{
+      --bg:#05060a;
+      --panel:#111524;
+      --panel2:#181d2f;
+      --ink:#f6f7fb;
+      --muted:#a3acc3;
+      --brand:#ffe93b;
+      --brand-soft:rgba(255,233,59,.14);
+      --accent:#7fd2ff;
+      --danger:#ff6b6b;
+      --line:#262b3d;
+      --radius-lg:16px;
+      --radius-sm:8px;
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{
+      height:100%;
+      background:radial-gradient(circle at top,#171c30 0,#05060a 52%);
+      color:var(--ink);
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"SF Pro Text",Segoe UI,Roboto,sans-serif;
+    }
+
+    body{
+      display:flex;
+      justify-content:center;
+      padding:16px;
+    }
+
+    .app{
+      width:100%;
+      max-width:1280px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+
+    header{
+      padding:12px 18px;
+      border-radius:var(--radius-lg);
+      background:linear-gradient(135deg,#171c30,#111524);
+      border:1px solid var(--line);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+    }
+    header h1{
+      font-size:1.1rem;
+      letter-spacing:.04em;
+      text-transform:uppercase;
+    }
+    header span.sub{
+      font-size:.8rem;
+      color:var(--muted);
+    }
+
+    main{
+      display:grid;
+      grid-template-columns:320px minmax(260px,360px) 1fr;
+      gap:12px;
+      align-items:flex-start;
+    }
+
+    section{
+      border-radius:var(--radius-lg);
+      background:var(--panel);
+      border:1px solid var(--line);
+      padding:12px;
+      min-height:0;
+    }
+
+    section h2{
+      font-size:.9rem;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      color:var(--muted);
+      margin-bottom:8px;
+    }
+
+    /* Settings panel */
+    .settings-grid{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .field{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      font-size:.82rem;
+    }
+    .field label{
+      color:var(--muted);
+      display:flex;
+      justify-content:space-between;
+      gap:8px;
+    }
+    .field small{
+      font-size:.7rem;
+      color:var(--muted);
+    }
+    .field input[type="text"],
+    .field input[type="number"],
+    .field select{
+      background:var(--panel2);
+      border-radius:var(--radius-sm);
+      border:1px solid var(--line);
+      color:var(--ink);
+      padding:6px 8px;
+      font-size:.85rem;
+      outline:none;
+    }
+    .field input[type="text"]:focus,
+    .field input[type="number"]:focus,
+    .field select:focus{
+      border-color:var(--accent);
+      box-shadow:0 0 0 1px rgba(127,210,255,.3);
+    }
+    .field-row{
+      display:flex;
+      gap:8px;
+    }
+    .field-row > *{flex:1}
+
+    .checkbox-row{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      font-size:.8rem;
+      color:var(--muted);
+      margin-top:4px;
+    }
+    .checkbox-row input{
+      accent-color:var(--brand);
+    }
+
+    .settings-actions{
+      margin-top:8px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+    }
+    button{
+      border:none;
+      border-radius:999px;
+      padding:6px 10px;
+      font-size:.8rem;
+      background:var(--panel2);
+      color:var(--ink);
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+      transition:background .15s, transform .05s, box-shadow .15s;
+    }
+    button span.icon{
+      font-size:.9rem;
+    }
+    button.primary{
+      background:var(--brand);
+      color:#05060a;
+      font-weight:600;
+      box-shadow:0 0 0 1px rgba(0,0,0,.5);
+    }
+    button.primary:hover{
+      background:#fff39a;
+    }
+    button:hover{
+      background:#20263a;
+      transform:translateY(-1px);
+    }
+    button:active{
+      transform:translateY(0);
+      box-shadow:none;
+    }
+    button:disabled{
+      opacity:.5;
+      cursor:default;
+      transform:none;
+    }
+
+    /* Participants */
+    .participants-table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:.8rem;
+      margin-top:4px;
+      border-radius:var(--radius-sm);
+      overflow:hidden;
+    }
+    .participants-table thead{
+      background:var(--panel2);
+    }
+    .participants-table th,
+    .participants-table td{
+      padding:6px 6px;
+      border-bottom:1px solid var(--line);
+    }
+    .participants-table th{
+      text-align:left;
+      color:var(--muted);
+      font-weight:500;
+    }
+    .participants-table td.seed-cell{
+      width:40px;
+      color:var(--muted);
+    }
+    .participants-table input[type="text"]{
+      width:100%;
+      background:transparent;
+      border:none;
+      border-bottom:1px dashed rgba(255,255,255,.1);
+      padding:2px;
+      font-size:.8rem;
+      color:var(--ink);
+      outline:none;
+    }
+    .participants-table input[type="text"]:focus{
+      border-bottom-color:var(--accent);
+    }
+    .participants-table tbody tr:nth-child(even){
+      background:rgba(0,0,0,.06);
+    }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      padding:2px 6px;
+      border-radius:999px;
+      background:var(--panel2);
+      font-size:.72rem;
+      color:var(--muted);
+    }
+    .pill span.dot{
+      width:6px;height:6px;border-radius:50%;background:var(--brand);margin-right:4px;
+    }
+
+    .helper-text{
+      font-size:.72rem;
+      color:var(--muted);
+      margin-top:6px;
+      line-height:1.4;
+    }
+
+    /* Bracket */
+    .bracket-shell{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      min-height:220px;
+    }
+    .bracket-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      font-size:.8rem;
+      color:var(--muted);
+    }
+
+    .bracket-container{
+      display:flex;
+      align-items:flex-start;
+      gap:12px;
+      overflow-x:auto;
+      padding-bottom:4px;
+    }
+    .round-col{
+      min-width:180px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .round-title{
+      font-size:.8rem;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      color:var(--muted);
+      margin-bottom:2px;
+    }
+    .match-card{
+      background:var(--panel2);
+      border-radius:var(--radius-sm);
+      border:1px solid var(--line);
+      padding:6px;
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      box-shadow:0 8px 12px rgba(0,0,0,.35);
+    }
+    .match-meta{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      font-size:.7rem;
+      color:var(--muted);
+    }
+    .match-meta span.badge{
+      padding:1px 6px;
+      border-radius:999px;
+      background:var(--brand-soft);
+      color:var(--brand);
+      font-weight:500;
+      text-transform:uppercase;
+      letter-spacing:.06em;
+      font-size:.67rem;
+    }
+    .player-row{
+      display:grid;
+      grid-template-columns:22px minmax(0,1fr) 40px;
+      align-items:center;
+      gap:4px;
+      font-size:.8rem;
+    }
+    .player-row span.seed{
+      font-size:.7rem;
+      color:var(--muted);
+      text-align:right;
+    }
+    .player-row span.name{
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .player-row.bye span.name{
+      color:var(--muted);
+      opacity:.7;
+      font-style:italic;
+    }
+    .player-row input.score-input{
+      width:100%;
+      text-align:center;
+      background:#05060a;
+      border-radius:6px;
+      border:1px solid var(--line);
+      color:var(--ink);
+      padding:3px;
+      font-size:.78rem;
+      outline:none;
+    }
+    .player-row input.score-input:focus{
+      border-color:var(--accent);
+    }
+
+    .match-actions{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-top:2px;
+      gap:4px;
+    }
+    .match-actions button{
+      padding:4px 8px;
+      font-size:.72rem;
+    }
+    .match-status{
+      font-size:.7rem;
+      color:var(--muted);
+    }
+    .match-status .winner-tag{
+      color:var(--brand);
+      font-weight:600;
+    }
+    .match-status .pending{
+      color:var(--muted);
+    }
+
+    .empty-state{
+      font-size:.8rem;
+      color:var(--muted);
+      padding:18px 10px;
+      border-radius:var(--radius-sm);
+      background:rgba(0,0,0,.14);
+      border:1px dashed rgba(255,255,255,.08);
+    }
+
+    @media(max-width:1040px){
+      main{
+        grid-template-columns:minmax(0,1fr);
+      }
+      section:nth-child(2){
+        order:3;
+      }
+      section:nth-child(3){
+        order:2;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div>
+        <h1>Tournament Bracketing</h1>
+        <span class="sub">Single-elimination engine with Challonge-style seeding options.</span>
+      </div>
+      <div class="pill">
+        <span class="dot"></span>
+        <span>Local prototype — no backend yet</span>
+      </div>
+    </header>
+
+    <main>
+      <!-- SETTINGS -->
+      <section id="settings-section">
+        <h2>Settings</h2>
+        <div class="settings-grid">
+          <div class="field">
+            <label>
+              Tournament Name
+            </label>
+            <input type="text" id="tournament-name" placeholder="My Free Fire Cup"/>
+          </div>
+
+          <div class="field field-row">
+            <div>
+              <label>Format</label>
+              <select id="tournament-format">
+                <option value="single">Single Elimination</option>
+                <option value="double" disabled>Double Elim (stub)</option>
+                <option value="roundrobin" disabled>Round Robin (stub)</option>
+                <option value="swiss" disabled>Swiss (stub)</option>
+              </select>
+            </div>
+            <div>
+              <label>Best Of</label>
+              <select id="best-of">
+                <option value="1">Bo1</option>
+                <option value="3" selected>Bo3</option>
+                <option value="5">Bo5</option>
+                <option value="7">Bo7</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Seeding Mode</label>
+            <select id="seeding-mode">
+              <option value="seeded">Traditional (1 vs last)</option>
+              <option value="list">List order</option>
+              <option value="random">Randomize</option>
+            </select>
+            <small>Traditional seeding keeps top seeds apart until later rounds, similar to Challonge.</small>
+          </div>
+
+          <div class="checkbox-row">
+            <span>3rd place match</span>
+            <input type="checkbox" id="third-place-toggle"/>
+          </div>
+
+          <div class="settings-actions">
+            <button id="add-participant-btn">
+              <span class="icon">＋</span>
+              Add participant
+            </button>
+            <button id="shuffle-btn">
+              <span class="icon">🎲</span>
+              Shuffle list
+            </button>
+            <button id="clear-btn">
+              <span class="icon">🧹</span>
+              Clear all
+            </button>
+            <button class="primary" id="generate-btn">
+              <span class="icon">🏆</span>
+              Generate bracket
+            </button>
+          </div>
+
+          <p class="helper-text">
+            1. Add participants • 2. Pick seeding • 3. Generate bracket • 4. Enter scores to advance winners.
+          </p>
+        </div>
+      </section>
+
+      <!-- PARTICIPANTS -->
+      <section id="participants-section">
+        <h2>Participants</h2>
+
+        <table class="participants-table">
+          <thead>
+            <tr>
+              <th style="width:44px;">Seed</th>
+              <th>Name</th>
+              <th style="width:60px;text-align:right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="participants-body">
+          </tbody>
+        </table>
+
+        <p class="helper-text">
+          Seeding is based on row order. You can shuffle the list or manually edit names.
+        </p>
+      </section>
+
+      <!-- BRACKET -->
+      <section id="bracket-section">
+        <h2>Bracket</h2>
+        <div class="bracket-shell">
+          <div class="bracket-header">
+            <div id="bracket-title">No bracket generated yet.</div>
+            <div id="bracket-meta"></div>
+          </div>
+          <div id="bracket-container" class="bracket-container">
+            <div class="empty-state">
+              Add at least 2 participants and click <strong>Generate bracket</strong> to build your first tree.
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    // ------- STATE -------
+    const state = {
+      participants: [],        // [{id, name}]
+      bracketParticipants: [], // includes BYEs
+      rounds: [],              // [ [matches...] ]
+      matchById: {},           // id -> match
+      matchCounter: 0,
+      settings: {
+        name: 'My Free Fire Cup',
+        format: 'single',
+        bestOf: 3,
+        seedingMode: 'seeded',
+        thirdPlace: false
+      }
+    };
+
+    const participantsBody = document.getElementById('participants-body');
+    const addBtn = document.getElementById('add-participant-btn');
+    const shuffleBtn = document.getElementById('shuffle-btn');
+    const clearBtn = document.getElementById('clear-btn');
+    const generateBtn = document.getElementById('generate-btn');
+    const nameInput = document.getElementById('tournament-name');
+    const formatSelect = document.getElementById('tournament-format');
+    const bestOfSelect = document.getElementById('best-of');
+    const seedingSelect = document.getElementById('seeding-mode');
+    const thirdPlaceToggle = document.getElementById('third-place-toggle');
+    const bracketContainer = document.getElementById('bracket-container');
+    const bracketTitle = document.getElementById('bracket-title');
+    const bracketMeta = document.getElementById('bracket-meta');
+
+    let nextParticipantId = 1;
+
+    // ------- UTILITIES -------
+    function createParticipant(name){
+      return {
+        id: 'p' + (nextParticipantId++),
+        name: name || ('Player ' + (state.participants.length + 1))
+      };
+    }
+
+    function syncSettingsFromUI(){
+      state.settings.name = nameInput.value.trim() || 'My Tournament';
+      state.settings.format = formatSelect.value;
+      state.settings.bestOf = parseInt(bestOfSelect.value,10) || 1;
+      state.settings.seedingMode = seedingSelect.value;
+      state.settings.thirdPlace = thirdPlaceToggle.checked;
+    }
+
+    function nextPowerOfTwo(n){
+      let p = 1;
+      while(p < n) p <<= 1;
+      return p;
+    }
+
+    function clone(obj){
+      return JSON.parse(JSON.stringify(obj));
+    }
+
+    function shuffleArray(arr){
+      for(let i = arr.length-1; i > 0; i--){
+        const j = Math.floor(Math.random() * (i+1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+    }
+
+    // ------- PARTICIPANTS UI -------
+    function renderParticipants(){
+      participantsBody.innerHTML = '';
+      state.participants.forEach((p, idx) => {
+        const tr = document.createElement('tr');
+
+        const seedTd = document.createElement('td');
+        seedTd.className = 'seed-cell';
+        seedTd.textContent = idx + 1;
+        tr.appendChild(seedTd);
+
+        const nameTd = document.createElement('td');
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = p.name;
+        input.addEventListener('input', () => {
+          p.name = input.value;
+        });
+        nameTd.appendChild(input);
+        tr.appendChild(nameTd);
+
+        const actionsTd = document.createElement('td');
+        actionsTd.style.textAlign = 'right';
+
+        const removeBtn = document.createElement('button');
+        removeBtn.textContent = '✕';
+        removeBtn.style.padding = '3px 6px';
+        removeBtn.style.fontSize = '.7rem';
+        removeBtn.addEventListener('click', () => {
+          state.participants.splice(idx, 1);
+          renderParticipants();
+        });
+        actionsTd.appendChild(removeBtn);
+        tr.appendChild(actionsTd);
+
+        participantsBody.appendChild(tr);
+      });
+    }
+
+    addBtn.addEventListener('click', () => {
+      state.participants.push(createParticipant());
+      renderParticipants();
+    });
+
+    shuffleBtn.addEventListener('click', () => {
+      shuffleArray(state.participants);
+      renderParticipants();
+    });
+
+    clearBtn.addEventListener('click', () => {
+      if(!confirm('Clear all participants and bracket?')) return;
+      state.participants = [];
+      state.rounds = [];
+      state.matchById = {};
+      state.matchCounter = 0;
+      renderParticipants();
+      renderEmptyBracket();
+    });
+
+    // ------- BRACKET GENERATION (SINGLE ELIM) -------
+    function generateBracket(){
+      syncSettingsFromUI();
+
+      const n = state.participants.length;
+      if(n < 2){
+        alert('You need at least 2 participants to generate a bracket.');
+        return;
+      }
+
+      // Build seeded list based on seeding mode
+      let seeded = state.participants.map((p, idx) => ({
+        id: p.id,
+        name: p.name || ('Player ' + (idx+1)),
+        isBye: false
+      }));
+
+      if(state.settings.seedingMode === 'seeded'){
+        // Already in seed order (top row = #1 seed)
+        // Nothing extra to do here.
+      }else if(state.settings.seedingMode === 'list'){
+        // List order is also "as-is", but we keep branch in case you want to tweak later.
+      }else if(state.settings.seedingMode === 'random'){
+        shuffleArray(seeded);
+      }
+
+      const bracketSize = nextPowerOfTwo(seeded.length);
+      const byesNeeded = bracketSize - seeded.length;
+
+      for(let i=0;i<byesNeeded;i++){
+        seeded.push({
+          id:'bye-'+i,
+          name:'BYE',
+          isBye:true
+        });
+      }
+
+      state.bracketParticipants = seeded;
+      state.rounds = [];
+      state.matchById = {};
+      state.matchCounter = 0;
+
+      const roundsCount = Math.log2(bracketSize);
+      for(let r=0;r<roundsCount;r++){
+        state.rounds.push([]);
+      }
+
+      // Round 1: pair 1 vs last, 2 vs second last, etc.
+      const round1 = state.rounds[0];
+      const half = bracketSize / 2;
+      for(let i=0;i<half;i++){
+        const p1 = seeded[i] || null;
+        const p2 = seeded[bracketSize - 1 - i] || null;
+        const match = createMatch(1, i, p1, p2);
+        round1.push(match);
+      }
+
+      // Subsequent rounds: empty matches, link from previous
+      let prevRoundMatches = round1;
+      for(let r=2;r<=roundsCount;r++){
+        const prevCount = prevRoundMatches.length;
+        const curCount = prevCount / 2;
+        const curRound = [];
+        for(let i=0;i<curCount;i++){
+          const match = createMatch(r, i, null, null);
+          curRound.push(match);
+        }
+        state.rounds[r-1] = curRound;
+
+        // Link previous -> next
+        prevRoundMatches.forEach((m, idx) => {
+          const toIndex = Math.floor(idx / 2);
+          const slot = (idx % 2 === 0) ? 1 : 2;
+          m.nextMatchId = curRound[toIndex].id;
+          m.nextMatchSlot = slot;
+        });
+
+        prevRoundMatches = curRound;
+      }
+
+      // Auto-advance BYEs in round 1
+      for(const m of state.rounds[0]){
+        if(m.p1 && m.p1.isBye && m.p2 && !m.p2.isBye){
+          m.winnerId = m.p2.id;
+          propagateWinner(m);
+        }else if(m.p2 && m.p2.isBye && m.p1 && !m.p1.isBye){
+          m.winnerId = m.p1.id;
+          propagateWinner(m);
+        }
+      }
+
+      renderBracket();
+    }
+
+    function createMatch(roundNumber, indexInRound, p1, p2){
+      const id = 'm' + (++state.matchCounter);
+      const match = {
+        id,
+        round: roundNumber,
+        index: indexInRound,
+        p1,
+        p2,
+        s1: 0,
+        s2: 0,
+        winnerId: null,
+        nextMatchId: null,
+        nextMatchSlot: null
+      };
+      state.matchById[id] = match;
+      return match;
+    }
+
+    function findParticipantById(id){
+      return state.bracketParticipants.find(p => p.id === id) || null;
+    }
+
+    function propagateWinner(match){
+      if(!match.nextMatchId || !match.winnerId) return;
+      const winner = findParticipantById(match.winnerId);
+      if(!winner) return;
+      const nextMatch = state.matchById[match.nextMatchId];
+      if(!nextMatch) return;
+
+      if(match.nextMatchSlot === 1){
+        nextMatch.p1 = winner;
+      }else{
+        nextMatch.p2 = winner;
+      }
+    }
+
+    function clearAdvancement(match){
+      if(!match.nextMatchId) return;
+      const nextMatch = state.matchById[match.nextMatchId];
+      if(!nextMatch) return;
+
+      // Remove previously advanced participant from the appropriate slot
+      let removedId = null;
+      if(match.nextMatchSlot === 1){
+        removedId = nextMatch.p1 ? nextMatch.p1.id : null;
+        nextMatch.p1 = null;
+      }else{
+        removedId = nextMatch.p2 ? nextMatch.p2.id : null;
+        nextMatch.p2 = null;
+      }
+
+      // If that participant was also registered as winner, reset and recurse
+      if(nextMatch.winnerId && removedId && nextMatch.winnerId === removedId){
+        nextMatch.winnerId = null;
+        nextMatch.s1 = 0;
+        nextMatch.s2 = 0;
+        clearAdvancement(nextMatch);
+      }
+    }
+
+    function setMatchResult(matchId, score1, score2){
+      const m = state.matchById[matchId];
+      if(!m) return;
+
+      if(!m.p1 || !m.p2){
+        alert('Both slots must have participants to report a result.');
+        return;
+      }
+
+      const s1 = parseInt(score1,10);
+      const s2 = parseInt(score2,10);
+      if(Number.isNaN(s1) || Number.isNaN(s2)){
+        alert('Please enter numeric scores for both players.');
+        return;
+      }
+      if(s1 === s2){
+        alert('Ties are not allowed in elimination. Adjust the scores.');
+        return;
+      }
+
+      // Clear old advancement down the tree
+      clearAdvancement(m);
+
+      m.s1 = s1;
+      m.s2 = s2;
+
+      const winner = s1 > s2 ? m.p1 : m.p2;
+      m.winnerId = winner.id;
+
+      propagateWinner(m);
+      renderBracket();
+    }
+
+    // ------- BRACKET RENDER -------
+    function renderEmptyBracket(){
+      bracketTitle.textContent = 'No bracket generated yet.';
+      bracketMeta.textContent = '';
+      bracketContainer.innerHTML = '';
+      const div = document.createElement('div');
+      div.className = 'empty-state';
+      div.innerHTML = 'Add participants on the left and click <strong>Generate bracket</strong> to see the tree.';
+      bracketContainer.appendChild(div);
+    }
+
+    function renderBracket(){
+      if(!state.rounds.length){
+        renderEmptyBracket();
+        return;
+      }
+
+      bracketTitle.textContent = state.settings.name || 'My Tournament';
+      bracketMeta.textContent = `Format: Single Elimination • Best of ${state.settings.bestOf} • Players: ${state.participants.length}`;
+
+      bracketContainer.innerHTML = '';
+
+      state.rounds.forEach((roundMatches, idx) => {
+        const col = document.createElement('div');
+        col.className = 'round-col';
+
+        const title = document.createElement('div');
+        title.className = 'round-title';
+
+        if(idx === state.rounds.length-1){
+          title.textContent = 'Finals';
+        }else if(idx === state.rounds.length-2){
+          title.textContent = 'Semi-finals';
+        }else if(idx === 0){
+          title.textContent = 'Round of ' + (roundMatches.length * 2);
+        }else{
+          title.textContent = 'Round ' + (idx+1);
+        }
+        col.appendChild(title);
+
+        roundMatches.forEach(m => {
+          const card = document.createElement('div');
+          card.className = 'match-card';
+          card.dataset.matchId = m.id;
+
+          const metaRow = document.createElement('div');
+          metaRow.className = 'match-meta';
+          metaRow.innerHTML = `<span>Match ${m.id.toUpperCase()}</span><span class="badge">Bo${state.settings.bestOf}</span>`;
+          card.appendChild(metaRow);
+
+          const row1 = createPlayerRow(m, 1);
+          const row2 = createPlayerRow(m, 2);
+          card.appendChild(row1);
+          card.appendChild(row2);
+
+          const actions = document.createElement('div');
+          actions.className = 'match-actions';
+
+          const status = document.createElement('div');
+          status.className = 'match-status';
+
+          if(m.winnerId){
+            const winner = findParticipantById(m.winnerId);
+            status.innerHTML = `<span class="winner-tag">Winner:</span> ${winner ? winner.name : '—'}`;
+          }else{
+            status.innerHTML = `<span class="pending">Awaiting result…</span>`;
+          }
+
+          const reportBtn = document.createElement('button');
+          reportBtn.className = 'primary';
+          reportBtn.textContent = 'Report score';
+
+          // Disable reporting if this is a pure BYE match
+          const isPureBye = (m.p1 && m.p1.isBye) && (m.p2 && m.p2.isBye);
+          if(isPureBye){
+            reportBtn.disabled = true;
+            status.innerHTML = `<span class="pending">Unused BYE slot</span>`;
+          }
+
+          reportBtn.addEventListener('click', () => {
+            const scoreInputs = card.querySelectorAll('.score-input');
+            const s1 = scoreInputs[0].value;
+            const s2 = scoreInputs[1].value;
+            setMatchResult(m.id, s1, s2);
+          });
+
+          actions.appendChild(status);
+          actions.appendChild(reportBtn);
+          card.appendChild(actions);
+
+          col.appendChild(card);
+        });
+
+        bracketContainer.appendChild(col);
+      });
+    }
+
+    function createPlayerRow(match, slot){
+      const row = document.createElement('div');
+      row.className = 'player-row';
+
+      const p = slot === 1 ? match.p1 : match.p2;
+      let seedNumber = '—';
+
+      // Seed here is simply the index in the participant list + 1
+      if(p && !p.isBye){
+        const seedIdx = state.participants.findIndex(pp => pp.id === p.id);
+        if(seedIdx !== -1) seedNumber = seedIdx + 1;
+      }
+
+      const seedSpan = document.createElement('span');
+      seedSpan.className = 'seed';
+      seedSpan.textContent = seedNumber;
+
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'name';
+      nameSpan.textContent = p ? p.name : 'TBD';
+
+      if(p && p.isBye){
+        row.classList.add('bye');
+      }
+
+      const scoreInput = document.createElement('input');
+      scoreInput.type = 'number';
+      scoreInput.min = '0';
+      scoreInput.className = 'score-input';
+      scoreInput.value = slot === 1 ? match.s1 : match.s2;
+
+      row.appendChild(seedSpan);
+      row.appendChild(nameSpan);
+      row.appendChild(scoreInput);
+
+      return row;
+    }
+
+    // ------- INIT -------
+    function init(){
+      // Seed with a few demo participants
+      const demoNames = ['Team A','Team B','Team C','Team D','Team E','Team F','Team G','Team H'];
+      demoNames.forEach(n => state.participants.push(createParticipant(n)));
+      renderParticipants();
+      nameInput.value = state.settings.name;
+
+      generateBtn.addEventListener('click', generateBracket);
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
