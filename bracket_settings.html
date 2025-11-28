@@ -87,10 +87,7 @@
       box-shadow:0 0 0 1px rgba(127,210,255,.3);
     }
 
-    /* MAIN LAYOUT
-       Left column: settings + participants stacked
-       Right column: bracket preview
-    */
+    /* MAIN LAYOUT */
     main{
       display:grid;
       grid-template-columns:minmax(320px,420px) 1fr;
@@ -764,6 +761,15 @@
         `${n} participants → up to ${rounds} rounds • bracket size ${bracketSize} • byes ${byes}${stageInfo}`;
     }
 
+    // Regenerate bracket when stages configuration changes and a bracket already exists
+    function recomputeBracketStructureIfExists(){
+      if(state.participants.length >= 2 && state.rounds.length){
+        generateBracket();  // rebuild tree based on new Stage 1 Top X / stages
+      }else{
+        updateBracketMath();
+      }
+    }
+
     // ------- PARTICIPANTS UI -------
     function renderParticipants(){
       participantsBody.innerHTML = '';
@@ -799,6 +805,7 @@
           renderParticipants();
           renderSaveStatus(true);
           updateBracketMath();
+          recomputeBracketStructureIfExists();
         });
         actionsTd.appendChild(removeBtn);
         tr.appendChild(actionsTd);
@@ -813,12 +820,14 @@
       state.participants.push(createParticipant());
       renderParticipants();
       renderSaveStatus(true);
+      recomputeBracketStructureIfExists();
     });
 
     shuffleBtn.addEventListener('click', () => {
       shuffleArray(state.participants);
       renderParticipants();
       renderSaveStatus(true);
+      recomputeBracketStructureIfExists();
     });
 
     clearBtn.addEventListener('click', () => {
@@ -855,6 +864,7 @@
         nameInput.addEventListener('input', () => {
           state.settings.stages[index].name = nameInput.value;
           renderSaveStatus(true);
+          // name change doesn't affect structure
         });
         row.appendChild(nameInput);
 
@@ -870,6 +880,8 @@
           state.settings.stages[index].topX = Number.isNaN(val) ? 0 : val;
           renderSaveStatus(true);
           updateBracketMath();
+          // changing Top X should resize how many rounds this stage uses
+          recomputeBracketStructureIfExists();
         });
         row.appendChild(qualInput);
 
@@ -882,6 +894,7 @@
           renderStages();
           renderSaveStatus(true);
           updateBracketMath();
+          recomputeBracketStructureIfExists();
         });
         row.appendChild(removeBtn);
 
@@ -899,6 +912,8 @@
         renderStages();
         renderSaveStatus(true);
         updateBracketMath();
+        // if a bracket already exists, re-evaluate rounds (mainly Stage 1)
+        recomputeBracketStructureIfExists();
       });
     }
 
@@ -1136,7 +1151,6 @@
       if(byes < 0) byes = 0;
 
       bracketTitle.textContent = state.settings.name || 'My Tournament';
-      // Round of X moved into the overview/meta line
       bracketMeta.textContent =
         `Format: Single Elimination • Best of ${state.settings.bestOf} • Round of ${bracketSize} • Players: ${n} • Rounds: ${roundsCount} • Byes: ${byes}`;
 
@@ -1153,7 +1167,6 @@
         const matchesLabel = matchesCount === 1
           ? '1 match'
           : `${matchesCount} matches`;
-        // Column headers: Round 1, Round 2, ... with match counts
         title.textContent = `Round ${idx+1} (${matchesLabel})`;
         col.appendChild(title);
 
