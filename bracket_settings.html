@@ -125,8 +125,9 @@
     .field label{
       color:var(--muted);
       display:flex;
-      justify-content:space-between;
-      gap:8px;
+      flex-direction:column;       /* stack main + sub label */
+      align-items:flex-start;
+      gap:2px;
     }
     .field small{
       font-size:.7rem;
@@ -170,8 +171,12 @@
     .settings-actions{
       margin-top:8px;
       display:flex;
-      flex-wrap:wrap;
+      flex-direction:column;      /* stack buttons vertically */
       gap:6px;
+    }
+    .settings-actions > button{
+      width:100%;                 /* full-width buttons */
+      justify-content:center;
     }
 
     button{
@@ -213,33 +218,62 @@
       transform:none;
     }
 
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      padding:2px 6px;
+      border-radius:999px;
+      background:var(--panel2);
+      font-size:.72rem;
+      color:var(--muted);
+    }
+    .pill span.dot{
+      width:6px;height:6px;border-radius:50%;background:var(--brand);margin-right:4px;
+    }
+
+    .helper-text{
+      font-size:.72rem;
+      color:var(--muted);
+      margin-top:6px;
+      line-height:1.4;
+    }
+
     /* Stage editor */
+    #stages-list{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      margin-top:4px;
+    }
     .stage-row{
       display:flex;
-      align-items:center;
+      flex-wrap:wrap;         /* wrap on small widths, no bleed */
+      align-items:flex-start;
       gap:6px;
-      margin-bottom:4px;
+      margin-bottom:2px;
     }
     .stage-row span.stage-index{
       font-size:.75rem;
       color:var(--muted);
-      width:64px;
-      flex-shrink:0;
+      flex:0 0 auto;
     }
     .stage-row input.stage-name{
-      flex:1;
+      flex:1 1 140px;
+      min-width:0;
     }
     .stage-row input.stage-qualifiers{
-      width:72px;
+      flex:0 0 72px;
     }
     .stage-row small.stage-qualify{
       font-size:.7rem;
       color:var(--muted);
-      white-space:nowrap;
+      white-space:normal;
+      flex:0 0 100%;          /* own line when wrapping */
     }
     .stage-row button.remove-stage{
-      padding:2px 6px;
-      font-size:.7rem;
+      flex:0 0 auto;
+      padding:3px 8px;
+      font-size:.75rem;
     }
 
     /* Participants */
@@ -283,25 +317,6 @@
     }
     .participants-table tbody tr:nth-child(even){
       background:rgba(0,0,0,.06);
-    }
-    .pill{
-      display:inline-flex;
-      align-items:center;
-      padding:2px 6px;
-      border-radius:999px;
-      background:var(--panel2);
-      font-size:.72rem;
-      color:var(--muted);
-    }
-    .pill span.dot{
-      width:6px;height:6px;border-radius:50%;background:var(--brand);margin-right:4px;
-    }
-
-    .helper-text{
-      font-size:.72rem;
-      color:var(--muted);
-      margin-top:6px;
-      line-height:1.4;
     }
 
     /* Bracket */
@@ -479,14 +494,14 @@
         <div class="settings-grid">
           <div class="field">
             <label>
-              Tournament Name
+              <span>Tournament Name</span>
             </label>
             <input type="text" id="tournament-name" placeholder="My Tournament"/>
           </div>
 
           <div class="field field-row">
             <div>
-              <label>Format</label>
+              <label><span>Format</span></label>
               <select id="tournament-format">
                 <option value="single">Single Elimination</option>
                 <option value="double" disabled>Double Elim (stub)</option>
@@ -495,7 +510,7 @@
               </select>
             </div>
             <div>
-              <label>Best Of</label>
+              <label><span>Best Of</span></label>
               <select id="best-of">
                 <option value="1" selected>Bo1</option>
                 <option value="3">Bo3</option>
@@ -506,7 +521,9 @@
           </div>
 
           <div class="field">
-            <label>Seeding Mode</label>
+            <label>
+              <span>Seeding Mode</span>
+            </label>
             <select id="seeding-mode">
               <option value="seeded">Traditional (1 vs last)</option>
               <option value="list">List order</option>
@@ -520,18 +537,21 @@
             <input type="checkbox" id="third-place-toggle"/>
           </div>
 
-          <!-- NEW: multi-stage configuration -->
+          <!-- STAGES & QUALIFICATION -->
           <div class="field">
             <label>
-              Stages &amp; Qualification
-              <span style="font-size:.75rem;color:var(--muted);">Top X advance to next stage</span>
+              <span>Stages &amp; Qualification</span>
+              <span style="font-size:.75rem;">Top X advance to next stage (Stage 1 controls how many rounds are played)</span>
             </label>
-            <div id="stages-container"></div>
-            <button type="button" id="add-stage-btn" style="margin-top:4px;">
-              <span class="icon">➕</span>
+            <div id="stages-list"></div>
+            <button type="button" id="add-stage-btn">
+              <span class="icon">＋</span>
               Add stage
             </button>
-            <small>Example: Stage 1 – Groups (Top 12 qualify), Stage 2 – Finals (Top 1 champion).</small>
+            <p class="helper-text">
+              Example: Stage 1 – Groups (Top 12 qualify), Stage 2 – Finals (Top 1 champion).  
+              For single-elim brackets, Stage 1’s <strong>Top X</strong> will stop the bracket once ≤ X players remain.
+            </p>
           </div>
 
           <div class="settings-actions">
@@ -633,7 +653,9 @@
         totalRounds: null,
         bracketSize: null,
         byes: null,
-        stages: []             // [{ name, qualifiers }]
+        stages: [
+          { name: 'Qualifier', topX: 0 }   // 0 = ignore until user sets Top X
+        ]
       },
       lastSavedId: null
     };
@@ -656,9 +678,7 @@
     const saveStatusPill     = document.getElementById('save-status-pill');
     const tournamentSelect   = document.getElementById('tournament-select');
     const bracketMath        = document.getElementById('bracket-math');
-
-    // NEW: stage elements
-    const stagesContainer    = document.getElementById('stages-container');
+    const stagesList         = document.getElementById('stages-list');
     const addStageBtn        = document.getElementById('add-stage-btn');
 
     let nextParticipantId = 1;
@@ -671,13 +691,19 @@
       };
     }
 
+    function ensureStagesDefault(){
+      if(!Array.isArray(state.settings.stages) || state.settings.stages.length === 0){
+        state.settings.stages = [{ name: 'Stage 1', topX: 0 }];
+      }
+    }
+
     function syncSettingsFromUI(){
       state.settings.name        = nameInput.value.trim() || 'My Tournament';
       state.settings.format      = formatSelect.value;
       state.settings.bestOf      = parseInt(bestOfSelect.value,10) || 1;
       state.settings.seedingMode = seedingSelect.value;
       state.settings.thirdPlace  = thirdPlaceToggle.checked;
-      // stages are edited live via renderStages()/events
+      // stages are kept live from inputs, so no extra sync needed here
     }
 
     function shuffleArray(arr){
@@ -693,114 +719,47 @@
       return id ? parseInt(id,10) : null;
     }
 
-    // Ensure stages array exists & has at least one stage
-    function ensureDefaultStages(){
-      if(!state.settings.stages || !Array.isArray(state.settings.stages)){
-        state.settings.stages = [];
+    // Compute how many rounds we need so that remaining slots <= topX
+    function computeRoundsForTopX(bracketSize, topX){
+      if(!topX || topX <= 0) return null;
+      let t = Math.max(1, Math.min(topX, bracketSize));
+      let remaining = bracketSize;
+      let rounds = 0;
+      while(remaining > t){
+        remaining = remaining / 2;
+        rounds++;
+        if(rounds > 30) break; // safety
       }
-      if(state.settings.stages.length === 0){
-        state.settings.stages.push({
-          name: 'Main Stage',
-          qualifiers: 1
-        });
-      }
-    }
-
-    function renderStages(){
-      if(!stagesContainer) return;
-      ensureDefaultStages();
-      stagesContainer.innerHTML = '';
-      const stages = state.settings.stages;
-
-      stages.forEach((st, idx) => {
-        const row = document.createElement('div');
-        row.className = 'stage-row';
-
-        const idxSpan = document.createElement('span');
-        idxSpan.className = 'stage-index';
-        idxSpan.textContent = `Stage ${idx + 1}`;
-        row.appendChild(idxSpan);
-
-        const nameInput = document.createElement('input');
-        nameInput.type = 'text';
-        nameInput.className = 'stage-name';
-        nameInput.placeholder = `Stage ${idx + 1} name`;
-        nameInput.value = st.name || '';
-        nameInput.addEventListener('input', () => {
-          st.name = nameInput.value;
-          renderSaveStatus(true);
-        });
-        row.appendChild(nameInput);
-
-        const qualInput = document.createElement('input');
-        qualInput.type = 'number';
-        qualInput.min = '1';
-        qualInput.className = 'stage-qualifiers';
-        qualInput.value =
-          (typeof st.qualifiers === 'number' && st.qualifiers > 0)
-            ? st.qualifiers
-            : 1;
-        qualInput.addEventListener('input', () => {
-          const val = parseInt(qualInput.value, 10);
-          st.qualifiers = Number.isNaN(val) || val < 1 ? 1 : val;
-          qualInput.value = st.qualifiers;
-          renderSaveStatus(true);
-        });
-        row.appendChild(qualInput);
-
-        const note = document.createElement('small');
-        note.className = 'stage-qualify';
-        if(idx < stages.length - 1){
-          note.textContent = 'qualify to next stage';
-        }else{
-          note.textContent = 'final stage';
-        }
-        row.appendChild(note);
-
-        const removeBtn = document.createElement('button');
-        removeBtn.className = 'remove-stage';
-        removeBtn.type = 'button';
-        removeBtn.textContent = '✕';
-        removeBtn.addEventListener('click', () => {
-          stages.splice(idx, 1);
-          renderStages();
-          renderSaveStatus(true);
-        });
-        row.appendChild(removeBtn);
-
-        stagesContainer.appendChild(row);
-      });
-    }
-
-    if(addStageBtn){
-      addStageBtn.addEventListener('click', () => {
-        if(!state.settings.stages || !Array.isArray(state.settings.stages)){
-          state.settings.stages = [];
-        }
-        const nextIndex = state.settings.stages.length + 1;
-        state.settings.stages.push({
-          name: `Stage ${nextIndex}`,
-          qualifiers: 1
-        });
-        renderStages();
-        renderSaveStatus(true);
-      });
+      if(rounds === 0) rounds = 1;     // at least one round when Top X is set
+      return rounds;
     }
 
     // Bracket math helper (for display + sanity check)
     function updateBracketMath(){
       if(!bracketMath) return;
       const n = state.participants.length;
+      const firstStage = state.settings.stages && state.settings.stages[0];
+
       if(n < 2){
-        bracketMath.textContent =
-          'Add at least 2 participants to generate a single-elimination bracket.';
+        let extra = '';
+        if(firstStage && firstStage.topX && firstStage.topX > 0){
+          extra = ` Target top ${firstStage.topX} for Stage 1.`;
+        }
+        bracketMath.textContent = 'Add at least 2 participants to generate a single-elimination bracket.' + extra;
         return;
       }
       const rounds = Math.ceil(Math.log2(n));
       const bracketSize = 1 << rounds;
       const byes = bracketSize - n;
+
+      let stageInfo = '';
+      if(firstStage && firstStage.topX && firstStage.topX > 0){
+        const stageRounds = computeRoundsForTopX(bracketSize, firstStage.topX);
+        stageInfo = ` • Stage 1 (Top ${firstStage.topX}) ends after about ${stageRounds} round${stageRounds>1?'s':''}`;
+      }
+
       bracketMath.textContent =
-        `${n} participants → ${rounds} rounds • bracket size ${bracketSize} • byes ${byes}`;
+        `${n} participants → up to ${rounds} rounds • bracket size ${bracketSize} • byes ${byes}${stageInfo}`;
     }
 
     // ------- PARTICIPANTS UI -------
@@ -873,6 +832,74 @@
       renderSaveStatus(true);
     });
 
+    // ------- STAGES UI -------
+    function renderStages(){
+      ensureStagesDefault();
+      stagesList.innerHTML = '';
+      state.settings.stages.forEach((stg, index) => {
+        const row = document.createElement('div');
+        row.className = 'stage-row';
+
+        const idxSpan = document.createElement('span');
+        idxSpan.className = 'stage-index';
+        idxSpan.textContent = `Stage ${index+1}`;
+        row.appendChild(idxSpan);
+
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.className = 'stage-name';
+        nameInput.placeholder = 'Qualifier / Groups / Finals';
+        nameInput.value = stg.name || '';
+        nameInput.addEventListener('input', () => {
+          state.settings.stages[index].name = nameInput.value;
+          renderSaveStatus(true);
+        });
+        row.appendChild(nameInput);
+
+        const qualInput = document.createElement('input');
+        qualInput.type = 'number';
+        qualInput.min = '0';
+        qualInput.className = 'stage-qualifiers';
+        qualInput.value = (typeof stg.topX === 'number' && !Number.isNaN(stg.topX) && stg.topX>0)
+          ? stg.topX
+          : '';
+        qualInput.addEventListener('input', () => {
+          const val = parseInt(qualInput.value,10);
+          state.settings.stages[index].topX = Number.isNaN(val) ? 0 : val;
+          renderSaveStatus(true);
+          updateBracketMath();
+        });
+        row.appendChild(qualInput);
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'remove-stage';
+        removeBtn.textContent = '✕';
+        removeBtn.addEventListener('click', () => {
+          state.settings.stages.splice(index,1);
+          renderStages();
+          renderSaveStatus(true);
+          updateBracketMath();
+        });
+        row.appendChild(removeBtn);
+
+        stagesList.appendChild(row);
+      });
+    }
+
+    if(addStageBtn){
+      addStageBtn.addEventListener('click', () => {
+        ensureStagesDefault();
+        state.settings.stages.push({
+          name: 'Stage ' + (state.settings.stages.length + 1),
+          topX: 0
+        });
+        renderStages();
+        renderSaveStatus(true);
+        updateBracketMath();
+      });
+    }
+
     // ------- BRACKET GENERATION (SINGLE ELIM) -------
     function generateBracket(){
       syncSettingsFromUI();
@@ -896,15 +923,25 @@
       // "seeded" and "list" both use current order
 
       // ---- Automatic rounds / bracket size / byes ----
-      const roundsCount = Math.ceil(Math.log2(n));    // minimal rounds
-      const bracketSize = 1 << roundsCount;           // 2^rounds
-      const byesNeeded  = bracketSize - n;            // minimal number of BYEs needed
+      const maxRounds  = Math.ceil(Math.log2(n));  // minimal rounds to reach 1 champion
+      const bracketSize = 1 << maxRounds;          // 2^maxRounds
+      const byesNeeded  = bracketSize - n;
 
-      state.settings.totalRounds = roundsCount;
+      // Stage 1 Top X: limit number of rounds so that remaining <= Top X
+      let effectiveRounds = maxRounds;
+      const firstStage = state.settings.stages && state.settings.stages[0];
+      if(firstStage && firstStage.topX && firstStage.topX > 0){
+        const stageRounds = computeRoundsForTopX(bracketSize, firstStage.topX);
+        if(stageRounds && stageRounds > 0){
+          effectiveRounds = Math.min(maxRounds, stageRounds);
+        }
+      }
+
+      state.settings.totalRounds = effectiveRounds;
       state.settings.bracketSize = bracketSize;
       state.settings.byes        = byesNeeded;
 
-      // Assign BYEs to the tail so they pair with top seeds (1 vs last, 2 vs second last...)
+      // Assign BYEs at the tail so high seeds meet BYEs early
       const seededWithByes = seeded.slice();
       for(let i=0; i<byesNeeded; i++){
         seededWithByes.push({
@@ -919,8 +956,8 @@
       state.matchById = {};
       state.matchCounter = 0;
 
-      // Create rounds
-      for(let r=0; r<roundsCount; r++){
+      // Create empty rounds
+      for(let r=0; r<effectiveRounds; r++){
         state.rounds.push([]);
       }
 
@@ -934,9 +971,9 @@
         round1.push(match);
       }
 
-      // Subsequent rounds: empty matches, link from previous
+      // Subsequent rounds up to effectiveRounds: empty matches, link from previous
       let prevRoundMatches = round1;
-      for(let r=2;r<=roundsCount;r++){
+      for(let r=2; r<=effectiveRounds; r++){
         const prevCount = prevRoundMatches.length;
         const curCount = prevCount / 2;
         const curRound = [];
@@ -957,7 +994,7 @@
         prevRoundMatches = curRound;
       }
 
-      // Auto-advance matches that are effectively BYE for one participant
+      // Auto-advance matches that are effectively BYE for one participant in round 1
       for(const m of state.rounds[0]){
         if(m.p1 && m.p1.isBye && m.p2 && !m.p2.isBye){
           m.winnerId = m.p2.id;
@@ -1096,30 +1133,9 @@
 
       if(byes < 0) byes = 0;
 
-      // Build stage summary
-      let stageSummary = '';
-      if(state.settings.stages && Array.isArray(state.settings.stages) && state.settings.stages.length){
-        const parts = state.settings.stages.map((st, idx) => {
-          const label =
-            st.name && st.name.trim()
-              ? st.name.trim()
-              : `Stage ${idx + 1}`;
-          if(idx < state.settings.stages.length - 1){
-            const q =
-              (typeof st.qualifiers === 'number' && st.qualifiers > 0)
-                ? st.qualifiers
-                : 'X';
-            return `${label} (Top ${q} → next)`;
-          }
-          return `${label} (Final)`;
-        });
-        stageSummary = ' • Stages: ' + parts.join(' → ');
-      }
-
       bracketTitle.textContent = state.settings.name || 'My Tournament';
       bracketMeta.textContent =
-        `Format: Single Elimination • Best of ${state.settings.bestOf} • Players: ${n} • Rounds: ${roundsCount} • Byes: ${byes}` +
-        stageSummary;
+        `Format: Single Elimination • Best of ${state.settings.bestOf} • Players: ${n} • Rounds: ${roundsCount} • Byes: ${byes}`;
 
       bracketContainer.innerHTML = '';
 
@@ -1131,9 +1147,9 @@
         title.className = 'round-title';
 
         if(idx === state.rounds.length-1){
-          title.textContent = 'Finals';
+          title.textContent = 'Final round of this stage';
         }else if(idx === state.rounds.length-2){
-          title.textContent = 'Semi-finals';
+          title.textContent = 'Penultimate round';
         }else if(idx === 0){
           title.textContent = 'Round of ' + (roundMatches.length * 2);
         }else{
@@ -1148,8 +1164,7 @@
 
           const metaRow = document.createElement('div');
           metaRow.className = 'match-meta';
-          metaRow.innerHTML =
-            `<span>Match ${m.id.toUpperCase()}</span><span class="badge">Bo${state.settings.bestOf}</span>`;
+          metaRow.innerHTML = `<span>Match ${m.id.toUpperCase()}</span><span class="badge">Bo${state.settings.bestOf}</span>`;
           card.appendChild(metaRow);
 
           const row1 = createPlayerRow(m, 1);
@@ -1163,13 +1178,11 @@
           const status = document.createElement('div');
           status.className = 'match-status';
 
-          const isPureBye = (m.p1 && m.p1.isBye) && (m.p2 && m.p2.isBye);
-
           if(m.winnerId){
             const winner = findParticipantById(m.winnerId);
-            status.innerHTML =
-              `<span class="winner-tag">Winner:</span> ${winner ? winner.name : '—'}`;
+            status.innerHTML = `<span class="winner-tag">Winner:</span> ${winner ? winner.name : '—'}`;
           }else{
+            const isPureBye = (m.p1 && m.p1.isBye) && (m.p2 && m.p2.isBye);
             if(isPureBye){
               status.innerHTML = `<span class="pending">Unused BYE slot</span>`;
             }else{
@@ -1181,6 +1194,7 @@
           reportBtn.className = 'primary';
           reportBtn.textContent = 'Report score';
 
+          const isPureBye = (m.p1 && m.p1.isBye) && (m.p2 && m.p2.isBye);
           if(isPureBye){
             reportBtn.disabled = true;
           }
@@ -1258,15 +1272,12 @@
         totalRounds: null,
         bracketSize: null,
         byes: null,
-        stages: []
+        stages: [{ name: 'Qualifier', topX: 0 }]
       };
       state.lastSavedId = null;
 
       // Optional: seed demo participants for quick testing
-      const demoNames = [
-        'Player 1','Player 2','Player 3','Player 4',
-        'Player 5','Player 6','Player 7','Player 8'
-      ];
+      const demoNames = ['Player 1','Player 2','Player 3','Player 4','Player 5','Player 6','Player 7','Player 8'];
       demoNames.forEach(n => state.participants.push(createParticipant(n)));
 
       // Update UI controls
@@ -1276,10 +1287,9 @@
       seedingSelect.value = state.settings.seedingMode;
       thirdPlaceToggle.checked = state.settings.thirdPlace;
 
-      ensureDefaultStages();
-      renderStages();
       renderParticipants();
       renderEmptyBracket();
+      renderStages();
       renderSaveStatus(false);
       updateBracketMath();
     }
@@ -1373,16 +1383,15 @@
           totalRounds: null,
           bracketSize: null,
           byes: null,
-          stages: []
+          stages: [{ name: 'Qualifier', topX: 0 }]
         }, data.settings || {});
+
+        ensureStagesDefault();
 
         const d = data.data || {};
         state.participants        = d.participants || [];
         state.bracketParticipants = d.bracketParticipants || [];
         state.rounds              = d.rounds || [];
-
-        ensureDefaultStages();
-        renderStages();
 
         // Rebuild matchById and matchCounter
         state.matchById = {};
@@ -1405,6 +1414,7 @@
         thirdPlaceToggle.checked = !!state.settings.thirdPlace;
 
         renderParticipants();
+        renderStages();
         if(state.rounds.length){
           renderBracket();
         }else{
@@ -1438,8 +1448,7 @@
         saveStatus.textContent = 'Changes not yet saved to database.';
         saveStatusPill.textContent = 'Unsaved changes';
       }else if(state.lastSavedId){
-        saveStatus.textContent =
-          `Last saved as bracket #${state.lastSavedId}. Public page shows any saved bracket (or use ?id=${state.lastSavedId}).`;
+        saveStatus.textContent = `Last saved as bracket #${state.lastSavedId}. Public page shows any saved bracket (or use ?id=${state.lastSavedId}).`;
         saveStatusPill.textContent = `Saved: #${state.lastSavedId}`;
       }else{
         saveStatus.textContent = 'Not yet saved to database.';
@@ -1513,11 +1522,10 @@
     // ------- INIT -------
     function init(){
       renderEmptyBracket();
-      ensureDefaultStages();
-      renderStages();
       renderSaveStatus(false);
       generateBtn.addEventListener('click', generateBracket);
       loadTournamentList();
+      renderStages();
       updateBracketMath();
     }
 
