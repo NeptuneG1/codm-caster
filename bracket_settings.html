@@ -485,7 +485,7 @@
           </div>
 
           <p class="helper-text">
-            1) Add participants • 2) Pick seeding • 3) Generate bracket • 4) Report scores • 5) Save to database  
+            1) Add participants • 2) Pick seeding • 3) Generate bracket • 4) Report scores • 5) Save to database.  
             Public can view on <code>bracket_view.html</code>.
           </p>
           <p id="save-status"></p>
@@ -536,8 +536,9 @@
 
   <script>
     // ===== Supabase Setup =====
-    const SUPABASE_URL = 'https://YOUR_SUPABASE_URL.supabase.co';
-    const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+    const SUPABASE_URL = 'https://fjdyppkanjnvyscqrfum.supabase.co'; // your project URL
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqZHlwcGthbmpudnlzY3FyZnVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAzNDU1NzIsImV4cCI6MjA3NTkyMTU3Mn0.ssEN7uA9BVm9AkhsjkWxhPzV1-VQVxc4-u7LS2wt4Aw';              // TODO: paste your anon key here
+
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // ------- STATE -------
@@ -585,11 +586,11 @@
     }
 
     function syncSettingsFromUI(){
-      state.settings.name       = nameInput.value.trim() || 'My Tournament';
-      state.settings.format     = formatSelect.value;
-      state.settings.bestOf     = parseInt(bestOfSelect.value,10) || 1;
-      state.settings.seedingMode= seedingSelect.value;
-      state.settings.thirdPlace = thirdPlaceToggle.checked;
+      state.settings.name        = nameInput.value.trim() || 'My Tournament';
+      state.settings.format      = formatSelect.value;
+      state.settings.bestOf      = parseInt(bestOfSelect.value,10) || 1;
+      state.settings.seedingMode = seedingSelect.value;
+      state.settings.thirdPlace  = thirdPlaceToggle.checked;
     }
 
     function nextPowerOfTwo(n){
@@ -622,6 +623,7 @@
         input.value = p.name;
         input.addEventListener('input', () => {
           p.name = input.value;
+          renderSaveStatus(true);
         });
         nameTd.appendChild(input);
         tr.appendChild(nameTd);
@@ -636,6 +638,7 @@
         removeBtn.addEventListener('click', () => {
           state.participants.splice(idx, 1);
           renderParticipants();
+          renderSaveStatus(true);
         });
         actionsTd.appendChild(removeBtn);
         tr.appendChild(actionsTd);
@@ -647,11 +650,13 @@
     addBtn.addEventListener('click', () => {
       state.participants.push(createParticipant());
       renderParticipants();
+      renderSaveStatus(true);
     });
 
     shuffleBtn.addEventListener('click', () => {
       shuffleArray(state.participants);
       renderParticipants();
+      renderSaveStatus(true);
     });
 
     clearBtn.addEventListener('click', () => {
@@ -664,7 +669,7 @@
       renderParticipants();
       renderEmptyBracket();
       state.lastSavedId = null;
-      renderSaveStatus();
+      renderSaveStatus(true);
     });
 
     // ------- BRACKET GENERATION (SINGLE ELIM) -------
@@ -687,7 +692,7 @@
       if(state.settings.seedingMode === 'random'){
         shuffleArray(seeded);
       }
-      // seeded / list are already in list order
+      // "seeded" and "list" both use current order
 
       const bracketSize = nextPowerOfTwo(seeded.length);
       const byesNeeded = bracketSize - seeded.length;
@@ -755,7 +760,7 @@
       }
 
       renderBracket();
-      renderSaveStatus(true); // unsaved changes
+      renderSaveStatus(true); // bracket changed, unsaved
     }
 
     function createMatch(roundNumber, indexInRound, p1, p2){
@@ -849,7 +854,7 @@
 
       propagateWinner(m);
       renderBracket();
-      renderSaveStatus(true); // unsaved changes
+      renderSaveStatus(true); // unsaved change
     }
 
     // ------- BRACKET RENDER -------
@@ -993,7 +998,7 @@
         saveStatus.textContent = 'Changes not yet saved to database.';
         saveStatusPill.textContent = 'Unsaved changes';
       }else if(state.lastSavedId){
-        saveStatus.textContent = `Last saved as bracket #${state.lastSavedId}. Public page will show the latest saved bracket.`;
+        saveStatus.textContent = `Last saved as bracket #${state.lastSavedId}. Public page shows the latest saved bracket (or use ?id=${state.lastSavedId}).`;
         saveStatusPill.textContent = `Saved: #${state.lastSavedId}`;
       }else{
         saveStatus.textContent = 'Not yet saved to database.';
@@ -1031,7 +1036,7 @@
           .single();
 
         if(error){
-          console.error(error);
+          console.error('database insert error:', error);
           alert('Error saving bracket: ' + error.message);
           renderSaveStatus(true);
         }else{
@@ -1039,8 +1044,8 @@
           renderSaveStatus(false);
         }
       }catch(err){
-        console.error(err);
-        alert('Unexpected error saving bracket.');
+        console.error('Network error while saving bracket:', err);
+        alert('Error saving bracket: ' + (err.message || err));
         renderSaveStatus(true);
       }finally{
         saveBtn.disabled = false;
@@ -1058,7 +1063,7 @@
       renderParticipants();
       nameInput.value = state.settings.name;
       renderEmptyBracket();
-      renderSaveStatus();
+      renderSaveStatus(false);
 
       generateBtn.addEventListener('click', generateBracket);
     }
