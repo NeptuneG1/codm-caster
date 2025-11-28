@@ -539,7 +539,7 @@
             <div class="field">
               <label>
                 <span>Stages &amp; Qualification</span>
-                <span style="font-size:.75rem;">Top X advance to next stage (Stage 1 controls how many rounds are played)</span>
+                <span style="font-size:.75rem;">Top X advance to next stage. Multiple stages chain together (e.g. Qualifier → Finals → Champion).</span>
               </label>
               <div id="stages-list"></div>
               <button type="button" id="add-stage-btn">
@@ -547,8 +547,8 @@
                 Add stage
               </button>
               <p class="helper-text">
-                Example: Stage 1 – Groups (Top 12 qualify), Stage 2 – Finals (Top 1 champion).  
-                For single-elim brackets, Stage 1’s <strong>Top X</strong> will stop the bracket once ≤ X players remain.
+                Example: Stage 1 – Groups (Top 16 qualify), Stage 2 – Finals (Top 4), Stage 3 – Grand Final (Top 1 champion).  
+                Rounds will be split across stages and marked in the bracket preview.
               </p>
             </div>
 
@@ -656,6 +656,7 @@
           { name: 'Qualifier', topX: 0 }   // 0 = ignore until user sets Top X
         ]
       },
+      stageRanges: [],         // computed round ranges for each stage
       lastSavedId: null
     };
 
@@ -718,53 +719,122 @@
       return id ? parseInt(id,10) : null;
     }
 
-    // Compute how many rounds we need so that remaining slots <= topX
-    function computeRoundsForTopX(bracketSize, topX){
-      if(!topX || topX <= 0) return null;
-      let t = Math.max(1, Math.min(topX, bracketSize));
-      let remaining = bracketSize;
-      let rounds = 0;
-      while(remaining > t){
-        remaining = remaining / 2;
-        rounds++;
-        if(rounds > 30) break; // safety
+    // Compute cumulative stage ranges across *all* stages
+    // Returns { stageRanges: [{index,name,startRound,endRound,targetPlayers}], totalRoundsFromStages }
+    function computeStageRoundMeta(bracketSize, stagesRaw){
+      const stageRanges = [];
+      if(!bracketSize || bracketSize < 2 || !Array.isArray(stagesRaw) || !stagesRaw.length){
+        return { stageRanges, totalRoundsFromStages: null };
       }
-      if(rounds === 0) rounds = 1;     // at least one round when Top X is set
-      return rounds;
+
+      const stages = stagesRaw.map((s, idx) => ({
+        name: s.name || ('Stage ' + (idx+1)),
+        topX: (typeof s.topX === 'number' ? s.topX : 0)
+      }));
+
+      // Ensure last stage finishes the bracket (champion) if left blank
+      const lastIdx = stages.length - 1;
+      if(!stages[lastIdx].topX || stages[lastIdx].topX <= 0){
+        stages[lastIdx].topX = 1;
+      }
+
+      let remaining = bracketSize;
+      let roundCursor = 1;
+      let totalRoundsFromStages = 0;
+
+      for(let i=0; i<stages.length; i++){
+        let stage = stages[i];
+        let target = stage.topX;
+
+        if(target <= 0){
+          continue;
+        }
+
+        target = Math.max(1, Math.min(target, remaining));
+
+        if(remaining <= target){
+          // No actual rounds needed but mark where this stage effectively begins
+          stageRanges.push({
+            index: i,
+            name: stage.name,
+            startRound: roundCursor,
+            endRound: roundCursor - 1,
+            targetPlayers: remaining
+          });
+          continue;
+        }
+
+        const startRound = roundCursor;
+        let roundsForStage = 0;
+
+        while(remaining > target){
+          remaining = remaining / 2;
+          roundsForStage++;
+          roundCursor++;
+          totalRoundsFromStages++;
+          if(totalRoundsFromStages > 32) break; // safety
+        }
+
+        const endRound = roundCursor - 1;
+        stageRanges.push({
+          index: i,
+          name: stage.name,
+          startRound,
+          endRound,
+          targetPlayers: target
+        });
+
+        if(totalRoundsFromStages > 32) break;
+      }
+
+      return {
+        stageRanges,
+        totalRoundsFromStages: totalRoundsFromStages || null
+      };
     }
 
     // Bracket math helper (for display + sanity check)
     function updateBracketMath(){
       if(!bracketMath) return;
       const n = state.participants.length;
-      const firstStage = state.settings.stages && state.settings.stages[0];
 
       if(n < 2){
-        let extra = '';
-        if(firstStage && firstStage.topX && firstStage.topX > 0){
-          extra = ` Target top ${firstStage.topX} for Stage 1.`;
-        }
-        bracketMath.textContent = 'Add at least 2 participants to generate a single-elimination bracket.' + extra;
+        bracketMath.textContent =
+          'Add at least 2 participants to generate a single-elimination bracket.';
         return;
       }
+
       const rounds = Math.ceil(Math.log2(n));
       const bracketSize = 1 << rounds;
       const byes = bracketSize - n;
 
+      const { stageRanges } = computeStageRoundMeta(bracketSize, state.settings.stages);
       let stageInfo = '';
-      if(firstStage && firstStage.topX && firstStage.topX > 0){
-        const stageRounds = computeRoundsForTopX(bracketSize, firstStage.topX);
-        stageInfo = ` • Stage 1 (Top ${firstStage.topX}) ends after about ${stageRounds} round${stageRounds>1?'s':''}`;
+
+      if(stageRanges.length){
+        const pieces = stageRanges.map(sr => {
+          const originalStage = state.settings.stages[sr.index];
+          const name = (originalStage && originalStage.name) || sr.name || ('Stage ' + (sr.index+1));
+
+          if(sr.startRound > sr.endRound){
+            // purely informational
+            return `${name}: starts at R${sr.startRound}`;
+          }else{
+            const targetLabel = sr.targetPlayers === 1 ? 'champion' : `top ${sr.targetPlayers}`;
+            return `${name}: R${sr.startRound}–R${sr.endRound} → ${targetLabel}`;
+          }
+        });
+        stageInfo = ' • Stages: ' + pieces.join(' • ');
       }
 
       bracketMath.textContent =
         `${n} participants → up to ${rounds} rounds • bracket size ${bracketSize} • byes ${byes}${stageInfo}`;
     }
 
-    // Regenerate bracket when stages configuration changes and a bracket already exists
+    // If a bracket already exists, regenerate it when stages change
     function recomputeBracketStructureIfExists(){
       if(state.participants.length >= 2 && state.rounds.length){
-        generateBracket();  // rebuild tree based on new Stage 1 Top X / stages
+        generateBracket();  // rebuild tree based on all stages
       }else{
         updateBracketMath();
       }
@@ -804,7 +874,6 @@
           state.participants.splice(idx, 1);
           renderParticipants();
           renderSaveStatus(true);
-          updateBracketMath();
           recomputeBracketStructureIfExists();
         });
         actionsTd.appendChild(removeBtn);
@@ -865,6 +934,7 @@
           state.settings.stages[index].name = nameInput.value;
           renderSaveStatus(true);
           // name change doesn't affect structure
+          updateBracketMath();
         });
         row.appendChild(nameInput);
 
@@ -879,8 +949,6 @@
           const val = parseInt(qualInput.value,10);
           state.settings.stages[index].topX = Number.isNaN(val) ? 0 : val;
           renderSaveStatus(true);
-          updateBracketMath();
-          // changing Top X should resize how many rounds this stage uses
           recomputeBracketStructureIfExists();
         });
         row.appendChild(qualInput);
@@ -893,7 +961,6 @@
           state.settings.stages.splice(index,1);
           renderStages();
           renderSaveStatus(true);
-          updateBracketMath();
           recomputeBracketStructureIfExists();
         });
         row.appendChild(removeBtn);
@@ -911,8 +978,6 @@
         });
         renderStages();
         renderSaveStatus(true);
-        updateBracketMath();
-        // if a bracket already exists, re-evaluate rounds (mainly Stage 1)
         recomputeBracketStructureIfExists();
       });
     }
@@ -937,21 +1002,20 @@
       if(state.settings.seedingMode === 'random'){
         shuffleArray(seeded);
       }
-      // "seeded" and "list" both use current order
 
-      // ---- Automatic rounds / bracket size / byes ----
       const maxRounds  = Math.ceil(Math.log2(n));  // minimal rounds to reach 1 champion
       const bracketSize = 1 << maxRounds;          // 2^maxRounds
       const byesNeeded  = bracketSize - n;
 
-      // Stage 1 Top X: limit number of rounds so that remaining <= Top X
-      let effectiveRounds = maxRounds;
-      const firstStage = state.settings.stages && state.settings.stages[0];
-      if(firstStage && firstStage.topX && firstStage.topX > 0){
-        const stageRounds = computeRoundsForTopX(bracketSize, firstStage.topX);
-        if(stageRounds && stageRounds > 0){
-          effectiveRounds = Math.min(maxRounds, stageRounds);
-        }
+      // Multi-stage logic: compute ranges for all stages
+      const stageMeta = computeStageRoundMeta(bracketSize, state.settings.stages);
+      state.stageRanges = stageMeta.stageRanges || [];
+
+      let effectiveRounds;
+      if(stageMeta.totalRoundsFromStages && stageMeta.totalRoundsFromStages > 0){
+        effectiveRounds = Math.min(maxRounds, stageMeta.totalRoundsFromStages);
+      }else{
+        effectiveRounds = maxRounds;
       }
 
       state.settings.totalRounds = effectiveRounds;
@@ -1132,6 +1196,16 @@
       bracketContainer.appendChild(div);
     }
 
+    function getStageForRound(roundNumber){
+      if(!state.stageRanges || !state.stageRanges.length) return null;
+      for(const sr of state.stageRanges){
+        if(roundNumber >= sr.startRound && roundNumber <= sr.endRound){
+          return sr;
+        }
+      }
+      return null;
+    }
+
     function renderBracket(){
       if(!state.rounds.length){
         renderEmptyBracket();
@@ -1150,6 +1224,10 @@
 
       if(byes < 0) byes = 0;
 
+      // Make sure stage ranges are in sync with current settings
+      const stageMeta = computeStageRoundMeta(bracketSize, state.settings.stages);
+      state.stageRanges = stageMeta.stageRanges || [];
+
       bracketTitle.textContent = state.settings.name || 'My Tournament';
       bracketMeta.textContent =
         `Format: Single Elimination • Best of ${state.settings.bestOf} • Round of ${bracketSize} • Players: ${n} • Rounds: ${roundsCount} • Byes: ${byes}`;
@@ -1157,6 +1235,8 @@
       bracketContainer.innerHTML = '';
 
       state.rounds.forEach((roundMatches, idx) => {
+        const roundNumber = idx + 1;
+
         const col = document.createElement('div');
         col.className = 'round-col';
 
@@ -1167,7 +1247,27 @@
         const matchesLabel = matchesCount === 1
           ? '1 match'
           : `${matchesCount} matches`;
-        title.textContent = `Round ${idx+1} (${matchesLabel})`;
+
+        const stageInfo = getStageForRound(roundNumber);
+        if(stageInfo){
+          const originalStage = state.settings.stages[stageInfo.index];
+          const stageName = (originalStage && originalStage.name) || stageInfo.name || ('Stage ' + (stageInfo.index+1));
+          const tags = [stageName];
+
+          if(stageInfo.startRound === roundNumber){
+            tags.push('start');
+          }
+          if(stageInfo.endRound === roundNumber){
+            const targetLabel = stageInfo.targetPlayers === 1
+              ? 'end → champion'
+              : `end → top ${stageInfo.targetPlayers}`;
+            tags.push(targetLabel);
+          }
+
+          title.textContent = `Round ${roundNumber} (${matchesLabel}) • ${tags.join(' | ')}`;
+        }else{
+          title.textContent = `Round ${roundNumber} (${matchesLabel})`;
+        }
         col.appendChild(title);
 
         roundMatches.forEach(m => {
@@ -1287,6 +1387,7 @@
         byes: null,
         stages: [{ name: 'Qualifier', topX: 0 }]
       };
+      state.stageRanges = [];
       state.lastSavedId = null;
 
       // Optional: seed demo participants for quick testing
@@ -1418,6 +1519,9 @@
             }
           });
         });
+
+        // Stage ranges are recomputed in renderBracket based on settings
+        state.stageRanges = [];
 
         // Update UI controls
         nameInput.value = state.settings.name || '';
