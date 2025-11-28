@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Tournament Bracket — Public View</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+  <style>
+    :root{
+      --bg:#05060a;
+      --panel:#111524;
+      --panel2:#181d2f;
+      --ink:#f6f7fb;
+      --muted:#a3acc3;
+      --brand:#ffe93b;
+      --brand-soft:rgba(255,233,59,.14);
+      --accent:#7fd2ff;
+      --line:#262b3d;
+      --radius-lg:16px;
+      --radius-sm:8px;
+    }
+
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{
+      height:100%;
+      background:radial-gradient(circle at top,#171c30 0,#05060a 52%);
+      color:var(--ink);
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"SF Pro Text",Segoe UI,Roboto,sans-serif;
+    }
+
+    body{
+      display:flex;
+      justify-content:center;
+      padding:12px;
+    }
+
+    .app{
+      width:100%;
+      max-width:1280px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+
+    header{
+      padding:10px 16px;
+      border-radius:var(--radius-lg);
+      background:linear-gradient(135deg,#171c30,#111524);
+      border:1px solid var(--line);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:8px;
+    }
+    header h1{
+      font-size:1.05rem;
+      letter-spacing:.04em;
+      text-transform:uppercase;
+    }
+    header .meta{
+      font-size:.75rem;
+      color:var(--muted);
+    }
+    header button{
+      border:none;
+      border-radius:999px;
+      padding:6px 10px;
+      font-size:.8rem;
+      background:var(--panel2);
+      color:var(--ink);
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:4px;
+    }
+    header button:hover{
+      background:#20263a;
+    }
+
+    main{
+      border-radius:var(--radius-lg);
+      background:var(--panel);
+      border:1px solid var(--line);
+      padding:10px;
+      min-height:0;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+
+    .bracket-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      font-size:.78rem;
+      color:var(--muted);
+    }
+
+    .bracket-title{
+      font-weight:600;
+    }
+
+    .bracket-container{
+      display:flex;
+      align-items:flex-start;
+      gap:12px;
+      overflow-x:auto;
+      padding-bottom:4px;
+    }
+
+    .round-col{
+      min-width:180px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .round-title{
+      font-size:.8rem;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      color:var(--muted);
+      margin-bottom:2px;
+    }
+    .match-card{
+      background:var(--panel2);
+      border-radius:var(--radius-sm);
+      border:1px solid var(--line);
+      padding:6px;
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+      box-shadow:0 8px 12px rgba(0,0,0,.35);
+    }
+    .match-meta{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      font-size:.7rem;
+      color:var(--muted);
+    }
+    .match-meta span.badge{
+      padding:1px 6px;
+      border-radius:999px;
+      background:var(--brand-soft);
+      color:var(--brand);
+      font-weight:500;
+      text-transform:uppercase;
+      letter-spacing:.06em;
+      font-size:.67rem;
+    }
+
+    .player-row{
+      display:grid;
+      grid-template-columns:22px minmax(0,1fr) 40px;
+      align-items:center;
+      gap:4px;
+      font-size:.8rem;
+    }
+    .player-row span.seed{
+      font-size:.7rem;
+      color:var(--muted);
+      text-align:right;
+    }
+    .player-row span.name{
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .player-row.bye span.name{
+      color:var(--muted);
+      opacity:.7;
+      font-style:italic;
+    }
+    .player-row span.score{
+      display:inline-block;
+      text-align:center;
+      border-radius:6px;
+      padding:2px 0;
+      font-size:.78rem;
+      min-width:26px;
+      background:#05060a;
+      border:1px solid var(--line);
+    }
+    .player-row.winner span.name{
+      color:var(--brand);
+      font-weight:600;
+    }
+    .player-row.winner span.score{
+      border-color:var(--brand);
+    }
+
+    .match-status{
+      font-size:.7rem;
+      color:var(--muted);
+      margin-top:2px;
+    }
+    .match-status .winner-tag{
+      color:var(--brand);
+      font-weight:600;
+    }
+    .match-status .pending{
+      color:var(--muted);
+    }
+
+    .empty-state{
+      font-size:.8rem;
+      color:var(--muted);
+      padding:18px 10px;
+      border-radius:var(--radius-sm);
+      background:rgba(0,0,0,.14);
+      border:1px dashed rgba(255,255,255,.08);
+      text-align:center;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div>
+        <h1>Public Bracket View</h1>
+        <div class="meta" id="header-meta">Loading latest bracket…</div>
+      </div>
+      <button id="refresh-btn">
+        <span>⟳</span>
+        <span>Refresh</span>
+      </button>
+    </header>
+
+    <main>
+      <div class="bracket-header">
+        <div class="bracket-title" id="bracket-title">—</div>
+        <div id="bracket-meta"></div>
+      </div>
+      <div id="bracket-container" class="bracket-container">
+        <div class="empty-state">
+          Waiting for a bracket to be saved from the settings page…
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Supabase CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
+    const SUPABASE_URL = 'https://YOUR_SUPABASE_URL.supabase.co';
+    const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const headerMeta      = document.getElementById('header-meta');
+    const refreshBtn      = document.getElementById('refresh-btn');
+    const bracketTitleEl  = document.getElementById('bracket-title');
+    const bracketMetaEl   = document.getElementById('bracket-meta');
+    const bracketContainer= document.getElementById('bracket-container');
+
+    const state = {
+      settings: null,
+      participants: [],
+      bracketParticipants: [],
+      rounds: [],
+      bracketId: null
+    };
+
+    function getBracketIdFromURL(){
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get('id');
+      return id ? parseInt(id,10) : null;
+    }
+
+    async function loadBracket(){
+      const urlId = getBracketIdFromURL();
+      headerMeta.textContent = 'Loading bracket from Supabase…';
+      bracketContainer.innerHTML = '<div class="empty-state">Loading bracket…</div>';
+
+      try{
+        let query = client.from('brackets').select('*');
+
+        if(urlId){
+          query = query.eq('id', urlId).single();
+        }else{
+          query = query.order('created_at', { ascending:false }).limit(1).maybeSingle();
+        }
+
+        const { data, error } = await query;
+
+        if(error){
+          console.error(error);
+          headerMeta.textContent = 'Error loading bracket from Supabase.';
+          bracketContainer.innerHTML = '<div class="empty-state">Error loading bracket. Check console.</div>';
+          return;
+        }
+
+        if(!data){
+          headerMeta.textContent = 'No brackets saved yet.';
+          bracketContainer.innerHTML = '<div class="empty-state">No brackets found. Ask admin to save one from settings page.</div>';
+          return;
+        }
+
+        state.bracketId          = data.id;
+        state.settings           = data.settings || {};
+        const d                  = data.data || {};
+        state.participants       = d.participants || [];
+        state.bracketParticipants= d.bracketParticipants || [];
+        state.rounds             = d.rounds || [];
+
+        headerMeta.textContent   = `Showing bracket #${data.id} • Updated ${new Date(data.created_at).toLocaleString()}`;
+        renderBracket();
+      }catch(err){
+        console.error(err);
+        headerMeta.textContent = 'Unexpected error loading bracket.';
+        bracketContainer.innerHTML = '<div class="empty-state">Unexpected error loading bracket.</div>';
+      }
+    }
+
+    function findParticipantById(id){
+      return state.bracketParticipants.find(p => p.id === id) || null;
+    }
+
+    function renderBracket(){
+      if(!state.rounds.length){
+        bracketTitleEl.textContent = state.settings?.name || 'No bracket';
+        bracketMetaEl.textContent  = '';
+        bracketContainer.innerHTML = '<div class="empty-state">Bracket has no rounds yet.</div>';
+        return;
+      }
+
+      bracketTitleEl.textContent = state.settings.name || 'Tournament Bracket';
+      bracketMetaEl.textContent  =
+        `Format: Single Elimination • Best of ${state.settings.bestOf || 1} • Players: ${state.participants.length}`;
+
+      bracketContainer.innerHTML = '';
+
+      state.rounds.forEach((roundMatches, idx) => {
+        const col = document.createElement('div');
+        col.className = 'round-col';
+
+        const title = document.createElement('div');
+        title.className = 'round-title';
+
+        if(idx === state.rounds.length-1){
+          title.textContent = 'Finals';
+        }else if(idx === state.rounds.length-2){
+          title.textContent = 'Semi-finals';
+        }else if(idx === 0){
+          title.textContent = 'Round of ' + (roundMatches.length * 2);
+        }else{
+          title.textContent = 'Round ' + (idx+1);
+        }
+        col.appendChild(title);
+
+        roundMatches.forEach(m => {
+          const card = document.createElement('div');
+          card.className = 'match-card';
+          card.dataset.matchId = m.id;
+
+          const metaRow = document.createElement('div');
+          metaRow.className = 'match-meta';
+          metaRow.innerHTML = `<span>${m.id.toUpperCase()}</span><span class="badge">Bo${state.settings.bestOf || 1}</span>`;
+          card.appendChild(metaRow);
+
+          const row1 = createPlayerRow(m, 1);
+          const row2 = createPlayerRow(m, 2);
+          card.appendChild(row1);
+          card.appendChild(row2);
+
+          const status = document.createElement('div');
+          status.className = 'match-status';
+
+          if(m.winnerId){
+            const winner = findParticipantById(m.winnerId);
+            status.innerHTML = `<span class="winner-tag">Winner:</span> ${winner ? winner.name : '—'}`;
+          }else if( (m.p1 && m.p1.isBye) && (m.p2 && m.p2.isBye) ){
+            status.innerHTML = `<span class="pending">Unused BYE slot</span>`;
+          }else{
+            status.innerHTML = `<span class="pending">Pending result…</span>`;
+          }
+
+          card.appendChild(status);
+          col.appendChild(card);
+        });
+
+        bracketContainer.appendChild(col);
+      });
+    }
+
+    function createPlayerRow(match, slot){
+      const row = document.createElement('div');
+      row.className = 'player-row';
+
+      const p = slot === 1 ? match.p1 : match.p2;
+      let seedNumber = '—';
+
+      if(p && !p.isBye){
+        const seedIdx = state.participants.findIndex(pp => pp.id === p.id);
+        if(seedIdx !== -1) seedNumber = seedIdx + 1;
+      }
+
+      const seedSpan = document.createElement('span');
+      seedSpan.className = 'seed';
+      seedSpan.textContent = seedNumber;
+
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'name';
+      nameSpan.textContent = p ? p.name : 'TBD';
+
+      if(p && p.isBye){
+        row.classList.add('bye');
+      }
+
+      const scoreSpan = document.createElement('span');
+      scoreSpan.className = 'score';
+      const score = slot === 1 ? (match.s1 ?? 0) : (match.s2 ?? 0);
+      scoreSpan.textContent = score;
+
+      // Highlight winner row if winnerId is set
+      if(match.winnerId && p && !p.isBye && p.id === match.winnerId){
+        row.classList.add('winner');
+      }
+
+      row.appendChild(seedSpan);
+      row.appendChild(nameSpan);
+      row.appendChild(scoreSpan);
+
+      return row;
+    }
+
+    refreshBtn.addEventListener('click', loadBracket);
+
+    document.addEventListener('DOMContentLoaded', loadBracket);
+  </script>
+</body>
+</html>
