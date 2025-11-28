@@ -66,6 +66,7 @@
       display:flex;
       align-items:center;
       gap:6px;
+      flex-wrap:wrap;
     }
 
     header button{
@@ -79,9 +80,15 @@
       display:inline-flex;
       align-items:center;
       gap:4px;
+      transition:background .15s,transform .05s,box-shadow .15s;
     }
     header button:hover{
       background:#20263a;
+      transform:translateY(-1px);
+    }
+    header button:active{
+      transform:translateY(0);
+      box-shadow:none;
     }
 
     #tournament-select{
@@ -129,11 +136,10 @@
       gap:12px;
       overflow-x:auto;
       padding-bottom:4px;
-      position:relative; /* for SVG overlay */
     }
 
     .round-col{
-      min-width:180px;
+      min-width:190px;
       display:flex;
       flex-direction:column;
       gap:8px;
@@ -144,6 +150,7 @@
       letter-spacing:.08em;
       color:var(--muted);
       margin-bottom:2px;
+      white-space:nowrap;
     }
 
     .match-card{
@@ -156,8 +163,8 @@
       gap:4px;
       box-shadow:0 8px 12px rgba(0,0,0,.35);
       position:relative;
-      z-index:2;
     }
+
     .match-meta{
       display:flex;
       justify-content:space-between;
@@ -237,15 +244,19 @@
       background:rgba(0,0,0,.14);
       border:1px dashed rgba(255,255,255,.08);
       text-align:center;
+      width:100%;
     }
 
-    /* SVG connector layer */
-    .bracket-lines{
-      position:absolute;
-      top:0;
-      left:0;
-      pointer-events:none;
-      z-index:1;
+    @media(max-width:768px){
+      header{
+        flex-direction:column;
+        align-items:flex-start;
+      }
+      .bracket-header{
+        flex-direction:column;
+        align-items:flex-start;
+        gap:4px;
+      }
     }
   </style>
 </head>
@@ -284,6 +295,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
+    // ===== Supabase Setup =====
     const SUPABASE_URL = 'https://fjdyppkanjnvyscqrfum.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqZHlwcGthbmpudnlzY3FyZnVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAzNDU1NzIsImV4cCI6MjA3NTkyMTU3Mn0.ssEN7uA9BVm9AkhsjkWxhPzV1-VQVxc4-u7LS2wt4Aw';
 
@@ -303,16 +315,30 @@
       rounds: [],
       bracketId: null,
       tournaments: [],
-      stageRanges: [] // for elimination formats
+      stageRanges: []
     };
 
+    // ===== URL Helpers =====
     function getBracketIdFromURL(){
       const params = new URLSearchParams(window.location.search);
       const id = params.get('id');
       return id ? parseInt(id,10) : null;
     }
 
-    // ---- Stage meta (same logic as settings page) ----
+    function updateUrlFromSelection(){
+      if(!tournamentSelect) return;
+      const val = tournamentSelect.value;
+      const url = new URL(window.location.href);
+
+      if(val === 'latest' || !val){
+        url.searchParams.delete('id');
+      }else{
+        url.searchParams.set('id', val);
+      }
+      window.history.replaceState(null, '', url.toString());
+    }
+
+    // ===== Stage meta (same logic as settings) =====
     function computeStageRoundMeta(bracketSize, stagesRaw){
       const stageRanges = [];
       if(!bracketSize || bracketSize < 2 || !Array.isArray(stagesRaw) || !stagesRaw.length){
@@ -324,6 +350,7 @@
         topX: (typeof s.topX === 'number' ? s.topX : 0)
       }));
 
+      // Ensure last stage ends in champion if blank
       const lastIdx = stages.length - 1;
       if(!stages[lastIdx].topX || stages[lastIdx].topX <= 0){
         stages[lastIdx].topX = 1;
@@ -333,13 +360,11 @@
       let roundCursor = 1;
       let totalRoundsFromStages = 0;
 
-      for(let i=0; i<stages.length; i++){
+      for(let i=0;i<stages.length;i++){
         let stage = stages[i];
         let target = stage.topX;
 
-        if(target <= 0){
-          continue;
-        }
+        if(target <= 0) continue;
 
         target = Math.max(1, Math.min(target, remaining));
 
@@ -383,9 +408,9 @@
       };
     }
 
-    function getStageForRound(roundNumber){
-      if(!state.stageRanges || !state.stageRanges.length) return null;
-      for(const sr of state.stageRanges){
+    function getStageForRound(stageRanges, roundNumber){
+      if(!stageRanges || !stageRanges.length) return null;
+      for(const sr of stageRanges){
         if(roundNumber >= sr.startRound && roundNumber <= sr.endRound){
           return sr;
         }
@@ -393,7 +418,7 @@
       return null;
     }
 
-    // ---- Supabase loading ----
+    // ===== Load list of tournaments =====
     async function loadTournamentList(){
       headerMeta.textContent = 'Loading tournaments…';
       tournamentSelect.innerHTML = '<option>Loading…</option>';
@@ -412,7 +437,6 @@
         }
 
         state.tournaments = data || [];
-
         tournamentSelect.innerHTML = '';
 
         const latestOpt = document.createElement('option');
@@ -424,7 +448,7 @@
           const opt = document.createElement('option');
           opt.value = String(row.id);
           const name = row.name || 'Untitled';
-          const dt = row.created_at ? new Date(row.created_at).toLocaleString() : '';
+          const dt   = row.created_at ? new Date(row.created_at).toLocaleString() : '';
           opt.textContent = `#${row.id} — ${name}${dt ? ' • ' + dt : ''}`;
           tournamentSelect.appendChild(opt);
         });
@@ -436,8 +460,9 @@
           tournamentSelect.value = 'latest';
         }
 
+        updateUrlFromSelection();
         headerMeta.textContent = 'Select a tournament or view the latest saved.';
-        await loadBracket();
+        await loadBracket();  // load based on current selection / URL
       }catch(err){
         console.error('Unexpected error loading tournaments:', err);
         headerMeta.textContent = 'Unexpected error loading tournaments.';
@@ -445,6 +470,7 @@
       }
     }
 
+    // ===== Load a specific bracket =====
     async function loadBracket(explicitId){
       const urlId = getBracketIdFromURL();
       let idToLoad = explicitId ?? null;
@@ -506,18 +532,19 @@
         state.rounds              = d.rounds || [];
         state.stageRanges         = [];
 
+        const bracketName = state.settings.name || data.name || 'Tournament Bracket';
+        headerMeta.textContent = `Showing #${data.id} — ${bracketName} • Updated ${new Date(data.created_at).toLocaleString()}`;
+
+        // Sync dropdown to loaded id
         if(tournamentSelect){
           const valStr = String(data.id);
           if(tournamentSelect.value !== valStr){
             const exists = [...tournamentSelect.options].some(o => o.value === valStr);
-            if(exists){
-              tournamentSelect.value = valStr;
-            }
+            tournamentSelect.value = exists ? valStr : 'latest';
+            updateUrlFromSelection();
           }
         }
 
-        const bracketName = state.settings.name || data.name || 'Tournament Bracket';
-        headerMeta.textContent = `Showing #${data.id} — ${bracketName} • Updated ${new Date(data.created_at).toLocaleString()}`;
         renderBracket();
       }catch(err){
         console.error('Unexpected error loading bracket:', err);
@@ -528,9 +555,143 @@
       }
     }
 
-    // ---- Helpers ----
+    // ===== Helpers =====
     function findParticipantById(id){
       return state.bracketParticipants.find(p => p.id === id) || null;
+    }
+
+    function formatLabelFromSettings(){
+      const fmt = (state.settings && state.settings.format) || 'single';
+      const map = {
+        single: 'Single Elimination',
+        double: 'Double Elimination',
+        roundrobin: 'Round Robin',
+        swiss: 'Swiss'
+      };
+      return map[fmt] || 'Bracket';
+    }
+
+    // ===== Render Bracket =====
+    function renderBracket(){
+      const settings = state.settings || {};
+      const rounds   = state.rounds || [];
+      const participants = state.participants || [];
+
+      if(!rounds.length){
+        bracketTitleEl.textContent = settings.name || 'No bracket';
+        bracketMetaEl.textContent  = '';
+        bracketContainer.innerHTML = '<div class="empty-state">Bracket has no rounds yet.</div>';
+        return;
+      }
+
+      const firstRoundMatches = rounds[0]?.length || 0;
+      const storedBracketSize = settings.bracketSize;
+      const bracketSize = (typeof storedBracketSize === 'number' && storedBracketSize > 0)
+        ? storedBracketSize
+        : Math.max(2, firstRoundMatches * 2);
+
+      let byes = (typeof settings.byes === 'number') ? settings.byes : (bracketSize - participants.length);
+      if(byes < 0) byes = 0;
+
+      const formatLabel = formatLabelFromSettings();
+      const bestOf      = settings.bestOf || 1;
+      const playerCount = participants.length;
+
+      // Stage ranges (recomputed from settings)
+      const stagesRaw = Array.isArray(settings.stages) ? settings.stages : [];
+      const stageMeta = computeStageRoundMeta(bracketSize, stagesRaw);
+      state.stageRanges = stageMeta.stageRanges || [];
+
+      bracketTitleEl.textContent = settings.name || 'Tournament Bracket';
+
+      // Meta line
+      let metaPieces = [
+        `Format: ${formatLabel}`,
+        `Best of ${bestOf}`,
+        `Players: ${playerCount}`
+      ];
+      if(settings.format === 'single' || settings.format === 'double' || !settings.format){
+        metaPieces.push(`Round of ${bracketSize}`);
+        metaPieces.push(`Byes: ${byes}`);
+      }
+      bracketMetaEl.textContent = metaPieces.join(' • ');
+
+      // Render rounds
+      bracketContainer.innerHTML = '';
+
+      rounds.forEach((roundMatches, idx) => {
+        const roundNumber = idx + 1;
+        const col = document.createElement('div');
+        col.className = 'round-col';
+
+        const title = document.createElement('div');
+        title.className = 'round-title';
+
+        const matchesCount = roundMatches.length;
+        const matchesLabel = matchesCount === 1
+          ? '1 match'
+          : `${matchesCount} matches`;
+
+        const stageInfo = getStageForRound(state.stageRanges, roundNumber);
+        if(stageInfo){
+          const originalStage = stagesRaw[stageInfo.index];
+          const stageName = (originalStage && originalStage.name) || stageInfo.name || ('Stage ' + (stageInfo.index+1));
+          const tags = [stageName];
+
+          if(stageInfo.startRound === roundNumber){
+            tags.push('start');
+          }
+          if(stageInfo.endRound === roundNumber){
+            const targetLabel = stageInfo.targetPlayers === 1
+              ? 'end → champion'
+              : `end → top ${stageInfo.targetPlayers}`;
+            tags.push(targetLabel);
+          }
+
+          title.textContent = `Round ${roundNumber} (${matchesLabel}) • ${tags.join(' | ')}`;
+        }else{
+          title.textContent = `Round ${roundNumber} (${matchesLabel})`;
+        }
+
+        col.appendChild(title);
+
+        roundMatches.forEach(m => {
+          const card = document.createElement('div');
+          card.className = 'match-card';
+          card.dataset.matchId = m.id;
+
+          const metaRow = document.createElement('div');
+          metaRow.className = 'match-meta';
+          metaRow.innerHTML = `<span>${String(m.id || '').toUpperCase()}</span><span class="badge">Bo${bestOf}</span>`;
+          card.appendChild(metaRow);
+
+          const row1 = createPlayerRow(m, 1);
+          const row2 = createPlayerRow(m, 2);
+          card.appendChild(row1);
+          card.appendChild(row2);
+
+          const status = document.createElement('div');
+          status.className = 'match-status';
+
+          const p1IsBye = m.p1 && m.p1.isBye;
+          const p2IsBye = m.p2 && m.p2.isBye;
+          const pureBye = p1IsBye && p2IsBye;
+
+          if(m.winnerId){
+            const winner = findParticipantById(m.winnerId) || m.p1 || m.p2;
+            status.innerHTML = `<span class="winner-tag">Winner:</span> ${winner ? winner.name : '—'}`;
+          }else if(pureBye){
+            status.innerHTML = `<span class="pending">Unused BYE slot</span>`;
+          }else{
+            status.innerHTML = `<span class="pending">Pending result…</span>`;
+          }
+
+          card.appendChild(status);
+          col.appendChild(card);
+        });
+
+        bracketContainer.appendChild(col);
+      });
     }
 
     function createPlayerRow(match, slot){
@@ -573,216 +734,11 @@
       return row;
     }
 
-    // ---- Draw SVG connectors for elimination formats ----
-    function drawBracketLines(){
-      const format = state.settings?.format || 'single';
-      if(format !== 'single' && format !== 'double'){
-        const existing = bracketContainer.querySelector('#bracket-lines');
-        if(existing) existing.remove();
-        return;
-      }
-
-      if(!state.rounds.length) return;
-
-      let svg = bracketContainer.querySelector('#bracket-lines');
-      if(!svg){
-        svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-        svg.setAttribute('id','bracket-lines');
-        svg.classList.add('bracket-lines');
-        bracketContainer.prepend(svg);
-      }
-
-      while(svg.firstChild){
-        svg.removeChild(svg.firstChild);
-      }
-
-      const containerRect = bracketContainer.getBoundingClientRect();
-      svg.setAttribute('width', bracketContainer.scrollWidth);
-      svg.setAttribute('height', bracketContainer.scrollHeight);
-
-      for(let rIdx = 1; rIdx < state.rounds.length; rIdx++){
-        const roundMatches = state.rounds[rIdx];
-        const prevRound = state.rounds[rIdx - 1];
-
-        roundMatches.forEach((match, mIdx) => {
-          const parentCard = bracketContainer.querySelector(
-            `.match-card[data-match-id="${match.id}"]`
-          );
-          if(!parentCard) return;
-
-          const parentRect = parentCard.getBoundingClientRect();
-          const parentX = parentRect.left - containerRect.left;
-          const parentY = (parentRect.top + parentRect.bottom) / 2 - containerRect.top;
-
-          const childA = prevRound[mIdx*2];
-          const childB = prevRound[mIdx*2 + 1];
-          const children = [childA, childB];
-
-          children.forEach(child => {
-            if(!child) return;
-            const childCard = bracketContainer.querySelector(
-              `.match-card[data-match-id="${child.id}"]`
-            );
-            if(!childCard) return;
-
-            const childRect = childCard.getBoundingClientRect();
-            const childX = childRect.right - containerRect.left;
-            const childY = (childRect.top + childRect.bottom) / 2 - containerRect.top;
-
-            const midX = (childX + parentX) / 2;
-
-            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            const d = [
-              `M ${childX} ${childY}`,
-              `L ${midX} ${childY}`,
-              `L ${midX} ${parentY}`,
-              `L ${parentX} ${parentY}`
-            ].join(' ');
-            path.setAttribute('d', d);
-            path.setAttribute('fill', 'none');
-            path.setAttribute('stroke', 'rgba(255,255,255,0.22)');
-            path.setAttribute('stroke-width', '1.5');
-            path.setAttribute('stroke-linecap', 'round');
-            svg.appendChild(path);
-          });
-        });
-      }
-    }
-
-    // ---- Main render ----
-    function renderBracket(){
-      if(!state.rounds.length){
-        bracketTitleEl.textContent = state.settings?.name || 'No bracket';
-        bracketMetaEl.textContent  = '';
-        bracketContainer.innerHTML = '<div class="empty-state">Bracket has no rounds yet.</div>';
-        const existing = bracketContainer.querySelector('#bracket-lines');
-        if(existing) existing.remove();
-        return;
-      }
-
-      const n = state.participants.length;
-      const settings = state.settings || {};
-      const format = settings.format || 'single';
-      const bestOf = Number(settings.bestOf || 1);
-
-      const formatLabels = {
-        single: 'Single Elimination',
-        double: 'Double Elimination',
-        roundrobin: 'Round Robin',
-        swiss: 'Swiss'
-      };
-      const formatLabel = formatLabels[format] || 'Unknown';
-
-      bracketTitleEl.textContent = settings.name || 'Tournament Bracket';
-
-      if(format === 'single' || format === 'double'){
-        let roundsCount = settings.totalRounds || state.rounds.length || Math.ceil(Math.log2(Math.max(n,2)));
-        let bracketSize = settings.bracketSize || (1 << roundsCount);
-        let byes = (typeof settings.byes === 'number') ? settings.byes : (bracketSize - n);
-        if(byes < 0) byes = 0;
-
-        const stageMeta = computeStageRoundMeta(bracketSize, settings.stages || []);
-        state.stageRanges = stageMeta.stageRanges || [];
-
-        bracketMetaEl.textContent =
-          `Format: ${formatLabel} • Best of ${bestOf} • Round of ${bracketSize} • Players: ${n} • Rounds: ${roundsCount} • Byes: ${byes}`;
-      }else{
-        state.stageRanges = [];
-        let matchesTotal = 0;
-        state.rounds.forEach(r => matchesTotal += r.length);
-        bracketMetaEl.textContent =
-          `Format: ${formatLabel} • Best of ${bestOf} • Players: ${n} • Rounds: ${state.rounds.length} • Matches: ${matchesTotal}`;
-      }
-
-      bracketContainer.innerHTML = '';
-
-      state.rounds.forEach((roundMatches, idx) => {
-        const roundNumber = idx + 1;
-
-        const col = document.createElement('div');
-        col.className = 'round-col';
-
-        const title = document.createElement('div');
-        title.className = 'round-title';
-
-        const matchesCount = roundMatches.length;
-        const matchesLabel = matchesCount === 1 ? '1 match' : `${matchesCount} matches`;
-
-        let titleText;
-
-        if(format === 'single' || format === 'double'){
-          const stageInfo = getStageForRound(roundNumber);
-          if(stageInfo){
-            const originalStage = (settings.stages || [])[stageInfo.index];
-            const stageName = (originalStage && originalStage.name) || stageInfo.name || ('Stage ' + (stageInfo.index+1));
-            const tags = [stageName];
-
-            if(stageInfo.startRound === roundNumber){
-              tags.push('start');
-            }
-            if(stageInfo.endRound === roundNumber){
-              const targetLabel = stageInfo.targetPlayers === 1
-                ? 'end → champion'
-                : `end → top ${stageInfo.targetPlayers}`;
-              tags.push(targetLabel);
-            }
-
-            titleText = `Round ${roundNumber} (${matchesLabel}) • ${tags.join(' | ')}`;
-          }else{
-            titleText = `Round ${roundNumber} (${matchesLabel})`;
-          }
-        }else{
-          titleText = `Round ${roundNumber} (${matchesLabel})`;
-        }
-
-        title.textContent = titleText;
-        col.appendChild(title);
-
-        roundMatches.forEach(m => {
-          const card = document.createElement('div');
-          card.className = 'match-card';
-          card.dataset.matchId = m.id;
-
-          const metaRow = document.createElement('div');
-          metaRow.className = 'match-meta';
-          metaRow.innerHTML = `<span>${String(m.id).toUpperCase()}</span><span class="badge">Bo${bestOf}</span>`;
-          card.appendChild(metaRow);
-
-          const row1 = createPlayerRow(m, 1);
-          const row2 = createPlayerRow(m, 2);
-          card.appendChild(row1);
-          card.appendChild(row2);
-
-          const status = document.createElement('div');
-          status.className = 'match-status';
-
-          if(m.winnerId){
-            const winner = findParticipantById(m.winnerId);
-            status.innerHTML = `<span class="winner-tag">Winner:</span> ${winner ? winner.name : '—'}`;
-          }else if( (m.p1 && m.p1.isBye) && (m.p2 && m.p2.isBye) ){
-            status.innerHTML = `<span class="pending">Unused BYE slot</span>`;
-          }else{
-            status.innerHTML = `<span class="pending">Pending result…</span>`;
-          }
-
-          card.appendChild(status);
-          col.appendChild(card);
-        });
-
-        bracketContainer.appendChild(col);
-      });
-
-      drawBracketLines();
-    }
-
-    // ---- Events ----
+    // ===== Events =====
     refreshBtn.addEventListener('click', () => loadBracket());
-    tournamentSelect.addEventListener('change', () => loadBracket());
-
-    window.addEventListener('resize', () => {
-      if(state.rounds && state.rounds.length){
-        drawBracketLines();
-      }
+    tournamentSelect.addEventListener('change', () => {
+      updateUrlFromSelection();
+      loadBracket();
     });
 
     document.addEventListener('DOMContentLoaded', () => {
