@@ -87,11 +87,22 @@
       box-shadow:0 0 0 1px rgba(127,210,255,.3);
     }
 
+    /* MAIN LAYOUT
+       Left column: settings + participants stacked
+       Right column: bracket preview
+    */
     main{
       display:grid;
-      grid-template-columns:320px minmax(260px,360px) 1fr;
+      grid-template-columns:minmax(320px,420px) 1fr;
       gap:12px;
       align-items:flex-start;
+    }
+
+    .left-column{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      min-width:0;
     }
 
     section{
@@ -458,13 +469,8 @@
 
     @media(max-width:1040px){
       main{
-        grid-template-columns:minmax(0,1fr);
-      }
-      section:nth-child(2){
-        order:3;
-      }
-      section:nth-child(3){
-        order:2;
+        display:flex;
+        flex-direction:column;
       }
     }
   </style>
@@ -488,126 +494,128 @@
     </header>
 
     <main>
-      <!-- SETTINGS -->
-      <section id="settings-section">
-        <h2>Settings</h2>
-        <div class="settings-grid">
-          <div class="field">
-            <label>
-              <span>Tournament Name</span>
-            </label>
-            <input type="text" id="tournament-name" placeholder="My Tournament"/>
-          </div>
-
-          <div class="field field-row">
-            <div>
-              <label><span>Format</span></label>
-              <select id="tournament-format">
-                <option value="single">Single Elimination</option>
-                <option value="double" disabled>Double Elim (stub)</option>
-                <option value="roundrobin" disabled>Round Robin (stub)</option>
-                <option value="swiss" disabled>Swiss (stub)</option>
-              </select>
+      <div class="left-column">
+        <!-- SETTINGS -->
+        <section id="settings-section">
+          <h2>Settings</h2>
+          <div class="settings-grid">
+            <div class="field">
+              <label>
+                <span>Tournament Name</span>
+              </label>
+              <input type="text" id="tournament-name" placeholder="My Tournament"/>
             </div>
-            <div>
-              <label><span>Best Of</span></label>
-              <select id="best-of">
-                <option value="1" selected>Bo1</option>
-                <option value="3">Bo3</option>
-                <option value="5">Bo5</option>
-                <option value="7">Bo7</option>
-              </select>
+
+            <div class="field field-row">
+              <div>
+                <label><span>Format</span></label>
+                <select id="tournament-format">
+                  <option value="single">Single Elimination</option>
+                  <option value="double" disabled>Double Elim (stub)</option>
+                  <option value="roundrobin" disabled>Round Robin (stub)</option>
+                  <option value="swiss" disabled>Swiss (stub)</option>
+                </select>
+              </div>
+              <div>
+                <label><span>Best Of</span></label>
+                <select id="best-of">
+                  <option value="1" selected>Bo1</option>
+                  <option value="3">Bo3</option>
+                  <option value="5">Bo5</option>
+                  <option value="7">Bo7</option>
+                </select>
+              </div>
             </div>
-          </div>
 
-          <div class="field">
-            <label>
-              <span>Seeding Mode</span>
-            </label>
-            <select id="seeding-mode">
-              <option value="seeded">Traditional (1 vs last)</option>
-              <option value="list">List order</option>
-              <option value="random">Randomize</option>
-            </select>
-            <small>Traditional seeding keeps top seeds apart until later rounds, similar to Challonge.</small>
-          </div>
+            <div class="field">
+              <label>
+                <span>Seeding Mode</span>
+              </label>
+              <select id="seeding-mode">
+                <option value="seeded">Traditional (1 vs last)</option>
+                <option value="list">List order</option>
+                <option value="random">Randomize</option>
+              </select>
+              <small>Traditional seeding keeps top seeds apart until later rounds, similar to Challonge.</small>
+            </div>
 
-          <div class="checkbox-row">
-            <span>3rd place match</span>
-            <input type="checkbox" id="third-place-toggle"/>
-          </div>
+            <div class="checkbox-row">
+              <span>3rd place match</span>
+              <input type="checkbox" id="third-place-toggle"/>
+            </div>
 
-          <!-- STAGES & QUALIFICATION -->
-          <div class="field">
-            <label>
-              <span>Stages &amp; Qualification</span>
-              <span style="font-size:.75rem;">Top X advance to next stage (Stage 1 controls how many rounds are played)</span>
-            </label>
-            <div id="stages-list"></div>
-            <button type="button" id="add-stage-btn">
-              <span class="icon">＋</span>
-              Add stage
-            </button>
+            <!-- STAGES & QUALIFICATION -->
+            <div class="field">
+              <label>
+                <span>Stages &amp; Qualification</span>
+                <span style="font-size:.75rem;">Top X advance to next stage (Stage 1 controls how many rounds are played)</span>
+              </label>
+              <div id="stages-list"></div>
+              <button type="button" id="add-stage-btn">
+                <span class="icon">＋</span>
+                Add stage
+              </button>
+              <p class="helper-text">
+                Example: Stage 1 – Groups (Top 12 qualify), Stage 2 – Finals (Top 1 champion).  
+                For single-elim brackets, Stage 1’s <strong>Top X</strong> will stop the bracket once ≤ X players remain.
+              </p>
+            </div>
+
+            <div class="settings-actions">
+              <button id="add-participant-btn">
+                <span class="icon">＋</span>
+                Add participant
+              </button>
+              <button id="shuffle-btn">
+                <span class="icon">🎲</span>
+                Shuffle list
+              </button>
+              <button id="clear-btn">
+                <span class="icon">🧹</span>
+                Clear all
+              </button>
+              <button class="primary" id="generate-btn">
+                <span class="icon">🏆</span>
+                Generate bracket
+              </button>
+              <button class="primary" id="save-btn">
+                <span class="icon">💾</span>
+                Save bracket to database
+              </button>
+            </div>
+
             <p class="helper-text">
-              Example: Stage 1 – Groups (Top 12 qualify), Stage 2 – Finals (Top 1 champion).  
-              For single-elim brackets, Stage 1’s <strong>Top X</strong> will stop the bracket once ≤ X players remain.
+              1) Select tournament (or create new) • 2) Add participants • 3) Generate bracket • 4) Report scores • 5) Save/update.  
+              Public can view on <code>bracket_view.html</code>.
             </p>
-          </div>
+            <!-- live bracket math helper -->
+            <p id="bracket-math" class="helper-text"></p>
 
-          <div class="settings-actions">
-            <button id="add-participant-btn">
-              <span class="icon">＋</span>
-              Add participant
-            </button>
-            <button id="shuffle-btn">
-              <span class="icon">🎲</span>
-              Shuffle list
-            </button>
-            <button id="clear-btn">
-              <span class="icon">🧹</span>
-              Clear all
-            </button>
-            <button class="primary" id="generate-btn">
-              <span class="icon">🏆</span>
-              Generate bracket
-            </button>
-            <button class="primary" id="save-btn">
-              <span class="icon">💾</span>
-              Save bracket to database
-            </button>
+            <p id="save-status"></p>
           </div>
+        </section>
+
+        <!-- PARTICIPANTS -->
+        <section id="participants-section">
+          <h2>Participants</h2>
+
+          <table class="participants-table">
+            <thead>
+              <tr>
+                <th style="width:44px;">Seed</th>
+                <th>Name</th>
+                <th style="width:60px;text-align:right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="participants-body">
+            </tbody>
+          </table>
 
           <p class="helper-text">
-            1) Select tournament (or create new) • 2) Add participants • 3) Generate bracket • 4) Report scores • 5) Save/update.  
-            Public can view on <code>bracket_view.html</code>.
+            Seeding is based on row order. You can shuffle the list or manually edit names.
           </p>
-          <!-- live bracket math helper -->
-          <p id="bracket-math" class="helper-text"></p>
-
-          <p id="save-status"></p>
-        </div>
-      </section>
-
-      <!-- PARTICIPANTS -->
-      <section id="participants-section">
-        <h2>Participants</h2>
-
-        <table class="participants-table">
-          <thead>
-            <tr>
-              <th style="width:44px;">Seed</th>
-              <th>Name</th>
-              <th style="width:60px;text-align:right;">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="participants-body">
-          </tbody>
-        </table>
-
-        <p class="helper-text">
-          Seeding is based on row order. You can shuffle the list or manually edit names.
-        </p>
-      </section>
+        </section>
+      </div>
 
       <!-- BRACKET PREVIEW -->
       <section id="bracket-section">
