@@ -173,6 +173,7 @@
       flex-wrap:wrap;
       gap:6px;
     }
+
     button{
       border:none;
       border-radius:999px;
@@ -210,6 +211,35 @@
       opacity:.5;
       cursor:default;
       transform:none;
+    }
+
+    /* Stage editor */
+    .stage-row{
+      display:flex;
+      align-items:center;
+      gap:6px;
+      margin-bottom:4px;
+    }
+    .stage-row span.stage-index{
+      font-size:.75rem;
+      color:var(--muted);
+      width:64px;
+      flex-shrink:0;
+    }
+    .stage-row input.stage-name{
+      flex:1;
+    }
+    .stage-row input.stage-qualifiers{
+      width:72px;
+    }
+    .stage-row small.stage-qualify{
+      font-size:.7rem;
+      color:var(--muted);
+      white-space:nowrap;
+    }
+    .stage-row button.remove-stage{
+      padding:2px 6px;
+      font-size:.7rem;
     }
 
     /* Participants */
@@ -467,8 +497,8 @@
             <div>
               <label>Best Of</label>
               <select id="best-of">
-                <option value="1" selected>Bo1</option>
-                <option value="3" >Bo3</option>
+                <option value="1">Bo1</option>
+                <option value="3" selected>Bo3</option>
                 <option value="5">Bo5</option>
                 <option value="7">Bo7</option>
               </select>
@@ -488,6 +518,20 @@
           <div class="checkbox-row">
             <span>3rd place match</span>
             <input type="checkbox" id="third-place-toggle"/>
+          </div>
+
+          <!-- NEW: multi-stage configuration -->
+          <div class="field">
+            <label>
+              Stages &amp; Qualification
+              <span style="font-size:.75rem;color:var(--muted);">Top X advance to next stage</span>
+            </label>
+            <div id="stages-container"></div>
+            <button type="button" id="add-stage-btn" style="margin-top:4px;">
+              <span class="icon">➕</span>
+              Add stage
+            </button>
+            <small>Example: Stage 1 – Groups (Top 12 qualify), Stage 2 – Finals (Top 1 champion).</small>
           </div>
 
           <div class="settings-actions">
@@ -517,7 +561,7 @@
             1) Select tournament (or create new) • 2) Add participants • 3) Generate bracket • 4) Report scores • 5) Save/update.  
             Public can view on <code>bracket_view.html</code>.
           </p>
-          <!-- NEW: live bracket math helper -->
+          <!-- live bracket math helper -->
           <p id="bracket-math" class="helper-text"></p>
 
           <p id="save-status"></p>
@@ -588,7 +632,8 @@
         thirdPlace: false,
         totalRounds: null,
         bracketSize: null,
-        byes: null
+        byes: null,
+        stages: []             // [{ name, qualifiers }]
       },
       lastSavedId: null
     };
@@ -612,6 +657,10 @@
     const tournamentSelect   = document.getElementById('tournament-select');
     const bracketMath        = document.getElementById('bracket-math');
 
+    // NEW: stage elements
+    const stagesContainer    = document.getElementById('stages-container');
+    const addStageBtn        = document.getElementById('add-stage-btn');
+
     let nextParticipantId = 1;
 
     // ------- UTILITIES -------
@@ -628,6 +677,7 @@
       state.settings.bestOf      = parseInt(bestOfSelect.value,10) || 1;
       state.settings.seedingMode = seedingSelect.value;
       state.settings.thirdPlace  = thirdPlaceToggle.checked;
+      // stages are edited live via renderStages()/events
     }
 
     function shuffleArray(arr){
@@ -643,12 +693,107 @@
       return id ? parseInt(id,10) : null;
     }
 
+    // Ensure stages array exists & has at least one stage
+    function ensureDefaultStages(){
+      if(!state.settings.stages || !Array.isArray(state.settings.stages)){
+        state.settings.stages = [];
+      }
+      if(state.settings.stages.length === 0){
+        state.settings.stages.push({
+          name: 'Main Stage',
+          qualifiers: 1
+        });
+      }
+    }
+
+    function renderStages(){
+      if(!stagesContainer) return;
+      ensureDefaultStages();
+      stagesContainer.innerHTML = '';
+      const stages = state.settings.stages;
+
+      stages.forEach((st, idx) => {
+        const row = document.createElement('div');
+        row.className = 'stage-row';
+
+        const idxSpan = document.createElement('span');
+        idxSpan.className = 'stage-index';
+        idxSpan.textContent = `Stage ${idx + 1}`;
+        row.appendChild(idxSpan);
+
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.className = 'stage-name';
+        nameInput.placeholder = `Stage ${idx + 1} name`;
+        nameInput.value = st.name || '';
+        nameInput.addEventListener('input', () => {
+          st.name = nameInput.value;
+          renderSaveStatus(true);
+        });
+        row.appendChild(nameInput);
+
+        const qualInput = document.createElement('input');
+        qualInput.type = 'number';
+        qualInput.min = '1';
+        qualInput.className = 'stage-qualifiers';
+        qualInput.value =
+          (typeof st.qualifiers === 'number' && st.qualifiers > 0)
+            ? st.qualifiers
+            : 1;
+        qualInput.addEventListener('input', () => {
+          const val = parseInt(qualInput.value, 10);
+          st.qualifiers = Number.isNaN(val) || val < 1 ? 1 : val;
+          qualInput.value = st.qualifiers;
+          renderSaveStatus(true);
+        });
+        row.appendChild(qualInput);
+
+        const note = document.createElement('small');
+        note.className = 'stage-qualify';
+        if(idx < stages.length - 1){
+          note.textContent = 'qualify to next stage';
+        }else{
+          note.textContent = 'final stage';
+        }
+        row.appendChild(note);
+
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'remove-stage';
+        removeBtn.type = 'button';
+        removeBtn.textContent = '✕';
+        removeBtn.addEventListener('click', () => {
+          stages.splice(idx, 1);
+          renderStages();
+          renderSaveStatus(true);
+        });
+        row.appendChild(removeBtn);
+
+        stagesContainer.appendChild(row);
+      });
+    }
+
+    if(addStageBtn){
+      addStageBtn.addEventListener('click', () => {
+        if(!state.settings.stages || !Array.isArray(state.settings.stages)){
+          state.settings.stages = [];
+        }
+        const nextIndex = state.settings.stages.length + 1;
+        state.settings.stages.push({
+          name: `Stage ${nextIndex}`,
+          qualifiers: 1
+        });
+        renderStages();
+        renderSaveStatus(true);
+      });
+    }
+
     // Bracket math helper (for display + sanity check)
     function updateBracketMath(){
       if(!bracketMath) return;
       const n = state.participants.length;
       if(n < 2){
-        bracketMath.textContent = 'Add at least 2 participants to generate a single-elimination bracket.';
+        bracketMath.textContent =
+          'Add at least 2 participants to generate a single-elimination bracket.';
         return;
       }
       const rounds = Math.ceil(Math.log2(n));
@@ -951,9 +1096,30 @@
 
       if(byes < 0) byes = 0;
 
+      // Build stage summary
+      let stageSummary = '';
+      if(state.settings.stages && Array.isArray(state.settings.stages) && state.settings.stages.length){
+        const parts = state.settings.stages.map((st, idx) => {
+          const label =
+            st.name && st.name.trim()
+              ? st.name.trim()
+              : `Stage ${idx + 1}`;
+          if(idx < state.settings.stages.length - 1){
+            const q =
+              (typeof st.qualifiers === 'number' && st.qualifiers > 0)
+                ? st.qualifiers
+                : 'X';
+            return `${label} (Top ${q} → next)`;
+          }
+          return `${label} (Final)`;
+        });
+        stageSummary = ' • Stages: ' + parts.join(' → ');
+      }
+
       bracketTitle.textContent = state.settings.name || 'My Tournament';
       bracketMeta.textContent =
-        `Format: Single Elimination • Best of ${state.settings.bestOf} • Players: ${n} • Rounds: ${roundsCount} • Byes: ${byes}`;
+        `Format: Single Elimination • Best of ${state.settings.bestOf} • Players: ${n} • Rounds: ${roundsCount} • Byes: ${byes}` +
+        stageSummary;
 
       bracketContainer.innerHTML = '';
 
@@ -982,7 +1148,8 @@
 
           const metaRow = document.createElement('div');
           metaRow.className = 'match-meta';
-          metaRow.innerHTML = `<span>Match ${m.id.toUpperCase()}</span><span class="badge">Bo${state.settings.bestOf}</span>`;
+          metaRow.innerHTML =
+            `<span>Match ${m.id.toUpperCase()}</span><span class="badge">Bo${state.settings.bestOf}</span>`;
           card.appendChild(metaRow);
 
           const row1 = createPlayerRow(m, 1);
@@ -996,11 +1163,13 @@
           const status = document.createElement('div');
           status.className = 'match-status';
 
+          const isPureBye = (m.p1 && m.p1.isBye) && (m.p2 && m.p2.isBye);
+
           if(m.winnerId){
             const winner = findParticipantById(m.winnerId);
-            status.innerHTML = `<span class="winner-tag">Winner:</span> ${winner ? winner.name : '—'}`;
+            status.innerHTML =
+              `<span class="winner-tag">Winner:</span> ${winner ? winner.name : '—'}`;
           }else{
-            const isPureBye = (m.p1 && m.p1.isBye) && (m.p2 && m.p2.isBye);
             if(isPureBye){
               status.innerHTML = `<span class="pending">Unused BYE slot</span>`;
             }else{
@@ -1012,7 +1181,6 @@
           reportBtn.className = 'primary';
           reportBtn.textContent = 'Report score';
 
-          const isPureBye = (m.p1 && m.p1.isBye) && (m.p2 && m.p2.isBye);
           if(isPureBye){
             reportBtn.disabled = true;
           }
@@ -1089,12 +1257,16 @@
         thirdPlace: false,
         totalRounds: null,
         bracketSize: null,
-        byes: null
+        byes: null,
+        stages: []
       };
       state.lastSavedId = null;
 
       // Optional: seed demo participants for quick testing
-      const demoNames = ['Player 1','Player 2','Player 3','Player 4','Player 5','Player 6','Player 7','Player 8'];
+      const demoNames = [
+        'Player 1','Player 2','Player 3','Player 4',
+        'Player 5','Player 6','Player 7','Player 8'
+      ];
       demoNames.forEach(n => state.participants.push(createParticipant(n)));
 
       // Update UI controls
@@ -1104,9 +1276,12 @@
       seedingSelect.value = state.settings.seedingMode;
       thirdPlaceToggle.checked = state.settings.thirdPlace;
 
+      ensureDefaultStages();
+      renderStages();
       renderParticipants();
       renderEmptyBracket();
       renderSaveStatus(false);
+      updateBracketMath();
     }
 
     async function loadTournamentList(){
@@ -1197,13 +1372,17 @@
           thirdPlace: false,
           totalRounds: null,
           bracketSize: null,
-          byes: null
+          byes: null,
+          stages: []
         }, data.settings || {});
 
         const d = data.data || {};
         state.participants        = d.participants || [];
         state.bracketParticipants = d.bracketParticipants || [];
         state.rounds              = d.rounds || [];
+
+        ensureDefaultStages();
+        renderStages();
 
         // Rebuild matchById and matchCounter
         state.matchById = {};
@@ -1232,6 +1411,7 @@
           renderEmptyBracket();
         }
         renderSaveStatus(false);
+        updateBracketMath();
       }catch(err){
         console.error('Unexpected error loading bracket:', err);
         alert('Unexpected error loading bracket.');
@@ -1258,7 +1438,8 @@
         saveStatus.textContent = 'Changes not yet saved to database.';
         saveStatusPill.textContent = 'Unsaved changes';
       }else if(state.lastSavedId){
-        saveStatus.textContent = `Last saved as bracket #${state.lastSavedId}. Public page shows any saved bracket (or use ?id=${state.lastSavedId}).`;
+        saveStatus.textContent =
+          `Last saved as bracket #${state.lastSavedId}. Public page shows any saved bracket (or use ?id=${state.lastSavedId}).`;
         saveStatusPill.textContent = `Saved: #${state.lastSavedId}`;
       }else{
         saveStatus.textContent = 'Not yet saved to database.';
@@ -1332,6 +1513,8 @@
     // ------- INIT -------
     function init(){
       renderEmptyBracket();
+      ensureDefaultStages();
+      renderStages();
       renderSaveStatus(false);
       generateBtn.addEventListener('click', generateBracket);
       loadTournamentList();
