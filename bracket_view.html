@@ -269,7 +269,7 @@
 
     async function loadBracket(){
       const urlId = getBracketIdFromURL();
-      headerMeta.textContent = 'Loading bracket from Supabase…';
+      headerMeta.textContent = 'Loading bracket from database…';
       bracketContainer.innerHTML = '<div class="empty-state">Loading bracket…</div>';
 
       try{
@@ -285,7 +285,7 @@
 
         if(error){
           console.error(error);
-          headerMeta.textContent = 'Error loading bracket from Supabase.';
+          headerMeta.textContent = 'Error loading bracket from database.';
           bracketContainer.innerHTML = '<div class="empty-state">Error loading bracket. Check console.</div>';
           return;
         }
