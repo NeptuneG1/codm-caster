@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <title>Tournament Bracketing — Mini Challonge Style</title>
+  <title>Tournament Bracketing — Settings</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
   <style>
@@ -381,6 +381,12 @@
       border:1px dashed rgba(255,255,255,.08);
     }
 
+    #save-status{
+      font-size:.72rem;
+      color:var(--muted);
+      margin-top:4px;
+    }
+
     @media(max-width:1040px){
       main{
         grid-template-columns:minmax(0,1fr);
@@ -398,12 +404,12 @@
   <div class="app">
     <header>
       <div>
-        <h1>Tournament Bracketing</h1>
-        <span class="sub">Single-elimination engine with Challonge-style seeding options.</span>
+        <h1>Tournament Bracketing — Settings</h1>
+        <span class="sub">Configure participants, generate bracket, and push to Supabase.</span>
       </div>
       <div class="pill">
         <span class="dot"></span>
-        <span>Local prototype — no backend yet</span>
+        <span id="save-status-pill">Not saved to Supabase</span>
       </div>
     </header>
 
@@ -472,11 +478,17 @@
               <span class="icon">🏆</span>
               Generate bracket
             </button>
+            <button class="primary" id="save-btn">
+              <span class="icon">💾</span>
+              Save bracket to Supabase
+            </button>
           </div>
 
           <p class="helper-text">
-            1. Add participants • 2. Pick seeding • 3. Generate bracket • 4. Enter scores to advance winners.
+            1) Add participants • 2) Pick seeding • 3) Generate bracket • 4) Report scores • 5) Save to Supabase.  
+            Public can view on <code>bracket_view.html</code>.
           </p>
+          <p id="save-status"></p>
         </div>
       </section>
 
@@ -501,9 +513,9 @@
         </p>
       </section>
 
-      <!-- BRACKET -->
+      <!-- BRACKET PREVIEW -->
       <section id="bracket-section">
-        <h2>Bracket</h2>
+        <h2>Bracket Preview</h2>
         <div class="bracket-shell">
           <div class="bracket-header">
             <div id="bracket-title">No bracket generated yet.</div>
@@ -519,7 +531,15 @@
     </main>
   </div>
 
+  <!-- Supabase CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <script>
+    // ===== Supabase Setup =====
+    const SUPABASE_URL = 'https://YOUR_SUPABASE_URL.supabase.co';
+    const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
     // ------- STATE -------
     const state = {
       participants: [],        // [{id, name}]
@@ -533,22 +553,26 @@
         bestOf: 1,
         seedingMode: 'seeded',
         thirdPlace: false
-      }
+      },
+      lastSavedId: null
     };
 
-    const participantsBody = document.getElementById('participants-body');
-    const addBtn = document.getElementById('add-participant-btn');
-    const shuffleBtn = document.getElementById('shuffle-btn');
-    const clearBtn = document.getElementById('clear-btn');
-    const generateBtn = document.getElementById('generate-btn');
-    const nameInput = document.getElementById('tournament-name');
-    const formatSelect = document.getElementById('tournament-format');
-    const bestOfSelect = document.getElementById('best-of');
-    const seedingSelect = document.getElementById('seeding-mode');
-    const thirdPlaceToggle = document.getElementById('third-place-toggle');
-    const bracketContainer = document.getElementById('bracket-container');
-    const bracketTitle = document.getElementById('bracket-title');
-    const bracketMeta = document.getElementById('bracket-meta');
+    const participantsBody   = document.getElementById('participants-body');
+    const addBtn             = document.getElementById('add-participant-btn');
+    const shuffleBtn         = document.getElementById('shuffle-btn');
+    const clearBtn           = document.getElementById('clear-btn');
+    const generateBtn        = document.getElementById('generate-btn');
+    const saveBtn            = document.getElementById('save-btn');
+    const nameInput          = document.getElementById('tournament-name');
+    const formatSelect       = document.getElementById('tournament-format');
+    const bestOfSelect       = document.getElementById('best-of');
+    const seedingSelect      = document.getElementById('seeding-mode');
+    const thirdPlaceToggle   = document.getElementById('third-place-toggle');
+    const bracketContainer   = document.getElementById('bracket-container');
+    const bracketTitle       = document.getElementById('bracket-title');
+    const bracketMeta        = document.getElementById('bracket-meta');
+    const saveStatus         = document.getElementById('save-status');
+    const saveStatusPill     = document.getElementById('save-status-pill');
 
     let nextParticipantId = 1;
 
@@ -561,10 +585,10 @@
     }
 
     function syncSettingsFromUI(){
-      state.settings.name = nameInput.value.trim() || 'My Tournament';
-      state.settings.format = formatSelect.value;
-      state.settings.bestOf = parseInt(bestOfSelect.value,10) || 1;
-      state.settings.seedingMode = seedingSelect.value;
+      state.settings.name       = nameInput.value.trim() || 'My Tournament';
+      state.settings.format     = formatSelect.value;
+      state.settings.bestOf     = parseInt(bestOfSelect.value,10) || 1;
+      state.settings.seedingMode= seedingSelect.value;
       state.settings.thirdPlace = thirdPlaceToggle.checked;
     }
 
@@ -572,10 +596,6 @@
       let p = 1;
       while(p < n) p <<= 1;
       return p;
-    }
-
-    function clone(obj){
-      return JSON.parse(JSON.stringify(obj));
     }
 
     function shuffleArray(arr){
@@ -640,8 +660,11 @@
       state.rounds = [];
       state.matchById = {};
       state.matchCounter = 0;
+      state.bracketParticipants = [];
       renderParticipants();
       renderEmptyBracket();
+      state.lastSavedId = null;
+      renderSaveStatus();
     });
 
     // ------- BRACKET GENERATION (SINGLE ELIM) -------
@@ -661,14 +684,10 @@
         isBye: false
       }));
 
-      if(state.settings.seedingMode === 'seeded'){
-        // Already in seed order (top row = #1 seed)
-        // Nothing extra to do here.
-      }else if(state.settings.seedingMode === 'list'){
-        // List order is also "as-is", but we keep branch in case you want to tweak later.
-      }else if(state.settings.seedingMode === 'random'){
+      if(state.settings.seedingMode === 'random'){
         shuffleArray(seeded);
       }
+      // seeded / list are already in list order
 
       const bracketSize = nextPowerOfTwo(seeded.length);
       const byesNeeded = bracketSize - seeded.length;
@@ -736,6 +755,7 @@
       }
 
       renderBracket();
+      renderSaveStatus(true); // unsaved changes
     }
 
     function createMatch(roundNumber, indexInRound, p1, p2){
@@ -829,6 +849,7 @@
 
       propagateWinner(m);
       renderBracket();
+      renderSaveStatus(true); // unsaved changes
     }
 
     // ------- BRACKET RENDER -------
@@ -966,6 +987,69 @@
       return row;
     }
 
+    // ------- SAVE TO SUPABASE -------
+    function renderSaveStatus(dirty){
+      if(dirty){
+        saveStatus.textContent = 'Changes not yet saved to Supabase.';
+        saveStatusPill.textContent = 'Unsaved changes';
+      }else if(state.lastSavedId){
+        saveStatus.textContent = `Last saved as bracket #${state.lastSavedId}. Public page will show the latest saved bracket.`;
+        saveStatusPill.textContent = `Saved: #${state.lastSavedId}`;
+      }else{
+        saveStatus.textContent = 'Not yet saved to Supabase.';
+        saveStatusPill.textContent = 'Not saved to Supabase';
+      }
+    }
+
+    async function saveBracketToSupabase(){
+      syncSettingsFromUI();
+
+      if(!state.rounds.length){
+        alert('Generate a bracket before saving to Supabase.');
+        return;
+      }
+
+      const payload = {
+        name: state.settings.name,
+        settings: state.settings,
+        data: {
+          participants: state.participants,
+          bracketParticipants: state.bracketParticipants,
+          rounds: state.rounds
+        }
+      };
+
+      try{
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving...';
+        renderSaveStatus(true);
+
+        const { data, error } = await client
+          .from('brackets')
+          .insert(payload)
+          .select('id, created_at')
+          .single();
+
+        if(error){
+          console.error(error);
+          alert('Error saving bracket: ' + error.message);
+          renderSaveStatus(true);
+        }else{
+          state.lastSavedId = data.id;
+          renderSaveStatus(false);
+        }
+      }catch(err){
+        console.error(err);
+        alert('Unexpected error saving bracket.');
+        renderSaveStatus(true);
+      }finally{
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save bracket to Supabase';
+      }
+    }
+
+    saveBtn.addEventListener('click', saveBracketToSupabase);
+
     // ------- INIT -------
     function init(){
       // Seed with a few demo participants
@@ -973,6 +1057,8 @@
       demoNames.forEach(n => state.participants.push(createParticipant(n)));
       renderParticipants();
       nameInput.value = state.settings.name;
+      renderEmptyBracket();
+      renderSaveStatus();
 
       generateBtn.addEventListener('click', generateBracket);
     }
