@@ -517,6 +517,9 @@
             1) Select tournament (or create new) • 2) Add participants • 3) Generate bracket • 4) Report scores • 5) Save/update.  
             Public can view on <code>bracket_view.html</code>.
           </p>
+          <!-- NEW: live bracket math helper -->
+          <p id="bracket-math" class="helper-text"></p>
+
           <p id="save-status"></p>
         </div>
       </section>
@@ -565,7 +568,7 @@
 
   <script>
     // ===== Supabase Setup =====
-    const SUPABASE_URL = 'https://fjdyppkanjnvyscqrfum.supabase.co'; // your project URL
+    const SUPABASE_URL = 'https://fjdyppkanjnvyscqrfum.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqZHlwcGthbmpudnlzY3FyZnVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAzNDU1NzIsImV4cCI6MjA3NTkyMTU3Mn0.ssEN7uA9BVm9AkhsjkWxhPzV1-VQVxc4-u7LS2wt4Aw';
 
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -573,7 +576,7 @@
     // ------- STATE -------
     const state = {
       participants: [],        // [{id, name}]
-      bracketParticipants: [], // includes BYEs
+      bracketParticipants: [], // includes BYEs (if any)
       rounds: [],              // [ [matches...] ]
       matchById: {},           // id -> match
       matchCounter: 0,
@@ -582,7 +585,10 @@
         format: 'single',
         bestOf: 3,
         seedingMode: 'seeded',
-        thirdPlace: false
+        thirdPlace: false,
+        totalRounds: null,
+        bracketSize: null,
+        byes: null
       },
       lastSavedId: null
     };
@@ -604,6 +610,7 @@
     const saveStatus         = document.getElementById('save-status');
     const saveStatusPill     = document.getElementById('save-status-pill');
     const tournamentSelect   = document.getElementById('tournament-select');
+    const bracketMath        = document.getElementById('bracket-math');
 
     let nextParticipantId = 1;
 
@@ -623,12 +630,6 @@
       state.settings.thirdPlace  = thirdPlaceToggle.checked;
     }
 
-    function nextPowerOfTwo(n){
-      let p = 1;
-      while(p < n) p <<= 1;
-      return p;
-    }
-
     function shuffleArray(arr){
       for(let i = arr.length-1; i > 0; i--){
         const j = Math.floor(Math.random() * (i+1));
@@ -640,6 +641,21 @@
       const params = new URLSearchParams(window.location.search);
       const id = params.get('id');
       return id ? parseInt(id,10) : null;
+    }
+
+    // Bracket math helper (for display + sanity check)
+    function updateBracketMath(){
+      if(!bracketMath) return;
+      const n = state.participants.length;
+      if(n < 2){
+        bracketMath.textContent = 'Add at least 2 participants to generate a single-elimination bracket.';
+        return;
+      }
+      const rounds = Math.ceil(Math.log2(n));
+      const bracketSize = 1 << rounds;
+      const byes = bracketSize - n;
+      bracketMath.textContent =
+        `${n} participants → ${rounds} rounds • bracket size ${bracketSize} • byes ${byes}`;
     }
 
     // ------- PARTICIPANTS UI -------
@@ -660,6 +676,7 @@
         input.addEventListener('input', () => {
           p.name = input.value;
           renderSaveStatus(true);
+          updateBracketMath();
         });
         nameTd.appendChild(input);
         tr.appendChild(nameTd);
@@ -675,12 +692,15 @@
           state.participants.splice(idx, 1);
           renderParticipants();
           renderSaveStatus(true);
+          updateBracketMath();
         });
         actionsTd.appendChild(removeBtn);
         tr.appendChild(actionsTd);
 
         participantsBody.appendChild(tr);
       });
+
+      updateBracketMath();
     }
 
     addBtn.addEventListener('click', () => {
@@ -730,24 +750,32 @@
       }
       // "seeded" and "list" both use current order
 
-      const bracketSize = nextPowerOfTwo(seeded.length);
-      const byesNeeded = bracketSize - seeded.length;
+      // ---- Automatic rounds / bracket size / byes ----
+      const roundsCount = Math.ceil(Math.log2(n));    // minimal rounds
+      const bracketSize = 1 << roundsCount;           // 2^rounds
+      const byesNeeded  = bracketSize - n;            // minimal number of BYEs needed
 
-      for(let i=0;i<byesNeeded;i++){
-        seeded.push({
+      state.settings.totalRounds = roundsCount;
+      state.settings.bracketSize = bracketSize;
+      state.settings.byes        = byesNeeded;
+
+      // Assign BYEs to the tail so they pair with top seeds (1 vs last, 2 vs second last...)
+      const seededWithByes = seeded.slice();
+      for(let i=0; i<byesNeeded; i++){
+        seededWithByes.push({
           id:'bye-'+i,
           name:'BYE',
           isBye:true
         });
       }
 
-      state.bracketParticipants = seeded;
+      state.bracketParticipants = seededWithByes;
       state.rounds = [];
       state.matchById = {};
       state.matchCounter = 0;
 
-      const roundsCount = Math.log2(bracketSize);
-      for(let r=0;r<roundsCount;r++){
+      // Create rounds
+      for(let r=0; r<roundsCount; r++){
         state.rounds.push([]);
       }
 
@@ -755,8 +783,8 @@
       const round1 = state.rounds[0];
       const half = bracketSize / 2;
       for(let i=0;i<half;i++){
-        const p1 = seeded[i] || null;
-        const p2 = seeded[bracketSize - 1 - i] || null;
+        const p1 = seededWithByes[i] || null;
+        const p2 = seededWithByes[bracketSize - 1 - i] || null;
         const match = createMatch(1, i, p1, p2);
         round1.push(match);
       }
@@ -784,7 +812,7 @@
         prevRoundMatches = curRound;
       }
 
-      // Auto-advance BYEs in round 1
+      // Auto-advance matches that are effectively BYE for one participant
       for(const m of state.rounds[0]){
         if(m.p1 && m.p1.isBye && m.p2 && !m.p2.isBye){
           m.winnerId = m.p2.id;
@@ -797,6 +825,7 @@
 
       renderBracket();
       renderSaveStatus(true); // bracket changed, unsaved
+      updateBracketMath();
     }
 
     function createMatch(roundNumber, indexInRound, p1, p2){
@@ -910,8 +939,21 @@
         return;
       }
 
+      const n = state.participants.length;
+      let roundsCount = state.settings.totalRounds;
+      if(!roundsCount){
+        roundsCount = Math.ceil(Math.log2(Math.max(n,2)));
+      }
+      let bracketSize = state.settings.bracketSize || (1 << roundsCount);
+      let byes = (typeof state.settings.byes === 'number')
+        ? state.settings.byes
+        : (bracketSize - n);
+
+      if(byes < 0) byes = 0;
+
       bracketTitle.textContent = state.settings.name || 'My Tournament';
-      bracketMeta.textContent = `Format: Single Elimination • Best of ${state.settings.bestOf} • Players: ${state.participants.length}`;
+      bracketMeta.textContent =
+        `Format: Single Elimination • Best of ${state.settings.bestOf} • Players: ${n} • Rounds: ${roundsCount} • Byes: ${byes}`;
 
       bracketContainer.innerHTML = '';
 
@@ -958,18 +1000,21 @@
             const winner = findParticipantById(m.winnerId);
             status.innerHTML = `<span class="winner-tag">Winner:</span> ${winner ? winner.name : '—'}`;
           }else{
-            status.innerHTML = `<span class="pending">Awaiting result…</span>`;
+            const isPureBye = (m.p1 && m.p1.isBye) && (m.p2 && m.p2.isBye);
+            if(isPureBye){
+              status.innerHTML = `<span class="pending">Unused BYE slot</span>`;
+            }else{
+              status.innerHTML = `<span class="pending">Awaiting result…</span>`;
+            }
           }
 
           const reportBtn = document.createElement('button');
           reportBtn.className = 'primary';
           reportBtn.textContent = 'Report score';
 
-          // Disable reporting if this is a pure BYE match
           const isPureBye = (m.p1 && m.p1.isBye) && (m.p2 && m.p2.isBye);
           if(isPureBye){
             reportBtn.disabled = true;
-            status.innerHTML = `<span class="pending">Unused BYE slot</span>`;
           }
 
           reportBtn.addEventListener('click', () => {
@@ -1041,7 +1086,10 @@
         format: 'single',
         bestOf: 3,
         seedingMode: 'seeded',
-        thirdPlace: false
+        thirdPlace: false,
+        totalRounds: null,
+        bracketSize: null,
+        byes: null
       };
       state.lastSavedId = null;
 
@@ -1141,13 +1189,16 @@
         }
 
         state.lastSavedId = data.id;
-        state.settings = data.settings || {
+        state.settings = Object.assign({
           name: data.name || 'My Tournament',
           format: 'single',
           bestOf: 3,
           seedingMode: 'seeded',
-          thirdPlace: false
-        };
+          thirdPlace: false,
+          totalRounds: null,
+          bracketSize: null,
+          byes: null
+        }, data.settings || {});
 
         const d = data.data || {};
         state.participants        = d.participants || [];
@@ -1284,6 +1335,7 @@
       renderSaveStatus(false);
       generateBtn.addEventListener('click', generateBracket);
       loadTournamentList();
+      updateBracketMath();
     }
 
     document.addEventListener('DOMContentLoaded', init);
