@@ -416,7 +416,7 @@
             <label>
               Tournament Name
             </label>
-            <input type="text" id="tournament-name" placeholder="My Free Fire Cup"/>
+            <input type="text" id="tournament-name" placeholder="My Tournament"/>
           </div>
 
           <div class="field field-row">
@@ -969,7 +969,7 @@
     // ------- INIT -------
     function init(){
       // Seed with a few demo participants
-      const demoNames = ['Team A','Team B','Team C','Team D','Team E','Team F','Team G','Team H'];
+      const demoNames = ['Player 1','Player 2','Player 3','Player 4','Player 5','Player 6','Player 7','Player 8','Player 9','Player 10'];
       demoNames.forEach(n => state.participants.push(createParticipant(n)));
       renderParticipants();
       nameInput.value = state.settings.name;
