@@ -805,6 +805,7 @@
     }
 
     // Round Robin scheduler (all-play-all) using circle method
+    // If players are odd, exactly ONE BYE is added and rotates so BYE never repeats for the same team.
     function buildRoundRobinSchedule(players){
       const arr = players.slice();
       const hasBye = arr.length % 2 === 1;
@@ -835,57 +836,45 @@
       return schedule;
     }
 
-    // Swiss-style scheduler (static schedule, avoids rematches where possible)
+    // Swiss-style scheduler:
+    // - If players are odd, adds a SINGLE BYE seat.
+    // - Uses the same rotation as round-robin, so that BYE moves each round.
+    // - Within the scheduled rounds, no team gets BYE more than once.
     function buildSwissSchedule(players){
       const arr = players.slice();
+
+      // If odd number of players, add exactly ONE BYE seat
       if(arr.length % 2 === 1){
         arr.push({ id:'bye', name:'BYE', isBye:true });
       }
-      const n = arr.length;
-      const base = Math.ceil(Math.log2(n));
-      const rounds = Math.min(n - 1, base + 1);
-      const played = new Set();
 
-      function pairKey(a,b){
-        const id1 = a.id || '';
-        const id2 = b.id || '';
-        return id1 < id2 ? id1 + '::' + id2 : id2 + '::' + id1;
-      }
+      const n = arr.length;
+      const half = n / 2;
+
+      // Number of rounds: typical Swiss is ~log2(N) + 1;
+      // use original player count here, not including BYE.
+      const originalCount = players.length || 1;
+      const base = Math.ceil(Math.log2(originalCount));
+      const rounds = Math.min(n - 1, base + 1);  // <= n-1 ensures BYE won't repeat
 
       const schedule = [];
 
-      for(let r=0; r<rounds; r++){
-        const pool = arr.slice(); // naive: static ordering per round
+      for(let r = 0; r < rounds; r++){
         const roundPairings = [];
 
-        while(pool.length > 1){
-          const p1 = pool.shift();
-          let idx2 = -1;
-
-          // Prefer opponent with no previous pairing
-          for(let i=0; i<pool.length; i++){
-            const p2 = pool[i];
-            if(p1.isBye || p2.isBye) continue;
-            const k = pairKey(p1,p2);
-            if(!played.has(k)){
-              idx2 = i;
-              break;
-            }
-          }
-
-          if(idx2 === -1){
-            // fallback: first available
-            idx2 = 0;
-          }
-          const p2 = pool.splice(idx2,1)[0];
-
-          roundPairings.push([p1,p2]);
-          if(!p1.isBye && !p2.isBye){
-            played.add(pairKey(p1,p2));
-          }
+        for(let i = 0; i < half; i++){
+          const p1 = arr[i];
+          const p2 = arr[n - 1 - i];
+          roundPairings.push([p1, p2]);
         }
 
         schedule.push(roundPairings);
+
+        // Rotate array (circle method) so BYE seat rotates and doesn't stick to one team.
+        const fixed = arr[0];
+        const rest = arr.slice(1);
+        rest.unshift(rest.pop());
+        arr.splice(0, arr.length, fixed, ...rest);
       }
 
       return schedule;
@@ -904,18 +893,21 @@
       }
 
       if(format === 'roundrobin'){
-        const rounds = n - 1;
-        const totalMatches = n * (n - 1) / 2;
+        const effectiveN = n;
+        const hasBye = effectiveN % 2 === 1;
+        const size = hasBye ? effectiveN + 1 : effectiveN;
+        const rounds = size - 1;
+        const totalMatches = effectiveN * (effectiveN - 1) / 2;
         bracketMath.textContent =
-          `${n} participants • Round Robin: ${rounds} rounds • ${totalMatches} matches total.`;
+          `${effectiveN} participants • Round Robin: ${rounds} rounds • ${totalMatches} matches total • 1 rotating BYE if odd.`;
         return;
       }
 
       if(format === 'swiss'){
         const base = Math.ceil(Math.log2(n));
-        const rounds = Math.min(n - 1, base + 1);
+        const rounds = Math.min((n + (n%2 ? 1 : 0)) - 1, base + 1);
         bracketMath.textContent =
-          `${n} participants • Swiss-style: ~${rounds} rounds (static schedule, avoids rematches where possible).`;
+          `${n} participants • Swiss-style: ~${rounds} rounds • Single rotating BYE if odd (no repeat BYE for same team).`;
         return;
       }
 
@@ -1183,7 +1175,6 @@
         return;
       }
 
-      // For elimination, we propagate; for others, we just set winner highlight.
       const isElim = (state.settings.format === 'single' || state.settings.format === 'double');
 
       if(isElim){
@@ -1285,7 +1276,7 @@
     }
 
     function generateRoundRobinBracket(seeded){
-      const players = seeded.slice(); // no byes yet – handled inside scheduler if needed
+      const players = seeded.slice();
       const schedule = buildRoundRobinSchedule(players);
 
       state.stageRanges = []; // not used for RR
