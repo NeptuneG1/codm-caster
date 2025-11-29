@@ -1,456 +1,380 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>COD:M — Team Comparison + Series Viewer</title>
-<meta name="theme-color" content="#0d1014"/>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <meta charset="UTF-8" />
+  <title>Sadhguru in Malaysia 2026 — Countdown</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<style>
-  :root{
-    --bg:#0d1014; --panel:#292d42; --panel2:#1e2432; --ink:#f3f6fa; --muted:#b8c0cc;
-    --brand:#ffe93b; --brandText:#0b0d0e; --line:#4c525d; --chip:#213830;
-    --good:#62e887; --bad:#ff6b6b; --accent:#7fd2ff;
-  }
-  *{box-sizing:border-box}
-  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif}
-  a{color:var(--brand);text-decoration:none}
-  a:hover{text-decoration:underline}
-  header{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,#141a23 0%,#0d1014 100%);border-bottom:2px solid var(--brand)}
-  .head{display:flex;align-items:center;gap:14px;max-width:1240px;margin:0 auto;padding:12px 14px}
-  .logo{width:36px;height:36px;border-radius:8px;object-fit:contain;background:#0d1014;border:1px solid #2a3144;box-shadow:0 6px 16px rgba(0,0,0,.35)}
-  h1{margin:0;font-size:1.1rem;letter-spacing:.4px;color:var(--brand)}
-  .shell{max-width:1240px;margin:18px auto;padding:0 12px}
-  .block{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
-  .block h2{margin:0 0 8px 0;color:#fff}
-  .muted{color:var(--muted)}
+  <!-- Optional: Spiritual-feel fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Nunito+Sans:wght@300;400;600&display=swap" rel="stylesheet"/>
 
-  /* Controls */
-  .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-  .chip{background:var(--chip);border:1px solid var(--line);color:#d2efe1;border-radius:999px;padding:6px 10px}
-  .controls select{background:#151b26;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:.9rem}
-  .btn{background:var(--brand);color:#0c0e10;border:0;border-radius:10px;padding:8px 12px;font-weight:800;cursor:pointer}
-  .btn.secondary{background:#1a2030;color:#d6dbe6;border:1px solid var(--line)}
+  <style>
+    :root {
+      --bg:#05060a;
+      --ink:#f8f6f0;
+      --muted:#d2d0c2;
+      --accent:#f6c453;
+      --accent-soft:rgba(246,196,83,0.4);
+      --teal:#50d0c5;
+      --card:#05060aee;
+      --line:rgba(255,255,255,0.18);
+      --radius-lg:22px;
+      --radius-sm:12px;
+    }
 
-  /* Comparison */
-  .cmp-grid{display:grid;grid-template-columns:1fr;gap:12px}
-  @media(min-width:1100px){ .cmp-grid{grid-template-columns:1fr 1fr} }
-  .card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px}
-  .card h3{margin:0 0 6px 0}
-  .kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-  .tile{background:#141a1f;border:1px solid var(--line);border-radius:10px;padding:8px}
-  .k{font-size:.78rem;color:var(--muted)}
-  .v{font-weight:900}
+    *{box-sizing:border-box;margin:0;padding:0}
 
-  /* Compact tables */
-  .compact table{width:100%;border-collapse:collapse;font-size:.84rem;line-height:1.15}
-  .compact thead th{background:#141a1f}
-  .compact th,.compact td{border-bottom:1px solid #3a4255;padding:6px 8px;vertical-align:middle}
-  .right{text-align:right}
-  .compact tbody tr.clickable{cursor:pointer}
-  .compact tbody tr.clickable:hover{background:#141a1f}
+    body{
+      min-height:100vh;
+      font-family:"Nunito Sans",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+      color:var(--ink);
+      background:
+        radial-gradient(circle at 10% 0%,rgba(255,255,255,0.08),transparent 55%),
+        radial-gradient(circle at 90% 100%,rgba(19,173,179,0.35),transparent 55%),
+        linear-gradient(145deg,rgba(0,0,0,0.92),rgba(0,0,0,0.96)),
+        url("IMG_0697.JPG") center/cover fixed no-repeat;
+    }
 
-  /* Series card */
-  .series-card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-top:10px}
-  .series-card.highlight{box-shadow:0 0 0 2px var(--accent) inset}
-  .series-head{display:grid;grid-template-columns:1fr max-content 1fr;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line);background:#1a2030}
-  .team-name{font-weight:900;justify-self:start}
-  .opp-name{font-weight:900;justify-self:end}
-  .series-score{justify-self:center;font-weight:900;font-size:1.05rem;color:#fff;background:#101420;border:1px solid var(--line);border-radius:8px;padding:6px 10px}
-  .series-meta{grid-column:1 / -1; font-size:.85rem;color:var(--muted)}
-  .map-row{display:grid;grid-template-columns:220px 1fr 220px;gap:10px;padding:8px 12px;border-top:1px solid #2f3545;align-items:center}
-  @media(max-width:700px){ .map-row{grid-template-columns:160px 1fr 160px} }
-  .map-row:nth-child(odd){background:#181e2a}
-  .side{display:grid;gap:8px;align-items:center}
-  .side-left{grid-template-columns:16px 1fr;justify-self:start}
-  .side-right{grid-template-columns:1fr 16px;justify-self:end}
-  .scoreL{font-weight:800;text-align:right}
-  .scoreR{font-weight:800;text-align:left}
-  .tick,.cross{width:14px;height:14px;border-radius:50%}
-  .tick{background:var(--good)}
-  .cross{background:var(--bad)}
-  .dim{opacity:.55}
-  .mode-stack{display:flex;flex-direction:column;line-height:1.15;justify-self:center;align-items:center;text-align:center}
-  .mode-pill{font-size:.7rem;border:1px solid var(--line);padding:1px 6px;border-radius:999px;background:#111827;color:#e8ecf5;width:max-content;margin:0 auto}
-  .map-title{font-size:.95rem;margin-top:2px;text-align:center}
-  .series-foot{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-top:1px solid var(--line);background:#1a2030;color:var(--muted);font-size:.85rem}
-</style>
+    .overlay{
+      min-height:100vh;
+      backdrop-filter:blur(5px);
+      background:radial-gradient(circle at top,rgba(0,0,0,0.45),rgba(0,0,0,0.9));
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+    }
+
+    .card{
+      max-width:960px;
+      width:100%;
+      padding:32px 28px 28px;
+      background:var(--card);
+      border-radius:var(--radius-lg);
+      border:1px solid var(--accent-soft);
+      box-shadow:0 30px 70px rgba(0,0,0,0.85);
+    }
+
+    .kicker{
+      text-transform:uppercase;
+      letter-spacing:.18em;
+      font-size:.72rem;
+      color:var(--teal);
+      margin-bottom:6px;
+    }
+
+    h1{
+      font-family:"Cinzel",serif;
+      font-size:clamp(1.9rem,3.4vw,2.5rem);
+      letter-spacing:.06em;
+      text-transform:uppercase;
+      margin-bottom:10px;
+    }
+
+    .subtitle{
+      font-size:.98rem;
+      color:var(--muted);
+      max-width:40rem;
+      line-height:1.5;
+    }
+
+    .primary-section{
+      margin-top:26px;
+      padding-top:20px;
+      border-top:1px solid var(--line);
+    }
+
+    .section-title{
+      font-size:.88rem;
+      text-transform:uppercase;
+      letter-spacing:.18em;
+      color:var(--muted);
+      margin-bottom:10px;
+    }
+
+    .date-line{
+      font-size:.9rem;
+      margin-bottom:18px;
+      color:var(--muted);
+    }
+    .date-line span{
+      color:var(--accent);
+      font-weight:600;
+    }
+
+    .count-grid{
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:16px;
+    }
+
+    .count-box{
+      padding:14px 10px 18px;
+      border-radius:var(--radius-sm);
+      border:1px solid var(--line);
+      background:
+        radial-gradient(circle at top,rgba(246,196,83,0.12),transparent 60%),
+        rgba(8,10,20,0.9);
+      text-align:center;
+    }
+
+    .count-label{
+      font-size:.72rem;
+      text-transform:uppercase;
+      letter-spacing:.16em;
+      color:var(--muted);
+      margin-bottom:6px;
+    }
+
+    .count-number{
+      font-family:"Cinzel",serif;
+      font-size:clamp(2.2rem,4vw,3.1rem);
+      line-height:1;
+    }
+
+    .count-note{
+      margin-top:10px;
+      font-size:.75rem;
+      color:var(--muted);
+    }
+
+    .secondary{
+      margin-top:28px;
+      padding-top:20px;
+      border-top:1px dashed var(--line);
+    }
+
+    .accent-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      font-size:.78rem;
+      padding:6px 10px;
+      border-radius:999px;
+      background:rgba(0,0,0,0.6);
+      border:1px solid var(--accent-soft);
+      color:var(--accent);
+      margin-bottom:8px;
+    }
+
+    .accent-dot{
+      width:7px;
+      height:7px;
+      border-radius:50%;
+      background:var(--teal);
+    }
+
+    .reg{
+      margin-top:26px;
+      padding-top:18px;
+      border-top:1px solid var(--line);
+      font-size:.86rem;
+    }
+
+    .reg p{
+      margin-bottom:10px;
+      color:var(--muted);
+    }
+
+    .reg a{
+      color:var(--accent);
+      text-decoration:none;
+      border-bottom:1px solid rgba(246,196,83,0.55);
+    }
+    .reg a:hover{
+      border-bottom-color:var(--teal);
+      color:var(--teal);
+    }
+
+    .disclaimer{
+      margin-top:10px;
+      font-size:.74rem;
+      color:var(--muted);
+      opacity:.9;
+    }
+
+    .footer-note{
+      margin-top:18px;
+      font-size:.7rem;
+      color:var(--muted);
+    }
+
+    @media (max-width:720px){
+      .card{
+        padding:22px 18px 20px;
+      }
+      .count-grid{
+        grid-template-columns:1fr;
+      }
+      h1{
+        text-align:left;
+      }
+    }
+  </style>
 </head>
 <body>
-<header>
-  <div class="head">
-    <img src="https://i.imgur.com/K0TTjUC.png" alt="COD:M Logo" class="logo">
-    <h1>COD:M — Team Comparison</h1>
-    <a href="index.html" class="btn secondary" style="margin-left:auto">← Home</a>
+  <div class="overlay">
+    <main class="card">
+      <div class="kicker">Sadhguru in Malaysia 2026</div>
+      <h1>Sadhguru in Malaysia</h1>
+      <p class="subtitle">
+        A space for inner transformation. Stay tuned as we journey towards Sadhguru’s visit to Malaysia in 2026,
+        and honour the volunteers who began preparing long before the lights come on.
+      </p>
+
+      <!-- Main countdown -->
+      <section class="primary-section">
+        <div class="section-title">Countdown to Sadhguru in Malaysia</div>
+        <p class="date-line">
+          Main program date (tentative):
+          <span>26 October 2026 &middot; Malaysia</span>
+        </p>
+
+        <div class="count-grid">
+          <div class="count-box">
+            <div class="count-label">Months</div>
+            <div id="eventMonths" class="count-number">0</div>
+          </div>
+          <div class="count-box">
+            <div class="count-label">Days</div>
+            <div id="eventDays" class="count-number">0</div>
+          </div>
+          <div class="count-box">
+            <div class="count-label">Hours</div>
+            <div id="eventHours" class="count-number">0</div>
+          </div>
+        </div>
+        <p id="eventStatus" class="count-note">
+          Counting down in calendar months, days, and hours until the tentative program date.
+        </p>
+      </section>
+
+      <!-- Elapsed since first volunteer meeting -->
+      <section class="secondary">
+        <div class="accent-pill">
+          <span class="accent-dot"></span>
+          First Volunteer Meeting
+        </div>
+        <p class="date-line">
+          We first gathered on
+          <span>23 November 2025 &middot; 8:30 PM</span>
+        </p>
+
+        <div class="count-grid">
+          <div class="count-box">
+            <div class="count-label">Months Since</div>
+            <div id="meetMonths" class="count-number">0</div>
+          </div>
+          <div class="count-box">
+            <div class="count-label">Days Since</div>
+            <div id="meetDays" class="count-number">0</div>
+          </div>
+          <div class="count-box">
+            <div class="count-label">Hours Since</div>
+            <div id="meetHours" class="count-number">0</div>
+          </div>
+        </div>
+        <p class="count-note">
+          This is how long the volunteers have already been walking this journey together.
+        </p>
+      </section>
+
+      <!-- Registration & disclaimer -->
+      <section class="reg">
+        <p>
+          Please note: the program date is tentative and may change if the need arises.
+          To stay updated on any changes and be informed when registrations open,
+          kindly register your interest here:
+        </p>
+        <p>
+          <a href="https://iyg.to/eoe-eoi/555367/RY4X99" target="_blank" rel="noopener">
+            https://iyg.to/eoe-eoi/555367/RY4X99
+          </a>
+        </p>
+        <p class="disclaimer">
+          By registering your interest you will receive updates on final dates, venue,
+          and related volunteer information for Sadhguru in Malaysia 2026.
+        </p>
+        <p class="footer-note">
+          For the best experience, keep this page open during events &mdash; the timers update in real time.
+        </p>
+      </section>
+    </main>
   </div>
-</header>
 
-<div class="shell">
-  <!-- TEAM COMPARISON -->
-  <section class="block">
-    <h2>Team Comparison</h2>
-    <div class="controls" style="margin-bottom:8px">
-      <label class="chip">Team 1
-        <select id="cmpTeamA"></select>
-      </label>
-      <button class="btn secondary" id="cmpSwap" title="Swap teams">⇄ Swap</button>
-      <label class="chip">Team 2
-        <select id="cmpTeamB"></select>
-      </label>
-      <span class="muted">Scope: all data (allowed maps)</span>
-    </div>
+  <script>
+    // --- Dates (local time) ---
+    // Sadhguru in Malaysia (tentative)
+    const EVENT_DATE = new Date(2026, 9, 26, 0, 0, 0); // 26 October 2026, 00:00
+    // First volunteer meeting: 23 November 2025, 8:30 PM
+    const MEETING_DATE = new Date(2025, 10, 23, 20, 30, 0);
 
-    <div id="cmpEmpty" class="muted">Pick <b>Team 1</b> and <b>Team 2</b> to compare.</div>
-    <div id="cmpWrap" class="cmp-grid" style="display:none">
-      <div class="card">
-        <h3 id="cmpNameA">Team A</h3>
-        <div class="kv" id="cmpTilesA"></div>
-        <div class="compact" style="margin-top:8px">
-          <h3>By Mode</h3>
-          <div id="cmpModeA"></div>
-        </div>
-        <div class="compact" style="margin-top:8px">
-          <h3>By Map</h3>
-          <div id="cmpMapA"></div>
-        </div>
-      </div>
-      <div class="card">
-        <h3 id="cmpNameB">Team B</h3>
-        <div class="kv" id="cmpTilesB"></div>
-        <div class="compact" style="margin-top:8px">
-          <h3>By Mode</h3>
-          <div id="cmpModeB"></div>
-        </div>
-        <div class="compact" style="margin-top:8px">
-          <h3>By Map</h3>
-          <div id="cmpMapB"></div>
-        </div>
-      </div>
-    </div>
-  </section>
+    function diffInCalendarUnits(start, end){
+      // Ensure start <= end
+      let s = new Date(start.getTime());
+      let e = new Date(end.getTime());
+      let future = true;
+      if (e < s){
+        future = false;
+        [s, e] = [e, s];
+      }
 
-  <!-- H2H SUMMARY TABLE -->
-  <section class="block compact" id="h2hBlock">
-    <h2>Head-to-Head Matches</h2>
-    <div class="muted" id="h2hMeta">Pick two teams above to see their history.</div>
-    <div id="h2hTbl"></div>
-  </section>
+      let years   = e.getFullYear() - s.getFullYear();
+      let months  = e.getMonth()    - s.getMonth();
+      let days    = e.getDate()     - s.getDate();
+      let hours   = e.getHours()    - s.getHours();
+      let minutes = e.getMinutes()  - s.getMinutes();
+      let seconds = e.getSeconds()  - s.getSeconds();
 
-  <!-- ALL SERIES VIEWERS FOR THIS PAIR -->
-  <section class="block" id="seriesList">
-    <h2>Series Viewer (all matchups)</h2>
-    <div id="seriesHost" class="series-host"></div>
-  </section>
-</div>
+      if (seconds < 0){ seconds += 60; minutes--; }
+      if (minutes < 0){ minutes += 60; hours--; }
+      if (hours < 0){ hours += 24; days--; }
 
-<script>
-/* ===== Supabase ===== */
-const SUPA_URL = 'https://fjdyppkanjnvyscqrfum.supabase.co';
-const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZqZHlwcGthbmpudnlzY3FyZnVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAzNDU1NzIsImV4cCI6MjA3NTkyMTU3Mn0.ssEN7uA9BVm9AkhsjkWxhPzV1-VQVxc4-u7LS2wt4Aw';
-const client = supabase.createClient(SUPA_URL, SUPA_KEY);
+      if (days < 0){
+        const prevMonth = new Date(e.getFullYear(), e.getMonth(), 0); // last day of prev month
+        days += prevMonth.getDate();
+        months--;
+      }
+      if (months < 0){
+        months += 12;
+        years--;
+      }
 
-/* ===== Helpers ===== */
-const el = id => document.getElementById(id);
-const n  = v => Number(v ?? 0) || 0;
-const norm= v => (v==null ? '' : String(v)).trim();
-const key = v => norm(v).toLowerCase();
-const sum = (arr, k) => arr.reduce((a,r)=>a+n(r[k]),0);
-const groupBy = (arr, keyFn) => arr.reduce((m,r)=>{ const k = keyFn(r); (m[k]=m[k]||[]).push(r); return m; },{});
-const distinct = (rows,key) => Array.from(new Set(rows.map(r=>r[key]).filter(Boolean)));
-const cleanWL = v => { const s = norm(v).toUpperCase(); return s==='W' || s==='L' ? s : ''; };
-const MODE_ORDER = ['Hardpoint','Search & Destroy','Control'];
-function normalizeMode(m){
-  const s = norm(m).toLowerCase();
-  if (!s) return '';
-  if (s.includes('hardpoint')) return 'Hardpoint';
-  if (s.includes('search') || s.includes('snd')) return 'Search & Destroy';
-  if (s.includes('control')) return 'Control';
-  return norm(m);
-}
+      const totalMonths = years * 12 + months;
+      return { future, totalMonths, days, hours, minutes, seconds };
+    }
 
-/* ===== Allowed maps/teams ===== */
-const ALLOWED_MAPS = new Set(['Summit','Hacienda','Apocalypse','Slums','Combine','Tunisia','Firing Range','Kurohana Metropolis','Standoff','Coastal','Raid','Takeoff','Crossfire','Arsenal'].map(key));
-let ALLOWED_TAGS = new Set();
-function isAllowedMap(m){ return ALLOWED_MAPS.has(key(m)); }
-function isAllowedTeam(t){ return !ALLOWED_TAGS.size ? true : ALLOWED_TAGS.has(key(t)); }
+    function updateTimers(){
+      const now = new Date();
 
-/* ===== Data ===== */
-let ALL = [];        // normalized rows
-let GAME_ENTRIES = [];// merged map-level entries, both perspectives
+      // Countdown to event
+      const eventDiff = diffInCalendarUnits(now, EVENT_DATE);
+      const eventMonthsEl = document.getElementById("eventMonths");
+      const eventDaysEl   = document.getElementById("eventDays");
+      const eventHoursEl  = document.getElementById("eventHours");
+      const eventStatusEl = document.getElementById("eventStatus");
 
-/* ===== Fetch ===== */
-async function fetchAllMatches(){
-  const step = 1000; let from = 0; const out = [];
-  for(;;){
-    const { data, error } = await client.from('mp_data').select('*').order('id',{ascending:true}).range(from, from+step-1);
-    if (error){ console.error(error); alert('Failed to load mp_data: '+error.message); break; }
-    const rows = data || []; out.push(...rows); if (rows.length < step) break; from += rows.length;
-  }
-  return out;
-}
-async function fetchAllowedTags(){
-  const { data, error } = await client.from('player_list').select('Tag');
-  if (error){ console.error('player_list fetch failed:', error); return new Set(); }
-  const tags = (data||[]).map(r=>norm(r.Tag)).filter(Boolean);
-  return new Set(tags.map(key));
-}
+      if (!eventDiff.future){
+        eventMonthsEl.textContent = "0";
+        eventDaysEl.textContent   = "0";
+        eventHoursEl.textContent  = "0";
+        eventStatusEl.textContent = "Sadhguru is in Malaysia — may this be a time of profound inner transformation.";
+      } else {
+        eventMonthsEl.textContent = eventDiff.totalMonths;
+        eventDaysEl.textContent   = eventDiff.days;
+        eventHoursEl.textContent  = eventDiff.hours;
+        eventStatusEl.textContent = "Counting down in calendar months, days, and hours until the tentative program date.";
+      }
 
-/* ===== Build helpers ===== */
-function seriesKeyNeutral(r){
-  const tourn = norm(r.Tournament); const stage = norm(r.Stage), day = norm(r.Day), ser = norm(r.Series);
-  const a = norm(r.Tag), b = norm(r['Vs Opponent']); const pair = [a,b].sort((x,y)=>x.localeCompare(y)).join('~');
-  return `${tourn}|${stage}|${day}|${ser}|${pair}`;
-}
-function buildGameEntries(rows){
-  const valid = rows.filter(r=> cleanWL(r['W/L']) );
-  const g = groupBy(valid, r=> `${seriesKeyNeutral(r)}|${n(r.MATCHES)}|${norm(r.Map)}|${norm(r.ModeN)}`);
-  const out = [];
-  Object.values(g).forEach(list=>{
-    if (!list.length) return;
-    let rA = list[0];
-    let rB = list.find(x => norm(x.Tag)!==norm(rA.Tag)) || null;
-    const [tourn,stage,day,ser] = (seriesKeyNeutral(rA)).split('|');
-    const A = norm(rA.Tag); const B = rB ? norm(rB.Tag) : norm(rA['Vs Opponent']);
-    const aScore = n(rA.Score); const bScore = rB ? n(rB.Score) : n(rA['Opp Score']);
-    const map = norm(rA.Map); const mode= norm(rA.ModeN); const idx = n(rA.MATCHES);
-    if ((aScore + bScore) <= 0) return;
-    out.push({tournament:tourn, seriesNeutral: seriesKeyNeutral(rA), stage, day, seriesNo: ser, team: A, opp: B, mode, map, mapIdx: idx, ownScore: aScore, oppScore: bScore, win: aScore>bScore ? 1:0, loss: aScore<bScore ? 1:0});
-    out.push({tournament:tourn, seriesNeutral: seriesKeyNeutral(rA), stage, day, seriesNo: ser, team: B, opp: A, mode, map, mapIdx: idx, ownScore: bScore, oppScore: aScore, win: bScore>aScore ? 1:0, loss: bScore<aScore ? 1:0});
-  });
-  return out;
-}
+      // Time elapsed since first volunteer meeting
+      const meetDiff = diffInCalendarUnits(MEETING_DATE, now);
+      document.getElementById("meetMonths").textContent = meetDiff.totalMonths;
+      document.getElementById("meetDays").textContent   = meetDiff.days;
+      document.getElementById("meetHours").textContent  = meetDiff.hours;
+    }
 
-/* ===== UI helpers ===== */
-function setOptions(sel, values){
-  sel.innerHTML = `<option value="">— Select —</option>` + values.map(v=>`<option value="${v}">${v}</option>`).join('');
-}
-function listAllowedTeamsPresent(rowsBase=ALL){
-  const present = new Map(); // lower -> original casing
-  rowsBase.forEach(r=>{
-    [r.Tag, r['Vs Opponent']].forEach(name=>{
-      const k = key(name);
-      if (ALLOWED_TAGS.has(k) && !present.has(k)) present.set(k, norm(name));
-    });
-  });
-  return Array.from(present.values());
-}
-function renderTable(hostId, rows, cols, empty='No rows.'){
-  const host = el(hostId);
-  if (!rows.length){ host.innerHTML = `<div class="muted">${empty}</div>`; return; }
-  const thead = `<thead><tr>${cols.map(c=>`<th class="${c.right?'right':''}">${c.label}</th>`).join('')}</tr></thead>`;
-  const tbodyHTML = rows.map(r=>`<tr>${cols.map(c=>{
-    let v = r[c.key];
-    if (c.format==='pct') v = (typeof v==='number') ? (v*100).toFixed(1)+'%' : '—';
-    return `<td class="${c.right?'right':''}">${v ?? '—'}</td>`;
-  }).join('')}</tr>`).join('');
-  host.innerHTML = `<table class="table"><thead>${thead}</thead><tbody>${tbodyHTML}</tbody></table>`;
-  const tbody = host.querySelector('tbody');
-  if (hostId==='h2hTbl'){
-    [...tbody.rows].forEach((tr,i)=>{
-      tr.classList.add('clickable');
-      tr.addEventListener('click', ()=>{
-        const k = rows[i].seriesKey;
-        const elCard = document.querySelector(`[data-series="${CSS.escape(k)}"]`);
-        if (elCard){
-          elCard.scrollIntoView({behavior:'smooth',block:'start'});
-          elCard.classList.add('highlight');
-          setTimeout(()=>elCard.classList.remove('highlight'), 1000);
-        }
-      });
-    });
-  }
-}
-
-function quickStats(rows){
-  const games = rows.length;
-  const w = rows.filter(r=>cleanWL(r['W/L'])==='W').length;
-  const l = rows.filter(r=>cleanWL(r['W/L'])==='L').length;
-  const ptsFor = sum(rows,'Score');
-  const ptsAg  = sum(rows,'Opp Score');
-  return { games, wins:w, losses:l, winrate: games ? (w/games) : 0, ptsFor, ptsAg, diff: ptsFor-ptsAg };
-}
-function byMode(rows){
-  const g = groupBy(rows, r=>r.ModeN||'—');
-  return Object.entries(g).map(([mode,list])=>{
-    const qs = quickStats(list);
-    return { mode, games:qs.games, wins:qs.wins, losses:qs.losses, winrate:qs.winrate };
-  }).sort((a,b)=> {
-    const ai = MODE_ORDER.indexOf(a.mode), bi = MODE_ORDER.indexOf(b.mode);
-    return (ai-bi) || (b.winrate-a.winrate) || (b.games-a.games);
-  });
-}
-function renderTeamMode(hostId, rows){
-  const list = byMode(rows).map(r=>({mode:r.mode, games:r.games, wins:r.wins, losses:r.losses, winrate:r.winrate}));
-  renderTable(hostId, list, [
-    {label:'Mode',key:'mode'},
-    {label:'G',key:'games',right:true},
-    {label:'W',key:'wins',right:true},
-    {label:'L',key:'losses',right:true},
-    {label:'Win %',key:'winrate',format:'pct',right:true}
-  ], '—');
-}
-function byMap(rows){
-  const g = groupBy(rows, r=>norm(r.Map)||'—');
-  return Object.entries(g).map(([map,list])=>{
-    const qs = quickStats(list);
-    return { map, games:qs.games, wins:qs.wins, losses:qs.losses, winrate:qs.winrate };
-  })
-  // Sort by Win% (desc), then games (desc), then map name A→Z
-  .sort((a,b)=> (b.winrate - a.winrate) || (b.games - a.games) || a.map.localeCompare(b.map));
-}
-function renderTeamMap(hostId, rows){
-  const list = byMap(rows).map(r=>({map:r.map, games:r.games, wins:r.wins, losses:r.losses, winrate:r.winrate}));
-  renderTable(hostId, list, [
-    {label:'Map',key:'map'},
-    {label:'G',key:'games',right:true},
-    {label:'W',key:'wins',right:true},
-    {label:'L',key:'losses',right:true},
-    {label:'Win %',key:'winrate',format:'pct',right:true}
-  ], '—');
-}
-function renderKV(hostId, kv){
-  el(hostId).innerHTML = kv.map(x=>`<div class="tile"><div class="k">${x.k}</div><div class="v">${x.v}</div></div>`).join('');
-}
-function teamQuick(rows){
-  const s = quickStats(rows);
-  return [
-    {k:'Games',v:s.games},
-    {k:'Wins',v:s.wins},
-    {k:'Losses',v:s.losses},
-    {k:'Win %',v: (s.winrate*100).toFixed(1)+'%'},
-    {k:'Pts For',v:s.ptsFor},
-    {k:'Pts Ag',v:s.ptsAg},
-    {k:'Diff',v:s.diff}
-  ];
-}
-
-/* ===== Comparison ===== */
-function renderComparison(){
-  const a = el('cmpTeamA').value, b = el('cmpTeamB').value;
-  if (!a || !b || key(a)===key(b)){
-    el('cmpWrap').style.display = 'none';
-    el('cmpEmpty').style.display = '';
-    el('h2hTbl').innerHTML = '';
-    el('h2hMeta').textContent = 'Pick two teams above to see their history.';
-    el('seriesHost').innerHTML='';
-    return;
-  }
-  el('cmpNameA').textContent = a; el('cmpNameB').textContent = b;
-  const aRows = ALL.filter(r=> key(r.Tag)===key(a) && cleanWL(r['W/L']));
-  const bRows = ALL.filter(r=> key(r.Tag)===key(b) && cleanWL(r['W/L']));
-  renderKV('cmpTilesA', teamQuick(aRows)); renderKV('cmpTilesB', teamQuick(bRows));
-  renderTeamMode('cmpModeA', aRows); renderTeamMode('cmpModeB', bRows);
-  renderTeamMap('cmpMapA', aRows);   renderTeamMap('cmpMapB', bRows);
-  el('cmpEmpty').style.display = 'none'; el('cmpWrap').style.display = '';
-  renderH2HAndSeries(a,b);
-}
-
-function renderH2HAndSeries(a,b){
-  // series summary using GAME_ENTRIES (A perspective)
-  const A = norm(a), B = norm(b);
-  const rows = GAME_ENTRIES.filter(e => norm(e.team)===A && norm(e.opp)===B);
-  const bySeries = groupBy(rows, e=>e.seriesNeutral);
-  const series = Object.values(bySeries).map(list=>{
-    const s = list[0];
-    const aW = list.reduce((t,e)=>t+e.win,0);
-    const aL = list.reduce((t,e)=>t+e.loss,0);
-    return {
-      tournament:s.tournament, stage:s.stage, day:s.day, series:s.seriesNo,
-      aWins:aW, bWins:aL, maps:list.length, seriesKey:s.seriesNeutral
-    };
-  }).sort((x,y)=>
-    (String(y.tournament).localeCompare(String(x.tournament))) ||
-    (String(y.stage).localeCompare(String(x.stage))) ||
-    ((+y.day||0)-(+x.day||0)) ||
-    ((+y.series||0)-(+x.series||0))
-  );
-
-  el('h2hMeta').textContent = series.length
-    ? `${series.length} series between ${a} and ${b} (latest first)`
-    : `No head-to-head series between ${a} and ${b}`;
-
-  renderTable('h2hTbl', series, [
-    {label:'Tournament',key:'tournament'},
-    {label:'Stage',key:'stage'},
-    {label:'Day',key:'day',right:true},
-    {label:'Series',key:'series',right:true},
-    {label:`${a} MW`,key:'aWins',right:true},
-    {label:`${b} MW`,key:'bWins',right:true},
-    {label:'Maps',key:'maps',right:true}
-  ], '—');
-
-  // Render all series cards below
-  const host = el('seriesHost'); host.innerHTML = '';
-  if (!series.length){
-    host.innerHTML = '<div class="muted">No series viewer to show.</div>';
-    return;
-  }
-  host.innerHTML = series.map(s=> renderSeriesCardHTML(rows.filter(e=> e.seriesNeutral===s.seriesKey), A, B)).join('');
-}
-
-function renderSeriesCardHTML(list, A, B){
-  const played = list.length;
-  const aWins = list.reduce((t,e)=>t+e.win,0);
-  const bWins = list.reduce((t,e)=>t+e.loss,0);
-  const s0 = list[0] || {};
-  const head = `
-    <div class="series-head">
-      <div class="team-name">${A}</div>
-      <div class="series-score">${aWins} : ${bWins} <span class="muted" style="font-weight:600"> (Bo${played})</span></div>
-      <div class="opp-name">${B}</div>
-      <div class="series-meta">${s0.tournament? (s0.tournament+' • ') : ''}${s0.stage||'—'} • Day ${s0.day||'—'} • Series ${s0.seriesNo||'—'}</div>
-    </div>`;
-  const rowsSorted = list.slice().sort((x,y)=>(x.mapIdx||0)-(y.mapIdx||0));
-  const body = rowsSorted.map(l=>{
-    const aWin = !!l.win;
-    const left  = `<div class="side side-left ${aWin?'':'dim'}"><span class="${aWin?'tick':'cross'}"></span><div class="scoreL">${l.ownScore}</div></div>`;
-    const mid   = `<div class="mode-stack"><span class="mode-pill">${l.mode||'—'}</span><div class="map-title">${l.map||'—'}</div></div>`;
-    const right = `<div class="side side-right ${aWin?'dim':''}"><div class="scoreR">${l.oppScore}</div><span class="${aWin?'cross':'tick'}"></span></div>`;
-    return `<div class="map-row">${left}${mid}${right}</div>`;
-  }).join('');
-  const foot = `<div class="series-foot"><span>Maps played: ${played}</span><span>&nbsp;</span></div>`;
-  return `<div class="series-card" data-series="${s0.seriesNeutral}">${head}${body}${foot}</div>`;
-}
-
-/* ===== Boot ===== */
-(async function init(){
-  ALLOWED_TAGS = await fetchAllowedTags();
-  const raw = await fetchAllMatches();
-
-  // normalize + hard filter:
-  // - include row if EITHER side is in player_list.Tag
-  // - maps limited to ALLOWED_MAPS
-  ALL = raw.map(r=>({
-      ...r,
-      Score: n(r.Score),
-      ['Opp Score']: n(r['Opp Score']),
-      MATCHES: n(r.MATCHES),
-      ModeN: normalizeMode(r.Mode),
-      ['W/L']: cleanWL(r['W/L']),
-      Tournament: norm(r.Tournament),
-      Tag: norm(r.Tag),
-      ['Vs Opponent']: norm(r['Vs Opponent']),
-      Map: norm(r.Map)
-  })).filter(r =>
-      (isAllowedTeam(r.Tag) || isAllowedTeam(r['Vs Opponent'])) &&
-      isAllowedMap(r.Map)
-  );
-
-  GAME_ENTRIES = buildGameEntries(ALL);
-
-  // Build team selects
-  const teams = listAllowedTeamsPresent(ALL);
-  setOptions(el('cmpTeamA'), teams);
-  setOptions(el('cmpTeamB'), teams);
-
-  // Wire
-  el('cmpSwap').addEventListener('click', ()=>{
-    const a=el('cmpTeamA'), b=el('cmpTeamB'); const v=a.value; a.value=b.value; b.value=v; renderComparison();
-  });
-  el('cmpTeamA').addEventListener('change', renderComparison);
-  el('cmpTeamB').addEventListener('change', renderComparison);
-})();
-</script>
+    updateTimers();
+    setInterval(updateTimers, 1000);
+  </script>
 </body>
 </html>
