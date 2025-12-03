@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -569,6 +570,14 @@
                 <span class="icon">＋</span>
                 Add participant
               </button>
+
+              <!-- NEW: Upload CSV/TXT -->
+              <button id="upload-participants-btn">
+                <span class="icon">📂</span>
+                Upload list (.csv / .txt)
+              </button>
+              <input type="file" id="participants-file-input" accept=".csv,.txt" style="display:none"/>
+
               <button id="shuffle-btn">
                 <span class="icon">🎲</span>
                 Shuffle list
@@ -674,6 +683,8 @@
 
     const participantsBody   = document.getElementById('participants-body');
     const addBtn             = document.getElementById('add-participant-btn');
+    const uploadBtn          = document.getElementById('upload-participants-btn');
+    const uploadInput        = document.getElementById('participants-file-input');
     const shuffleBtn         = document.getElementById('shuffle-btn');
     const clearBtn           = document.getElementById('clear-btn');
     const generateBtn        = document.getElementById('generate-btn');
@@ -1177,6 +1188,74 @@
       syncSettingsFromUI();
       updateBracketMath();
     });
+
+    // ------- UPLOAD PARTICIPANTS (CSV/TXT) -------
+    function parseParticipantNamesFromText(text){
+      const lines = text.split(/\r?\n/);
+      const names = [];
+
+      for(const raw of lines){
+        if(!raw) continue;
+        const line = raw.trim();
+        if(!line) continue;
+
+        // Take first column if CSV
+        const firstCell = line.split(',')[0].trim();
+        if(!firstCell) continue;
+
+        // Skip very simple header-looking rows like "Seed" or "Name"
+        const lc = firstCell.toLowerCase();
+        if((lc.includes('seed') || lc.includes('name')) && !/\d/.test(firstCell)){
+          continue;
+        }
+
+        names.push(firstCell);
+      }
+
+      return names;
+    }
+
+    if(uploadBtn && uploadInput){
+      uploadBtn.addEventListener('click', () => {
+        uploadInput.click();
+      });
+
+      uploadInput.addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if(!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const text = ev.target.result || '';
+          const names = parseParticipantNamesFromText(text);
+
+          if(!names.length){
+            alert('No participant names found in the uploaded file. Make sure each line has a name (first column for CSV).');
+            uploadInput.value = '';
+            return;
+          }
+
+          // Replace current participants with imported list
+          state.participants = [];
+          nextParticipantId = 1;
+          names.forEach(n => state.participants.push(createParticipant(n)));
+
+          renderParticipants();
+          renderSaveStatus(true);
+          recomputeBracketStructureIfExists();
+
+          alert(`Imported ${names.length} participants from "${file.name}".`);
+          uploadInput.value = '';
+        };
+
+        reader.onerror = () => {
+          alert('Failed to read the file. Please try again.');
+          uploadInput.value = '';
+        };
+
+        reader.readAsText(file);
+      });
+    }
 
     // ------- STAGES UI -------
     function renderStages(){
