@@ -1,380 +1,394 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Sadhguru in Malaysia 2026 — Countdown</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8" />
+<title>CODM — Map Veto (Admin View)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<style>
+  :root{
+    --bg:#05060a; --panel:#141828; --panel2:#191e30;
+    --ink:#f6f7fb; --muted:#9ca3c7;
+    --brand:#ffe93b; --accent:#7fd2ff;
+    --ban:#ff6b6b; --pick:#62e887;
+    --line:#272b3f;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{
+    background:#05060a;
+    color:var(--ink);
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;
+  }
+  body{padding:16px}
 
-  <!-- Optional: Spiritual-feel fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Nunito+Sans:wght@300;400;600&display=swap" rel="stylesheet"/>
+  .shell{
+    max-width:980px;
+    margin:0 auto;
+    background:radial-gradient(circle at top,#1b2035 0,#05060a 52%);
+    border-radius:16px;
+    padding:18px 18px 20px;
+    border:1px solid #262a3c;
+    box-shadow:0 22px 60px rgba(0,0,0,.8);
+  }
+  h1{
+    font-size:1.4rem;
+    margin-bottom:4px;
+  }
+  .sub{
+    font-size:.85rem;
+    color:var(--muted);
+    margin-bottom:14px;
+  }
 
-  <style>
-    :root {
-      --bg:#05060a;
-      --ink:#f8f6f0;
-      --muted:#d2d0c2;
-      --accent:#f6c453;
-      --accent-soft:rgba(246,196,83,0.4);
-      --teal:#50d0c5;
-      --card:#05060aee;
-      --line:rgba(255,255,255,0.18);
-      --radius-lg:22px;
-      --radius-sm:12px;
-    }
+  .grid{
+    display:grid;
+    grid-template-columns:1.1fr .9fr;
+    gap:12px;
+  }
+  @media(max-width:768px){
+    .grid{grid-template-columns:1fr}
+  }
 
-    *{box-sizing:border-box;margin:0;padding:0}
+  .panel{
+    background:var(--panel);
+    border-radius:12px;
+    padding:12px 14px;
+    border:1px solid var(--line);
+  }
+  .panel h2{
+    font-size:.95rem;
+    margin-bottom:8px;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    color:#d2d8ff;
+  }
+  .row{display:flex;justify-content:space-between;gap:6px;font-size:.88rem;margin-bottom:4px}
+  .row label{color:var(--muted)}
+  .row span.value{font-weight:600;color:var(--ink)}
 
-    body{
-      min-height:100vh;
-      font-family:"Nunito Sans",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-      color:var(--ink);
-      background:
-        radial-gradient(circle at 10% 0%,rgba(255,255,255,0.08),transparent 55%),
-        radial-gradient(circle at 90% 100%,rgba(19,173,179,0.35),transparent 55%),
-        linear-gradient(145deg,rgba(0,0,0,0.92),rgba(0,0,0,0.96)),
-        url("IMG_0697.JPG") center/cover fixed no-repeat;
-    }
+  .phase{
+    margin-top:4px;
+    padding:6px 10px;
+    border-radius:8px;
+    background:linear-gradient(90deg,#20263a,#151a28);
+    border:1px solid #323853;
+    font-size:.85rem;
+  }
+  .phase span.label{
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    font-size:.7rem;
+    color:var(--muted);
+  }
+  .phase span.value{
+    display:block;
+    margin-top:2px;
+    font-weight:600;
+  }
 
-    .overlay{
-      min-height:100vh;
-      backdrop-filter:blur(5px);
-      background:radial-gradient(circle at top,rgba(0,0,0,0.45),rgba(0,0,0,0.9));
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:24px;
-    }
+  .bans, .summary-text{
+    margin-top:6px;
+    font-size:.85rem;
+  }
+  .bans div, .summary-text div{margin-bottom:2px}
 
-    .card{
-      max-width:960px;
-      width:100%;
-      padding:32px 28px 28px;
-      background:var(--card);
-      border-radius:var(--radius-lg);
-      border:1px solid var(--accent-soft);
-      box-shadow:0 30px 70px rgba(0,0,0,0.85);
-    }
+  .map-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    border-radius:999px;
+    padding:2px 8px;
+    font-size:.78rem;
+    border:1px solid var(--line);
+    background:var(--panel2);
+  }
+  .map-badge.ban{border-color:#ff6b6b99;color:#ffc2c2}
+  .map-badge.pick{border-color:#62e887aa;color:#bdf7d2}
+  .map-badge small{color:var(--muted);font-size:.7rem}
 
-    .kicker{
-      text-transform:uppercase;
-      letter-spacing:.18em;
-      font-size:.72rem;
-      color:var(--teal);
-      margin-bottom:6px;
-    }
+  .ticker{
+    margin-top:10px;
+    padding:6px 8px;
+    border-radius:8px;
+    border:1px dashed #3c425a;
+    font-size:.8rem;
+    color:var(--muted);
+  }
 
-    h1{
-      font-family:"Cinzel",serif;
-      font-size:clamp(1.9rem,3.4vw,2.5rem);
-      letter-spacing:.06em;
-      text-transform:uppercase;
-      margin-bottom:10px;
-    }
-
-    .subtitle{
-      font-size:.98rem;
-      color:var(--muted);
-      max-width:40rem;
-      line-height:1.5;
-    }
-
-    .primary-section{
-      margin-top:26px;
-      padding-top:20px;
-      border-top:1px solid var(--line);
-    }
-
-    .section-title{
-      font-size:.88rem;
-      text-transform:uppercase;
-      letter-spacing:.18em;
-      color:var(--muted);
-      margin-bottom:10px;
-    }
-
-    .date-line{
-      font-size:.9rem;
-      margin-bottom:18px;
-      color:var(--muted);
-    }
-    .date-line span{
-      color:var(--accent);
-      font-weight:600;
-    }
-
-    .count-grid{
-      display:grid;
-      grid-template-columns:repeat(3,minmax(0,1fr));
-      gap:16px;
-    }
-
-    .count-box{
-      padding:14px 10px 18px;
-      border-radius:var(--radius-sm);
-      border:1px solid var(--line);
-      background:
-        radial-gradient(circle at top,rgba(246,196,83,0.12),transparent 60%),
-        rgba(8,10,20,0.9);
-      text-align:center;
-    }
-
-    .count-label{
-      font-size:.72rem;
-      text-transform:uppercase;
-      letter-spacing:.16em;
-      color:var(--muted);
-      margin-bottom:6px;
-    }
-
-    .count-number{
-      font-family:"Cinzel",serif;
-      font-size:clamp(2.2rem,4vw,3.1rem);
-      line-height:1;
-    }
-
-    .count-note{
-      margin-top:10px;
-      font-size:.75rem;
-      color:var(--muted);
-    }
-
-    .secondary{
-      margin-top:28px;
-      padding-top:20px;
-      border-top:1px dashed var(--line);
-    }
-
-    .accent-pill{
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-      font-size:.78rem;
-      padding:6px 10px;
-      border-radius:999px;
-      background:rgba(0,0,0,0.6);
-      border:1px solid var(--accent-soft);
-      color:var(--accent);
-      margin-bottom:8px;
-    }
-
-    .accent-dot{
-      width:7px;
-      height:7px;
-      border-radius:50%;
-      background:var(--teal);
-    }
-
-    .reg{
-      margin-top:26px;
-      padding-top:18px;
-      border-top:1px solid var(--line);
-      font-size:.86rem;
-    }
-
-    .reg p{
-      margin-bottom:10px;
-      color:var(--muted);
-    }
-
-    .reg a{
-      color:var(--accent);
-      text-decoration:none;
-      border-bottom:1px solid rgba(246,196,83,0.55);
-    }
-    .reg a:hover{
-      border-bottom-color:var(--teal);
-      color:var(--teal);
-    }
-
-    .disclaimer{
-      margin-top:10px;
-      font-size:.74rem;
-      color:var(--muted);
-      opacity:.9;
-    }
-
-    .footer-note{
-      margin-top:18px;
-      font-size:.7rem;
-      color:var(--muted);
-    }
-
-    @media (max-width:720px){
-      .card{
-        padding:22px 18px 20px;
-      }
-      .count-grid{
-        grid-template-columns:1fr;
-      }
-      h1{
-        text-align:left;
-      }
-    }
-  </style>
+  .pill{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    border-radius:999px;
+    padding:3px 9px;
+    font-size:.75rem;
+    border:1px solid var(--line);
+    color:var(--muted);
+  }
+  .pill strong{color:var(--ink);font-weight:600}
+</style>
 </head>
 <body>
-  <div class="overlay">
-    <main class="card">
-      <div class="kicker">Sadhguru in Malaysia 2026</div>
-      <h1>Sadhguru in Malaysia</h1>
-      <p class="subtitle">
-        A space for inner transformation. Stay tuned as we journey towards Sadhguru’s visit to Malaysia in 2026,
-        and honour the volunteers who began preparing long before the lights come on.
-      </p>
-
-      <!-- Main countdown -->
-      <section class="primary-section">
-        <div class="section-title">Countdown to Sadhguru in Malaysia</div>
-        <p class="date-line">
-          Main program date (tentative):
-          <span>26 October 2026 &middot; Malaysia</span>
-        </p>
-
-        <div class="count-grid">
-          <div class="count-box">
-            <div class="count-label">Months</div>
-            <div id="eventMonths" class="count-number">0</div>
-          </div>
-          <div class="count-box">
-            <div class="count-label">Days</div>
-            <div id="eventDays" class="count-number">0</div>
-          </div>
-          <div class="count-box">
-            <div class="count-label">Hours</div>
-            <div id="eventHours" class="count-number">0</div>
-          </div>
-        </div>
-        <p id="eventStatus" class="count-note">
-          Counting down in calendar months, days, and hours until the tentative program date.
-        </p>
-      </section>
-
-      <!-- Elapsed since first volunteer meeting -->
-      <section class="secondary">
-        <div class="accent-pill">
-          <span class="accent-dot"></span>
-          First Volunteer Meeting
-        </div>
-        <p class="date-line">
-          We first gathered on
-          <span>23 November 2025 &middot; 8:30 PM</span>
-        </p>
-
-        <div class="count-grid">
-          <div class="count-box">
-            <div class="count-label">Months Since</div>
-            <div id="meetMonths" class="count-number">0</div>
-          </div>
-          <div class="count-box">
-            <div class="count-label">Days Since</div>
-            <div id="meetDays" class="count-number">0</div>
-          </div>
-          <div class="count-box">
-            <div class="count-label">Hours Since</div>
-            <div id="meetHours" class="count-number">0</div>
-          </div>
-        </div>
-        <p class="count-note">
-          This is how long the volunteers have already been walking this journey together.
-        </p>
-      </section>
-
-      <!-- Registration & disclaimer -->
-      <section class="reg">
-        <p>
-          Please note: the program date is tentative and may change if the need arises.
-          To stay updated on any changes and be informed when registrations open,
-          kindly register your interest here:
-        </p>
-        <p>
-          <a href="https://iyg.to/eoe-eoi/555367/RY4X99" target="_blank" rel="noopener">
-            https://iyg.to/eoe-eoi/555367/RY4X99
-          </a>
-        </p>
-        <p class="disclaimer">
-          By registering your interest you will receive updates on final dates, venue,
-          and related volunteer information for Sadhguru in Malaysia 2026.
-        </p>
-        <p class="footer-note">
-          For the best experience, keep this page open during events &mdash; the timers update in real time.
-        </p>
-      </section>
-    </main>
+<div class="shell">
+  <h1>CODM Map Veto — Admin View</h1>
+  <div class="sub">
+    This page is read-only. Open the Teams page in another tab on the same browser to drive the veto.  
+    Changes will appear here automatically.
   </div>
 
-  <script>
-    // --- Dates (local time) ---
-    // Sadhguru in Malaysia (tentative)
-    const EVENT_DATE = new Date(2026, 9, 26, 0, 0, 0); // 26 October 2026, 00:00
-    // First volunteer meeting: 23 November 2025, 8:30 PM
-    const MEETING_DATE = new Date(2025, 10, 23, 20, 30, 0);
+  <div class="grid">
+    <div class="panel">
+      <h2>Match Info</h2>
+      <div class="row">
+        <label>Team 1:</label><span class="value" id="t1Name">—</span>
+      </div>
+      <div class="row">
+        <label>Team 2:</label><span class="value" id="t2Name">—</span>
+      </div>
+      <div class="row">
+        <label>Coin Call:</label><span class="value" id="coinCall">—</span>
+      </div>
+      <div class="row">
+        <label>Coin Result:</label><span class="value" id="coinResult">—</span>
+      </div>
+      <div class="row">
+        <label>Coin Winner:</label><span class="value" id="coinWinner">—</span>
+      </div>
+      <div class="row">
+        <label>Start Team:</label><span class="value" id="startTeam">—</span>
+      </div>
+      <div class="row">
+        <label>Wait Team:</label><span class="value" id="waitTeam">—</span>
+      </div>
 
-    function diffInCalendarUnits(start, end){
-      // Ensure start <= end
-      let s = new Date(start.getTime());
-      let e = new Date(end.getTime());
-      let future = true;
-      if (e < s){
-        future = false;
-        [s, e] = [e, s];
-      }
+      <div class="phase">
+        <span class="label">Current Phase</span>
+        <span class="value" id="phaseLabel">—</span>
+      </div>
 
-      let years   = e.getFullYear() - s.getFullYear();
-      let months  = e.getMonth()    - s.getMonth();
-      let days    = e.getDate()     - s.getDate();
-      let hours   = e.getHours()    - s.getHours();
-      let minutes = e.getMinutes()  - s.getMinutes();
-      let seconds = e.getSeconds()  - s.getSeconds();
+      <div class="ticker" id="tickerText">
+        Waiting for the Teams page to start the session.
+      </div>
+    </div>
 
-      if (seconds < 0){ seconds += 60; minutes--; }
-      if (minutes < 0){ minutes += 60; hours--; }
-      if (hours < 0){ hours += 24; days--; }
+    <div class="panel">
+      <h2>Bans, Pick & Side</h2>
+      <div class="bans" id="bansBlock">
+        No bans yet.
+      </div>
+      <div style="margin-top:6px;">
+        <div class="row">
+          <label>Picked Map:</label><span class="value" id="pickedMap">—</span>
+        </div>
+        <div class="row">
+          <label>Side Choice:</label><span class="value" id="sideChoice">—</span>
+        </div>
+      </div>
 
-      if (days < 0){
-        const prevMonth = new Date(e.getFullYear(), e.getMonth(), 0); // last day of prev month
-        days += prevMonth.getDate();
-        months--;
-      }
-      if (months < 0){
-        months += 12;
-        years--;
-      }
+      <div class="summary-text" id="summaryBlock" style="margin-top:8px;">
+        <!-- summary lines -->
+      </div>
 
-      const totalMonths = years * 12 + months;
-      return { future, totalMonths, days, hours, minutes, seconds };
+      <div style="margin-top:10px;">
+        <span class="pill">
+          Session ID:&nbsp;<strong id="sessionId">—</strong>
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const STORAGE_KEY = 'codm_veto_state_v1';
+
+  function defaultState(){
+    return {
+      seriesId: null,
+      team1Name: '',
+      team2Name: '',
+      coinCaller: 'team1',
+      coinCall: null,
+      coinResult: null,
+      coinWinner: null,
+      startTeam: null,
+      waitTeam: null,
+      phase: 'setup',
+      turnTeam: null,
+      bans: [],
+      pick: null,
+      side: null
+    };
+  }
+
+  function loadState(){
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return defaultState();
+    try{
+      const s = JSON.parse(raw);
+      return Object.assign(defaultState(), s);
+    }catch(e){
+      return defaultState();
+    }
+  }
+
+  let state = loadState();
+
+  const t1NameEl = document.getElementById('t1Name');
+  const t2NameEl = document.getElementById('t2Name');
+  const coinCallEl = document.getElementById('coinCall');
+  const coinResultEl = document.getElementById('coinResult');
+  const coinWinnerEl = document.getElementById('coinWinner');
+  const startTeamEl = document.getElementById('startTeam');
+  const waitTeamEl = document.getElementById('waitTeam');
+  const phaseLabelEl = document.getElementById('phaseLabel');
+  const tickerTextEl = document.getElementById('tickerText');
+  const bansBlockEl = document.getElementById('bansBlock');
+  const pickedMapEl = document.getElementById('pickedMap');
+  const sideChoiceEl = document.getElementById('sideChoice');
+  const summaryBlockEl = document.getElementById('summaryBlock');
+  const sessionIdEl = document.getElementById('sessionId');
+
+  function teamName(key){
+    if(key === 'team1') return state.team1Name || 'Team 1';
+    if(key === 'team2') return state.team2Name || 'Team 2';
+    return '';
+  }
+
+  function phaseLabel(phase){
+    switch(phase){
+      case 'setup': return 'Setup';
+      case 'coin': return 'Coin Flip';
+      case 'choose_role': return 'Coin Winner Chooses Start / Wait';
+      case 'ban1': return 'Ban #1';
+      case 'ban2': return 'Ban #2';
+      case 'pick': return 'Map Pick';
+      case 'side': return 'Side Selection';
+      case 'done': return 'Completed';
+      default: return '—';
+    }
+  }
+
+  function phaseTickerText(){
+    switch(state.phase){
+      case 'setup':
+        return 'Waiting for team names and coin flip to begin.';
+      case 'coin':
+        return 'Team 1 is choosing Heads/Tails and flipping the coin.';
+      case 'choose_role':
+        return 'Coin winner is choosing whether to START bans or WAIT & pick side.';
+      case 'ban1':
+        return teamName(state.startTeam) + ' is banning the first map.';
+      case 'ban2':
+        return teamName(state.waitTeam) + ' is banning the second map.';
+      case 'pick':
+        return teamName(state.startTeam) + ' is picking the final map.';
+      case 'side':
+        return teamName(state.waitTeam) + ' is choosing RED or BLUE side.';
+      case 'done':
+        return 'Veto completed. Use the summary for broadcast graphics or overlays.';
+      default:
+        return 'Waiting for the Teams page to start the session.';
+    }
+  }
+
+  function render(){
+    state = loadState();
+
+    t1NameEl.textContent = state.team1Name || '—';
+    t2NameEl.textContent = state.team2Name || '—';
+
+    // coin
+    if(state.coinCall){
+      const caller = teamName('team1'); // Team 1 always calls
+      coinCallEl.textContent = caller + ' called ' + state.coinCall;
+    }else{
+      coinCallEl.textContent = '—';
+    }
+    coinResultEl.textContent = state.coinResult || '—';
+    coinWinnerEl.textContent = state.coinWinner ? teamName(state.coinWinner) : '—';
+
+    startTeamEl.textContent = state.startTeam ? teamName(state.startTeam) : '—';
+    waitTeamEl.textContent = state.waitTeam ? teamName(state.waitTeam) : '—';
+
+    phaseLabelEl.textContent = phaseLabel(state.phase);
+    tickerTextEl.textContent = phaseTickerText();
+
+    // bans
+    if(!state.bans || !state.bans.length){
+      bansBlockEl.textContent = 'No bans yet.';
+    }else{
+      bansBlockEl.innerHTML = state.bans.map((b, i) => {
+        return '<div><span class="map-badge ban">Ban '+(i+1)+': '+b.map+
+          ' <small>by '+teamName(b.team)+'</small></span></div>';
+      }).join('');
     }
 
-    function updateTimers(){
-      const now = new Date();
-
-      // Countdown to event
-      const eventDiff = diffInCalendarUnits(now, EVENT_DATE);
-      const eventMonthsEl = document.getElementById("eventMonths");
-      const eventDaysEl   = document.getElementById("eventDays");
-      const eventHoursEl  = document.getElementById("eventHours");
-      const eventStatusEl = document.getElementById("eventStatus");
-
-      if (!eventDiff.future){
-        eventMonthsEl.textContent = "0";
-        eventDaysEl.textContent   = "0";
-        eventHoursEl.textContent  = "0";
-        eventStatusEl.textContent = "Sadhguru is in Malaysia — may this be a time of profound inner transformation.";
-      } else {
-        eventMonthsEl.textContent = eventDiff.totalMonths;
-        eventDaysEl.textContent   = eventDiff.days;
-        eventHoursEl.textContent  = eventDiff.hours;
-        eventStatusEl.textContent = "Counting down in calendar months, days, and hours until the tentative program date.";
-      }
-
-      // Time elapsed since first volunteer meeting
-      const meetDiff = diffInCalendarUnits(MEETING_DATE, now);
-      document.getElementById("meetMonths").textContent = meetDiff.totalMonths;
-      document.getElementById("meetDays").textContent   = meetDiff.days;
-      document.getElementById("meetHours").textContent  = meetDiff.hours;
+    // pick
+    if(state.pick){
+      pickedMapEl.textContent = teamName(state.pick.team) + ' picked ' + state.pick.map;
+    }else{
+      pickedMapEl.textContent = '—';
     }
 
-    updateTimers();
-    setInterval(updateTimers, 1000);
-  </script>
+    // side
+    if(state.side){
+      sideChoiceEl.textContent = teamName(state.side.team) + ' chose ' + state.side.choice + ' side.';
+    }else{
+      sideChoiceEl.textContent = '—';
+    }
+
+    // summary
+    const lines = [];
+    lines.push('Matchup: ' + (state.team1Name || 'Team 1') + ' vs ' + (state.team2Name || 'Team 2'));
+
+    if(state.coinCall){
+      lines.push('Coin: Team 1 called ' + state.coinCall +
+        ' → result ' + (state.coinResult || '—') +
+        (state.coinWinner ? ' → winner ' + teamName(state.coinWinner) : ''));
+    }
+
+    if(state.startTeam && state.waitTeam){
+      lines.push('Roles: Start — ' + teamName(state.startTeam) +
+        ', Wait — ' + teamName(state.waitTeam));
+    }
+
+    if(state.bans && state.bans.length){
+      state.bans.forEach((b,i) => {
+        lines.push('Ban '+(i+1)+': '+teamName(b.team)+' banned '+b.map);
+      });
+    }
+
+    if(state.pick){
+      lines.push('Picked Map: ' + teamName(state.pick.team) + ' picked ' + state.pick.map);
+    }
+
+    if(state.side){
+      lines.push('Side: ' + teamName(state.side.team) + ' chose ' + state.side.choice);
+    }
+
+    if(state.phase === 'done'){
+      lines.push('Status: Veto complete.');
+    }else{
+      lines.push('Status: In progress (' + phaseLabel(state.phase) + ').');
+    }
+
+    summaryBlockEl.innerHTML = lines.map(l => '<div>'+l+'</div>').join('');
+
+    sessionIdEl.textContent = state.seriesId ? String(state.seriesId) : '—';
+  }
+
+  // update on storage events from the Teams tab
+  window.addEventListener('storage', (e) => {
+    if(e.key === STORAGE_KEY){
+      render();
+    }
+  });
+
+  // also poll every 1.5s as a backup
+  setInterval(render, 1500);
+
+  render();
+})();
+</script>
 </body>
 </html>
