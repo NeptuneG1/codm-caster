@@ -390,7 +390,7 @@
     .player-row{
       display:grid;
       grid-template-columns:22px minmax(0,1fr) 40px;
-      align-items:center;
+      align-items:flex-start;          /* so multi-line names align nicely */
       gap:4px;
       font-size:.8rem;
     }
@@ -400,9 +400,10 @@
       text-align:right;
     }
     .player-row span.name{
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
+      white-space:normal;              /* allow wrapping */
+      overflow-wrap:break-word;        /* break long words if needed */
+      word-break:break-word;           /* extra safety for long tags */
+      /* text-overflow removed so we don’t force ellipsis on one line */
     }
     .player-row.bye span.name{
       color:var(--muted);
