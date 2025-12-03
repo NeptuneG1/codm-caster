@@ -139,7 +139,9 @@
     }
 
     .round-col{
-      min-width:190px;
+      flex:0 0 200px;          /* fixed flex-basis */
+      width:200px;             /* explicit width */
+      max-width:200px;         /* prevent stretching */
       display:flex;
       flex-direction:column;
       gap:8px;
@@ -165,8 +167,8 @@
       gap:4px;
       box-shadow:0 8px 12px rgba(0,0,0,.35);
       position:relative;
+      width:100%;              /* NEW: fill round column */
     }
-
     .match-meta{
       display:flex;
       justify-content:space-between;
