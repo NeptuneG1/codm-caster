@@ -651,7 +651,7 @@
     // ------- STATE -------
     const state = {
       participants: [],        // [{id, name}]
-      bracketParticipants: [], // includes BYEs (if any)
+      bracketParticipants: [], // includes only real players for single elim (no BYE pseudo-player)
       rounds: [],              // [ [matches...] ]
       matchById: {},           // id -> match
       matchCounter: 0,
@@ -911,7 +911,31 @@
         return;
       }
 
-      // Single / Double Elimination
+      if(format === 'single'){
+        // NEW: sequential single-elim logic (no power-of-2 padding)
+        const rounds = Math.ceil(Math.log2(Math.max(n, 2)));
+
+        let size = n;
+        let totalByes = 0;
+        let totalMatches = 0;
+
+        while(size > 1){
+          totalMatches += Math.floor(size / 2);
+          if(size % 2 === 1) totalByes++;
+          size = Math.ceil(size / 2);
+        }
+
+        state.settings.totalRounds = rounds;
+        state.settings.bracketSize = n;
+        state.settings.byes = totalByes;
+        state.stageRanges = []; // we won't auto-split into stages for now
+
+        bracketMath.textContent =
+          `${n} participants • up to ${rounds} rounds • ${totalMatches} matches • byes (max 1 per round): ${totalByes}`;
+        return;
+      }
+
+      // Default: Double Elimination – still uses power-of-two style
       const rounds = Math.ceil(Math.log2(n));
       const bracketSize = 1 << rounds;
       const byes = bracketSize - n;
@@ -1040,17 +1064,17 @@
         idxSpan.textContent = `Stage ${index+1}`;
         row.appendChild(idxSpan);
 
-        const nameInput = document.createElement('input');
-        nameInput.type = 'text';
-        nameInput.className = 'stage-name';
-        nameInput.placeholder = 'Qualifier / Groups / Finals';
-        nameInput.value = stg.name || '';
-        nameInput.addEventListener('input', () => {
-          state.settings.stages[index].name = nameInput.value;
+        const nameInputStage = document.createElement('input');
+        nameInputStage.type = 'text';
+        nameInputStage.className = 'stage-name';
+        nameInputStage.placeholder = 'Qualifier / Groups / Finals';
+        nameInputStage.value = stg.name || '';
+        nameInputStage.addEventListener('input', () => {
+          state.settings.stages[index].name = nameInputStage.value;
           renderSaveStatus(true);
           updateBracketMath();
         });
-        row.appendChild(nameInput);
+        row.appendChild(nameInputStage);
 
         const qualInput = document.createElement('input');
         qualInput.type = 'number';
@@ -1194,8 +1218,119 @@
       renderSaveStatus(true);
     }
 
+    // ------- SINGLE ELIMINATION (SEQUENTIAL, 0–1 BYE PER ROUND) -------
+    function generateSingleElimBracketSequential(seeded){
+      const n = seeded.length;
+
+      // Basic meta
+      let size = n;
+      let totalByes = 0;
+      const roundCounts = [];
+      while(size > 1){
+        roundCounts.push(size);
+        if(size % 2 === 1) totalByes++;
+        size = Math.ceil(size / 2);
+      }
+      const totalRounds = roundCounts.length;
+
+      state.settings.totalRounds = totalRounds;
+      state.settings.bracketSize = n;       // no power-of-two padding
+      state.settings.byes = totalByes;
+      state.stageRanges = [];               // no automatic stage splitting for now
+
+      state.bracketParticipants = seeded.slice();
+      state.rounds = [];
+      state.matchById = {};
+      state.matchCounter = 0;
+
+      // Track who already had a BYE so we don't reuse in future rounds
+      const byeUsedMap = {};
+      seeded.forEach(p => { byeUsedMap[p.id] = false; });
+
+      // Tokens flowing from round to round:
+      // type: 'player' → direct participant
+      // type: 'winner' → winner from a previous match
+      let currentTokens = seeded.map(p => ({
+        type: 'player',
+        playerId: p.id,
+        player: p
+      }));
+
+      let roundIndex = 1;
+
+      while(currentTokens.length > 1){
+        const roundMatches = [];
+        const nextTokens = [];
+
+        // If odd, pick exactly ONE bye token; it auto-advances
+        if(currentTokens.length % 2 === 1){
+          let byeIdx = -1;
+
+          // Prefer a player that hasn't had a BYE yet
+          for(let i=0; i<currentTokens.length; i++){
+            const t = currentTokens[i];
+            if(t.type === 'player' && !byeUsedMap[t.playerId]){
+              byeIdx = i;
+              break;
+            }
+          }
+          // Fallback: last token
+          if(byeIdx === -1){
+            byeIdx = currentTokens.length - 1;
+          }
+
+          const [byeToken] = currentTokens.splice(byeIdx, 1);
+          if(byeToken.type === 'player'){
+            byeUsedMap[byeToken.playerId] = true;
+          }
+          nextTokens.push(byeToken); // goes straight to next round
+        }
+
+        // Now currentTokens is even; pair them sequentially
+        for(let i=0; i<currentTokens.length; i+=2){
+          const t1 = currentTokens[i];
+          const t2 = currentTokens[i+1];
+
+          const match = createMatch(roundIndex, roundMatches.length, null, null);
+
+          function attachTokenToMatch(token, slot){
+            if(token.type === 'player'){
+              // Direct player enters this round
+              match['p'+slot] = token.player;
+            }else if(token.type === 'winner'){
+              // Winner from a previous match flows into this slot when reported
+              const srcMatch = state.matchById[token.matchId];
+              if(srcMatch){
+                srcMatch.nextMatchId = match.id;
+                srcMatch.nextMatchSlot = slot;
+              }
+            }
+          }
+
+          attachTokenToMatch(t1, 1);
+          attachTokenToMatch(t2, 2);
+
+          roundMatches.push(match);
+          nextTokens.push({ type:'winner', matchId: match.id });
+        }
+
+        state.rounds.push(roundMatches);
+        currentTokens = nextTokens;
+        roundIndex++;
+      }
+
+      // When loop ends, currentTokens.length === 1 → champion after all rounds are played
+    }
+
     // ------- GENERATION FOR EACH FORMAT -------
     function generateElimBracket(format, seeded){
+      if(format === 'single'){
+        // NEW: sequential single-elim (no power-of-two padding)
+        generateSingleElimBracketSequential(seeded);
+        return;
+      }
+
+      // For now, keep the old power-of-two logic for "double"
       const n = seeded.length;
       const maxRounds  = Math.ceil(Math.log2(n));
       const bracketSize = 1 << maxRounds;
@@ -1515,14 +1650,20 @@
       let bracketSize = n;
       let byes = 0;
 
-      if(format === 'single' || format === 'double'){
-        roundsCount = state.settings.totalRounds || Math.ceil(Math.log2(Math.max(n,2)));
-        bracketSize = state.settings.bracketSize || (1 << roundsCount);
+      if(format === 'single'){
+        // NEW: sequential single-elim
+        roundsCount = state.rounds.length;
+        bracketSize = state.settings.bracketSize || n;
+        byes = (typeof state.settings.byes === 'number') ? state.settings.byes : 0;
+        state.stageRanges = []; // no auto stages
+      }else if(format === 'double'){
+        // Keep old power-of-two logic for double elim
+        const rounds = Math.ceil(Math.log2(Math.max(n,2)));
+        roundsCount = state.settings.totalRounds || rounds;
+        bracketSize = state.settings.bracketSize || (1 << rounds);
         byes = (typeof state.settings.byes === 'number')
           ? state.settings.byes
-          : (bracketSize - n);
-        if(byes < 0) byes = 0;
-
+          : Math.max(0, bracketSize - n);
         const stageMeta = computeStageRoundMeta(bracketSize, state.settings.stages);
         state.stageRanges = stageMeta.stageRanges || [];
       }else{
@@ -1539,14 +1680,22 @@
 
       bracketTitle.textContent = state.settings.name || 'My Tournament';
 
-      if(format === 'single' || format === 'double'){
+      if(format === 'single'){
+        let matchesTotal = 0;
+        state.rounds.forEach(r => matchesTotal += r.length);
         bracketMeta.textContent =
-          `Format: ${formatLabel} • Best of ${state.settings.bestOf} • Round of ${bracketSize} • Players: ${n} • Rounds: ${roundsCount} • Byes: ${byes}`;
+          `Format: ${formatLabel} • Best of ${state.settings.bestOf} • Players: ${n} ` +
+          `• Rounds: ${roundsCount} • Matches: ${matchesTotal} • Byes (total): ${byes}`;
+      }else if(format === 'double'){
+        bracketMeta.textContent =
+          `Format: ${formatLabel} • Best of ${state.settings.bestOf} • Round of ${bracketSize} ` +
+          `• Players: ${n} • Rounds: ${roundsCount} • Byes: ${byes}`;
       }else{
         let matchesTotal = 0;
         state.rounds.forEach(r => matchesTotal += r.length);
         bracketMeta.textContent =
-          `Format: ${formatLabel} • Best of ${state.settings.bestOf} • Players: ${n} • Rounds: ${state.rounds.length} • Matches: ${matchesTotal}`;
+          `Format: ${formatLabel} • Best of ${state.settings.bestOf} • Players: ${n} ` +
+          `• Rounds: ${state.rounds.length} • Matches: ${matchesTotal}`;
       }
 
       bracketContainer.innerHTML = '';
