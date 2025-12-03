@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <title>CODM — Map Veto (Teams)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --bg:#05060a; --panel:#151826; --panel2:#1e2233;
@@ -36,7 +37,7 @@
   .sub{
     font-size:.85rem;
     color:var(--muted);
-    margin-bottom:14px;
+    margin-bottom:10px;
   }
 
   .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start}
@@ -61,7 +62,9 @@
     display:block;
     margin-bottom:4px;
   }
-  input[type="text"]{
+  input[type="text"],
+  input[type="number"],
+  select{
     width:100%;
     background:var(--panel2);
     border-radius:8px;
@@ -70,7 +73,8 @@
     color:var(--ink);
     font-size:.9rem;
   }
-  input[type="text"]::placeholder{color:#535b78}
+  input::placeholder{color:#535b78}
+  select{cursor:pointer}
 
   .btn{
     display:inline-flex;
@@ -225,10 +229,26 @@
     align-items:center;
     justify-content:space-between;
     gap:8px;
-    margin-bottom:10px;
+    margin-bottom:6px;
     flex-wrap:wrap;
   }
   .topbar-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+  .session-join{
+    display:flex;
+    gap:6px;
+    align-items:center;
+  }
+  .session-join input{
+    max-width:120px;
+    background:var(--panel2);
+    border-radius:999px;
+    border:1px solid var(--line);
+    padding:5px 8px;
+    font-size:.8rem;
+    color:var(--ink);
+  }
+  .session-status{font-size:.8rem;color:var(--muted);margin-bottom:10px;}
 
   @media (max-width:640px){
     .shell{padding:12px}
@@ -241,25 +261,51 @@
   <div class="topbar">
     <div>
       <h1>CODM Map Veto — Teams</h1>
-      <div class="sub">Use this page with both teams present to run coin flip, bans, map pick, and side selection.</div>
+      <div class="sub">Coin flip → 2 bans → 1 map pick → side choice. Connected via Supabase.</div>
     </div>
     <div class="topbar-right">
-      <button class="btn secondary" id="resetBtn">Reset Session</button>
+      <div class="session-join">
+        <input type="text" id="sessionCodeInput" placeholder="Match code" />
+        <button class="btn secondary" id="joinSessionBtn">Join</button>
+      </div>
+      <button class="btn secondary" id="resetBtn">Reset</button>
     </div>
   </div>
+  <div class="session-status" id="sessionStatus">Not connected. Enter a match code and click Join.</div>
 
   <div class="row">
-    <!-- SETUP + COIN FLIP -->
+    <!-- SETUP + META + COIN -->
     <div class="panel">
       <h2>1. Setup & Coin Flip</h2>
+
       <label>Team 1 Name</label>
       <input type="text" id="team1Input" placeholder="e.g. Team Alpha" />
 
       <label style="margin-top:6px;">Team 2 Name</label>
       <input type="text" id="team2Input" placeholder="e.g. Team Bravo" />
 
-      <button class="btn" id="startSessionBtn">Start / Update Session</button>
+      <div style="margin-top:8px;border-top:1px solid var(--line);padding-top:8px;">
+        <label>Series Format</label>
+        <select id="formatSelect">
+          <option value="BO3">BO3</option>
+          <option value="BO5">BO5</option>
+          <option value="BO7">BO7</option>
+          <option value="GFBO7">GF BO7</option>
+        </select>
 
+        <label style="margin-top:6px;">Game # (in the series)</label>
+        <input type="number" id="gameInput" min="1" max="7" value="1" />
+
+        <label style="margin-top:6px;">Mode</label>
+        <select id="modeSelect">
+          <option value="Hardpoint">Hardpoint</option>
+          <option value="Search &amp; Destroy">Search &amp; Destroy</option>
+          <option value="Control">Control</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+
+      <button class="btn" id="startSessionBtn">Save Setup / Begin Coin Flip</button>
       <div class="status-line" id="namesStatus"></div>
 
       <div style="margin-top:10px;border-top:1px solid var(--line);padding-top:8px;">
@@ -280,19 +326,19 @@
       <div style="margin-top:10px;border-top:1px solid var(--line);padding-top:8px;">
         <label style="margin-bottom:4px;">Coin winner chooses:</label>
         <button class="btn secondary" id="chooseStartBtn">We START bans</button>
-        <button class="btn secondary" id="chooseWaitBtn">We WAIT & pick side</button>
+        <button class="btn secondary" id="chooseWaitBtn">We WAIT &amp; pick side</button>
         <div class="small" id="roleStatus">Start / Wait not chosen yet.</div>
       </div>
     </div>
 
     <!-- PHASE + MAPS -->
     <div class="panel">
-      <h2>2. Bans, Pick & Side</h2>
+      <h2>2. Bans, Pick &amp; Side</h2>
       <div class="phase">
         <span class="label">Current Phase</span>
         <span class="value" id="phaseLabel">Setup</span>
       </div>
-      <div class="status-line" id="turnStatus">Waiting for session setup.</div>
+      <div class="status-line" id="turnStatus">Join a session to begin.</div>
 
       <div class="map-grid" id="mapGrid"></div>
 
@@ -319,7 +365,12 @@
 
 <script>
 (function(){
-  const STORAGE_KEY = 'codm_veto_state_v1';
+  // === CONFIG – replace with your Supabase project info ===
+  const SUPABASE_URL = 'https://YOUR-PROJECT.supabase.co';
+  const SUPABASE_ANON_KEY = 'YOUR-ANON-KEY';
+  const TABLE = 'codm_veto_sessions';
+
+  const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   const MAPS = [
     'Firing Range','Standoff','Summit','Raid','Slums',
@@ -331,39 +382,38 @@
       seriesId: Date.now(),
       team1Name: '',
       team2Name: '',
-      coinCaller: 'team1',       // fixed: Team 1 calls
-      coinCall: null,            // 'Heads' | 'Tails'
-      coinResult: null,          // 'Heads' | 'Tails'
-      coinWinner: null,          // 'team1' | 'team2'
-      startTeam: null,           // 'team1' | 'team2'
-      waitTeam: null,            // 'team1' | 'team2'
-      phase: 'setup',            // 'setup','coin','choose_role','ban1','ban2','pick','side','done'
-      turnTeam: null,            // whose action is next for this phase
-      bans: [],                  // [{team:'team1'|'team2',map}]
-      pick: null,                // {team:'team1'|'team2',map}
-      side: null                 // {team:'team1'|'team2',choice:'Red'|'Blue'}
+      meta: {
+        format: 'BO3',
+        gameNumber: 1,
+        mode: 'Hardpoint'
+      },
+      coinCaller: 'team1',  // always Team 1 in this version
+      coinCall: null,       // 'Heads' | 'Tails'
+      coinResult: null,     // 'Heads' | 'Tails'
+      coinWinner: null,     // 'team1' | 'team2'
+      startTeam: null,      // 'team1' | 'team2'
+      waitTeam: null,       // 'team1' | 'team2'
+      phase: 'setup',       // 'setup','coin','choose_role','ban1','ban2','pick','side','done'
+      turnTeam: null,
+      bans: [],             // [{team,map}]
+      pick: null,           // {team,map}
+      side: null            // {team,choice}
     };
   }
 
-  function loadState(){
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if(!raw) return defaultState();
-    try{
-      const s = JSON.parse(raw);
-      return Object.assign(defaultState(), s);
-    }catch(e){
-      return defaultState();
-    }
-  }
+  let state = defaultState();
+  let sessionCode = null;
+  let channel = null;
 
-  let state = loadState();
-
-  function saveState(){
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }
+  const sessionCodeInput = document.getElementById('sessionCodeInput');
+  const sessionStatus = document.getElementById('sessionStatus');
 
   const team1Input = document.getElementById('team1Input');
   const team2Input = document.getElementById('team2Input');
+  const formatSelect = document.getElementById('formatSelect');
+  const gameInput = document.getElementById('gameInput');
+  const modeSelect = document.getElementById('modeSelect');
+
   const namesStatus = document.getElementById('namesStatus');
   const coinCallerLabel = document.getElementById('coinCallerLabel');
   const coinResultText = document.getElementById('coinResultText');
@@ -382,10 +432,7 @@
     if(key === 'team2') return state.team2Name || 'Team 2';
     return '';
   }
-
-  function otherTeam(key){
-    return key === 'team1' ? 'team2' : 'team1';
-  }
+  function otherTeam(key){ return key === 'team1' ? 'team2' : 'team1'; }
 
   function mapStatus(map){
     const b = state.bans.find(x => x.map === map);
@@ -421,9 +468,8 @@
         statusEl.textContent = 'Available';
       }
 
-      // disabled if already used or phase not using maps
       const phaseUsesMap = ['ban1','ban2','pick'].includes(state.phase);
-      if(st.type !== 'free' || !phaseUsesMap){
+      if(st.type !== 'free' || !phaseUsesMap || !sessionCode){
         card.classList.add('disabled');
         card.disabled = true;
       }
@@ -434,27 +480,83 @@
     });
   }
 
-  function onMapClick(e){
-    const map = e.currentTarget.dataset.map;
-    if(!['ban1','ban2','pick'].includes(state.phase)) return;
-
-    const st = mapStatus(map);
-    if(st.type !== 'free') return;
-
-    if(state.phase === 'ban1'){
-      state.bans.push({team: state.startTeam, map});
-      state.phase = 'ban2';
-      state.turnTeam = state.waitTeam;
-    }else if(state.phase === 'ban2'){
-      state.bans.push({team: state.waitTeam, map});
-      state.phase = 'pick';
-      state.turnTeam = state.startTeam;
-    }else if(state.phase === 'pick'){
-      state.pick = {team: state.startTeam, map};
-      state.phase = 'side';
-      state.turnTeam = state.waitTeam;
+  async function pushState(){
+    if(!sessionCode) return;
+    try{
+      await client.from(TABLE).upsert({ code: sessionCode, state });
+    }catch(err){
+      console.error('pushState error', err);
     }
-    saveState();
+  }
+
+  function subscribeToSession(){
+    if(channel){
+      client.removeChannel(channel);
+      channel = null;
+    }
+    if(!sessionCode) return;
+
+    channel = client
+      .channel('codm-veto-' + sessionCode)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: TABLE, filter: 'code=eq.' + sessionCode },
+        payload => {
+          const newState = payload.new?.state;
+          if(newState){
+            state = Object.assign(defaultState(), newState);
+            renderAll(true); // fromRemote=true
+          }
+        }
+      )
+      .subscribe();
+  }
+
+  async function joinSession(codeRaw){
+    const code = (codeRaw || '').trim().toUpperCase();
+    if(!code){
+      alert('Please enter a match code (e.g. GFS1).');
+      return;
+    }
+    sessionCode = code;
+    sessionStatus.textContent = 'Connecting to session ' + sessionCode + '...';
+
+    // Try load existing
+    let data = null;
+    try{
+      const res = await client
+        .from(TABLE)
+        .select('state')
+        .eq('code', sessionCode)
+        .maybeSingle?.();
+
+      if(res && !res.error){
+        data = res.data;
+      }else if(res && res.error && res.error.code !== 'PGRST116'){
+        console.error(res.error);
+      }
+      // if maybeSingle not available
+      if(!res){
+        const res2 = await client
+          .from(TABLE)
+          .select('state')
+          .eq('code', sessionCode)
+          .single();
+        if(!res2.error) data = res2.data;
+      }
+    }catch(e){
+      // fallback: ignore
+    }
+
+    if(!data){
+      state = defaultState();
+      await pushState();
+    }else{
+      state = Object.assign(defaultState(), data.state || data);
+    }
+
+    sessionStatus.textContent = 'Connected to session ' + sessionCode + '. Share this code with the admin.';
+    subscribeToSession();
     renderAll();
   }
 
@@ -465,7 +567,7 @@
     switch(state.phase){
       case 'setup':
         label = 'Setup';
-        turnInfo = 'Enter team names, then run the coin flip.';
+        turnInfo = 'Enter team names, format, game, and mode. Then begin the coin flip.';
         break;
       case 'coin':
         label = 'Coin Flip';
@@ -497,7 +599,7 @@
         break;
       case 'done':
         label = 'Completed';
-        turnInfo = 'Veto finished. You can read the summary below.';
+        turnInfo = 'Veto finished. Confirm summary with admin/observer.';
         break;
       default:
         label = '—';
@@ -505,21 +607,29 @@
     }
 
     phaseLabel.textContent = label;
-    turnStatus.textContent = turnInfo;
-
-    // side buttons visibility
+    turnStatus.textContent = sessionCode ? turnInfo : 'Join a session to begin.';
     sideWrapper.style.display = state.phase === 'side' ? 'block' : 'none';
+
+    const sideDisabled = state.phase !== 'side' || !sessionCode;
+    sideRedBtn.disabled = sideDisabled;
+    sideBlueBtn.disabled = sideDisabled;
   }
 
   function renderForm(){
     team1Input.value = state.team1Name;
     team2Input.value = state.team2Name;
+    formatSelect.value = state.meta?.format || 'BO3';
+    gameInput.value = state.meta?.gameNumber || 1;
+    modeSelect.value = state.meta?.mode || 'Hardpoint';
 
     if(state.team1Name || state.team2Name){
       namesStatus.textContent = 'Current matchup: ' +
-        (state.team1Name || 'Team 1') + ' vs ' + (state.team2Name || 'Team 2');
+        teamName('team1') + ' vs ' + teamName('team2') +
+        ' • ' + (state.meta?.format || 'BO3') +
+        ' • Game ' + (state.meta?.gameNumber || 1) +
+        ' • ' + (state.meta?.mode || 'Hardpoint');
     }else{
-      namesStatus.textContent = 'Set team names then start the session.';
+      namesStatus.textContent = 'Set team names & format, then start the session.';
     }
 
     coinCallerLabel.textContent = teamName(state.coinCaller);
@@ -533,7 +643,6 @@
     coinResultText.textContent = 'Result: ' + (state.coinResult || '—');
     coinWinnerText.textContent = 'Winner: ' + (state.coinWinner ? teamName(state.coinWinner) : '—');
 
-    // role status
     if(state.startTeam && state.waitTeam){
       roleStatus.textContent = 'Start: ' + teamName(state.startTeam) +
         ' | Wait: ' + teamName(state.waitTeam);
@@ -541,21 +650,19 @@
       roleStatus.textContent = 'Start / Wait not chosen yet.';
     }
 
-    // enable / disable coin actions based on phase
-    document.getElementById('flipBtn').disabled = (state.phase !== 'coin');
-    document.getElementById('chooseStartBtn').disabled = (state.phase !== 'choose_role');
-    document.getElementById('chooseWaitBtn').disabled = (state.phase !== 'choose_role');
-
-    // side buttons enabled only in "side" phase
-    const sideDisabled = state.phase !== 'side';
-    sideRedBtn.disabled = sideDisabled;
-    sideBlueBtn.disabled = sideDisabled;
+    document.getElementById('flipBtn').disabled = (state.phase !== 'coin' || !sessionCode);
+    document.getElementById('chooseStartBtn').disabled = (state.phase !== 'choose_role' || !sessionCode);
+    document.getElementById('chooseWaitBtn').disabled = (state.phase !== 'choose_role' || !sessionCode);
   }
 
   function renderSummary(){
     const lines = [];
 
+    const meta = state.meta || {};
     lines.push('Matchup: ' + teamName('team1') + ' vs ' + teamName('team2'));
+    lines.push('Format: ' + (meta.format || 'BO3') +
+      ' • Game ' + (meta.gameNumber || 1) +
+      ' • ' + (meta.mode || 'Hardpoint'));
 
     if(state.coinCall){
       lines.push('Coin call: ' + teamName('team1') + ' called ' + state.coinCall +
@@ -592,29 +699,73 @@
     summaryLines.innerHTML = lines.map(l => '<div>'+l+'</div>').join('');
   }
 
-  function renderAll(){
+  function renderAll(fromRemote){
     renderForm();
     renderPhase();
     renderMaps();
     renderSummary();
+
+    if(!sessionCode){
+      sessionStatus.textContent = 'Not connected. Enter a match code and click Join.';
+    }
   }
 
-  // --- EVENTS ---
-  document.getElementById('startSessionBtn').addEventListener('click', () => {
-    state.team1Name = team1Input.value.trim();
-    state.team2Name = team2Input.value.trim();
+  function ensureSession(){
+    if(!sessionCode){
+      alert('Join a match code first.');
+      return false;
+    }
+    return true;
+  }
 
-    if(!state.team1Name) state.team1Name = 'Team 1';
-    if(!state.team2Name) state.team2Name = 'Team 2';
+  function onMapClick(e){
+    if(!ensureSession()) return;
+    const map = e.currentTarget.dataset.map;
+    if(!['ban1','ban2','pick'].includes(state.phase)) return;
+    const st = mapStatus(map);
+    if(st.type !== 'free') return;
+
+    if(state.phase === 'ban1'){
+      state.bans.push({team: state.startTeam, map});
+      state.phase = 'ban2';
+      state.turnTeam = state.waitTeam;
+    }else if(state.phase === 'ban2'){
+      state.bans.push({team: state.waitTeam, map});
+      state.phase = 'pick';
+      state.turnTeam = state.startTeam;
+    }else if(state.phase === 'pick'){
+      state.pick = {team: state.startTeam, map};
+      state.phase = 'side';
+      state.turnTeam = state.waitTeam;
+    }
+    pushState().then(renderAll);
+  }
+
+  // === EVENTS ===
+  document.getElementById('joinSessionBtn').addEventListener('click', () => {
+    joinSession(sessionCodeInput.value);
+  });
+
+  document.getElementById('startSessionBtn').addEventListener('click', async () => {
+    if(!ensureSession()) return;
+
+    state.team1Name = team1Input.value.trim() || 'Team 1';
+    state.team2Name = team2Input.value.trim() || 'Team 2';
+    state.meta = {
+      format: formatSelect.value || 'BO3',
+      gameNumber: Number(gameInput.value) || 1,
+      mode: modeSelect.value || 'Hardpoint'
+    };
 
     if(state.phase === 'setup'){
       state.phase = 'coin';
     }
-    saveState();
+    await pushState();
     renderAll();
   });
 
-  document.getElementById('flipBtn').addEventListener('click', () => {
+  document.getElementById('flipBtn').addEventListener('click', async () => {
+    if(!ensureSession()) return;
     if(state.phase !== 'coin') return;
 
     const radios = document.querySelectorAll('input[name="coinCall"]');
@@ -637,59 +788,77 @@
     }
 
     state.phase = 'choose_role';
-    saveState();
+    await pushState();
     renderAll();
   });
 
-  document.getElementById('chooseStartBtn').addEventListener('click', () => {
+  document.getElementById('chooseStartBtn').addEventListener('click', async () => {
+    if(!ensureSession()) return;
     if(state.phase !== 'choose_role' || !state.coinWinner) return;
 
     state.startTeam = state.coinWinner;
     state.waitTeam = otherTeam(state.coinWinner);
     state.phase = 'ban1';
     state.turnTeam = state.startTeam;
-    saveState();
+    await pushState();
     renderAll();
   });
 
-  document.getElementById('chooseWaitBtn').addEventListener('click', () => {
+  document.getElementById('chooseWaitBtn').addEventListener('click', async () => {
+    if(!ensureSession()) return;
     if(state.phase !== 'choose_role' || !state.coinWinner) return;
 
     state.waitTeam = state.coinWinner;
     state.startTeam = otherTeam(state.coinWinner);
     state.phase = 'ban1';
     state.turnTeam = state.startTeam;
-    saveState();
+    await pushState();
     renderAll();
   });
 
-  sideRedBtn.addEventListener('click', () => {
+  sideRedBtn.addEventListener('click', async () => {
+    if(!ensureSession()) return;
     if(state.phase !== 'side') return;
     state.side = {team: state.waitTeam, choice:'Red'};
     state.phase = 'done';
     state.turnTeam = null;
-    saveState();
+    await pushState();
     renderAll();
   });
 
-  sideBlueBtn.addEventListener('click', () => {
+  sideBlueBtn.addEventListener('click', async () => {
+    if(!ensureSession()) return;
     if(state.phase !== 'side') return;
     state.side = {team: state.waitTeam, choice:'Blue'};
     state.phase = 'done';
     state.turnTeam = null;
-    saveState();
+    await pushState();
     renderAll();
   });
 
-  document.getElementById('resetBtn').addEventListener('click', () => {
-    if(!confirm('Reset veto session? This will clear all bans, picks, and side.')) return;
+  document.getElementById('resetBtn').addEventListener('click', async () => {
+    if(!ensureSession()) return;
+    if(!confirm('Reset this veto session? This keeps team names & meta but clears bans/picks/coin.')) return;
+    const t1 = state.team1Name;
+    const t2 = state.team2Name;
+    const meta = state.meta;
     state = defaultState();
-    saveState();
+    state.team1Name = t1;
+    state.team2Name = t2;
+    state.meta = meta;
+    await pushState();
     renderAll();
   });
 
-  // initial render
-  renderAll();
+  // Auto-load code from URL ?code=XXX if present
+  const params = new URLSearchParams(window.location.search);
+  const urlCode = params.get('code');
+  if(urlCode){
+    sessionCodeInput.value = urlCode.toUpperCase();
+    joinSession(urlCode);
+  }else{
+    renderAll();
+  }
 })();
 </script>
 </body>
