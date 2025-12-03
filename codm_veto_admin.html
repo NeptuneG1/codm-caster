@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <title>CODM — Map Veto (Admin View)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --bg:#05060a; --panel:#141828; --panel2:#191e30;
@@ -36,8 +37,32 @@
   .sub{
     font-size:.85rem;
     color:var(--muted);
-    margin-bottom:14px;
+    margin-bottom:8px;
   }
+
+  .topbar{
+    display:flex;
+    justify-content:space-between;
+    gap:8px;
+    align-items:center;
+    flex-wrap:wrap;
+    margin-bottom:6px;
+  }
+  .session-join{
+    display:flex;
+    gap:6px;
+    align-items:center;
+  }
+  .session-join input{
+    max-width:120px;
+    background:var(--panel2);
+    border-radius:999px;
+    border:1px solid var(--line);
+    padding:5px 8px;
+    font-size:.8rem;
+    color:var(--ink);
+  }
+  .session-status{font-size:.8rem;color:var(--muted);margin-bottom:10px;}
 
   .grid{
     display:grid;
@@ -61,7 +86,13 @@
     text-transform:uppercase;
     color:#d2d8ff;
   }
-  .row{display:flex;justify-content:space-between;gap:6px;font-size:.88rem;margin-bottom:4px}
+  .row{
+    display:flex;
+    justify-content:space-between;
+    gap:6px;
+    font-size:.88rem;
+    margin-bottom:4px;
+  }
   .row label{color:var(--muted)}
   .row span.value{font-weight:600;color:var(--ink)}
 
@@ -129,11 +160,17 @@
 </head>
 <body>
 <div class="shell">
-  <h1>CODM Map Veto — Admin View</h1>
-  <div class="sub">
-    This page is read-only. Open the Teams page in another tab on the same browser to drive the veto.  
-    Changes will appear here automatically.
+  <div class="topbar">
+    <div>
+      <h1>CODM Map Veto — Admin View</h1>
+      <div class="sub">Read-only view. Connect with the same match code as the Teams page.</div>
+    </div>
+    <div class="session-join">
+      <input type="text" id="sessionCodeInput" placeholder="Match code" />
+      <button class="btn secondary" id="joinSessionBtn">Connect</button>
+    </div>
   </div>
+  <div class="session-status" id="sessionStatus">Not connected.</div>
 
   <div class="grid">
     <div class="panel">
@@ -143,6 +180,15 @@
       </div>
       <div class="row">
         <label>Team 2:</label><span class="value" id="t2Name">—</span>
+      </div>
+      <div class="row">
+        <label>Format:</label><span class="value" id="formatVal">—</span>
+      </div>
+      <div class="row">
+        <label>Game #:</label><span class="value" id="gameVal">—</span>
+      </div>
+      <div class="row">
+        <label>Mode:</label><span class="value" id="modeVal">—</span>
       </div>
       <div class="row">
         <label>Coin Call:</label><span class="value" id="coinCall">—</span>
@@ -166,12 +212,12 @@
       </div>
 
       <div class="ticker" id="tickerText">
-        Waiting for the Teams page to start the session.
+        Not connected to any session.
       </div>
     </div>
 
     <div class="panel">
-      <h2>Bans, Pick & Side</h2>
+      <h2>Bans, Pick &amp; Side</h2>
       <div class="bans" id="bansBlock">
         No bans yet.
       </div>
@@ -185,7 +231,6 @@
       </div>
 
       <div class="summary-text" id="summaryBlock" style="margin-top:8px;">
-        <!-- summary lines -->
       </div>
 
       <div style="margin-top:10px;">
@@ -199,13 +244,22 @@
 
 <script>
 (function(){
-  const STORAGE_KEY = 'codm_veto_state_v1';
+  const SUPABASE_URL = 'https://YOUR-PROJECT.supabase.co';
+  const SUPABASE_ANON_KEY = 'YOUR-ANON-KEY';
+  const TABLE = 'codm_veto_sessions';
+
+  const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   function defaultState(){
     return {
       seriesId: null,
       team1Name: '',
       team2Name: '',
+      meta: {
+        format: 'BO3',
+        gameNumber: 1,
+        mode: 'Hardpoint'
+      },
       coinCaller: 'team1',
       coinCall: null,
       coinResult: null,
@@ -220,21 +274,18 @@
     };
   }
 
-  function loadState(){
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if(!raw) return defaultState();
-    try{
-      const s = JSON.parse(raw);
-      return Object.assign(defaultState(), s);
-    }catch(e){
-      return defaultState();
-    }
-  }
+  let state = defaultState();
+  let sessionCode = null;
+  let channel = null;
 
-  let state = loadState();
+  const sessionCodeInput = document.getElementById('sessionCodeInput');
+  const sessionStatus = document.getElementById('sessionStatus');
 
   const t1NameEl = document.getElementById('t1Name');
   const t2NameEl = document.getElementById('t2Name');
+  const formatValEl = document.getElementById('formatVal');
+  const gameValEl = document.getElementById('gameVal');
+  const modeValEl = document.getElementById('modeVal');
   const coinCallEl = document.getElementById('coinCall');
   const coinResultEl = document.getElementById('coinResult');
   const coinWinnerEl = document.getElementById('coinWinner');
@@ -254,7 +305,7 @@
     return '';
   }
 
-  function phaseLabel(phase){
+  function phaseLabelText(phase){
     switch(phase){
       case 'setup': return 'Setup';
       case 'coin': return 'Coin Flip';
@@ -285,22 +336,23 @@
       case 'side':
         return teamName(state.waitTeam) + ' is choosing RED or BLUE side.';
       case 'done':
-        return 'Veto completed. Use the summary for broadcast graphics or overlays.';
+        return 'Veto completed. Use the summary for overlays and graphics.';
       default:
         return 'Waiting for the Teams page to start the session.';
     }
   }
 
   function render(){
-    state = loadState();
-
     t1NameEl.textContent = state.team1Name || '—';
     t2NameEl.textContent = state.team2Name || '—';
 
-    // coin
+    const meta = state.meta || {};
+    formatValEl.textContent = meta.format || '—';
+    gameValEl.textContent = meta.gameNumber || '—';
+    modeValEl.textContent = meta.mode || '—';
+
     if(state.coinCall){
-      const caller = teamName('team1'); // Team 1 always calls
-      coinCallEl.textContent = caller + ' called ' + state.coinCall;
+      coinCallEl.textContent = 'Team 1 called ' + state.coinCall;
     }else{
       coinCallEl.textContent = '—';
     }
@@ -310,8 +362,8 @@
     startTeamEl.textContent = state.startTeam ? teamName(state.startTeam) : '—';
     waitTeamEl.textContent = state.waitTeam ? teamName(state.waitTeam) : '—';
 
-    phaseLabelEl.textContent = phaseLabel(state.phase);
-    tickerTextEl.textContent = phaseTickerText();
+    phaseLabelEl.textContent = phaseLabelText(state.phase);
+    tickerTextEl.textContent = sessionCode ? phaseTickerText() : 'Not connected to any session.';
 
     // bans
     if(!state.bans || !state.bans.length){
@@ -340,6 +392,9 @@
     // summary
     const lines = [];
     lines.push('Matchup: ' + (state.team1Name || 'Team 1') + ' vs ' + (state.team2Name || 'Team 2'));
+    lines.push('Format: ' + (meta.format || 'BO3') +
+      ' • Game ' + (meta.gameNumber || 1) +
+      ' • ' + (meta.mode || 'Hardpoint'));
 
     if(state.coinCall){
       lines.push('Coin: Team 1 called ' + state.coinCall +
@@ -369,25 +424,94 @@
     if(state.phase === 'done'){
       lines.push('Status: Veto complete.');
     }else{
-      lines.push('Status: In progress (' + phaseLabel(state.phase) + ').');
+      lines.push('Status: In progress (' + phaseLabelText(state.phase) + ').');
     }
 
     summaryBlockEl.innerHTML = lines.map(l => '<div>'+l+'</div>').join('');
-
     sessionIdEl.textContent = state.seriesId ? String(state.seriesId) : '—';
   }
 
-  // update on storage events from the Teams tab
-  window.addEventListener('storage', (e) => {
-    if(e.key === STORAGE_KEY){
-      render();
+  function subscribeToSession(){
+    if(channel){
+      client.removeChannel(channel);
+      channel = null;
     }
+    if(!sessionCode) return;
+
+    channel = client
+      .channel('codm-veto-admin-' + sessionCode)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: TABLE, filter: 'code=eq.' + sessionCode },
+        payload => {
+          const newState = payload.new?.state;
+          if(newState){
+            state = Object.assign(defaultState(), newState);
+            render();
+          }
+        }
+      )
+      .subscribe();
+  }
+
+  async function joinSession(codeRaw){
+    const code = (codeRaw || '').trim().toUpperCase();
+    if(!code){
+      alert('Enter a match code.');
+      return;
+    }
+    sessionCode = code;
+    sessionStatus.textContent = 'Connecting to session ' + sessionCode + '...';
+
+    let data = null;
+    try{
+      const res = await client
+        .from(TABLE)
+        .select('state')
+        .eq('code', sessionCode)
+        .maybeSingle?.();
+
+      if(res && !res.error){
+        data = res.data;
+      }else if(res && res.error && res.error.code !== 'PGRST116'){
+        console.error(res.error);
+      }
+      if(!res){
+        const res2 = await client
+          .from(TABLE)
+          .select('state')
+          .eq('code', sessionCode)
+          .single();
+        if(!res2.error) data = res2.data;
+      }
+    }catch(e){
+      // ignore
+    }
+
+    if(!data){
+      sessionStatus.textContent = 'No session found for ' + sessionCode + ' yet. Waiting for Teams page to create it.';
+      state = defaultState();
+    }else{
+      state = Object.assign(defaultState(), data.state || data);
+      sessionStatus.textContent = 'Connected to session ' + sessionCode + '.';
+    }
+    subscribeToSession();
+    render();
+  }
+
+  document.getElementById('joinSessionBtn').addEventListener('click', () => {
+    joinSession(sessionCodeInput.value);
   });
 
-  // also poll every 1.5s as a backup
-  setInterval(render, 1500);
-
-  render();
+  // Auto-connect via ?code=XXX
+  const params = new URLSearchParams(window.location.search);
+  const urlCode = params.get('code');
+  if(urlCode){
+    sessionCodeInput.value = urlCode.toUpperCase();
+    joinSession(urlCode);
+  }else{
+    render();
+  }
 })();
 </script>
 </body>
