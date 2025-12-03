@@ -149,8 +149,10 @@
       text-transform:uppercase;
       letter-spacing:.08em;
       color:var(--muted);
-      margin-bottom:2px;
-      white-space:nowrap;
+      margin-bottom:4px;
+      white-space:normal;              /* allow wrapping */
+      overflow-wrap:break-word;        /* wrap long titles */
+      word-break:break-word;           /* extra safety */
     }
 
     .match-card{
@@ -186,7 +188,7 @@
     .player-row{
       display:grid;
       grid-template-columns:22px minmax(0,1fr) 40px;
-      align-items:center;
+      align-items:flex-start;          /* better for multi-line names */
       gap:4px;
       font-size:.8rem;
     }
@@ -196,9 +198,9 @@
       text-align:right;
     }
     .player-row span.name{
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
+      white-space:normal;              /* allow wrapping */
+      overflow-wrap:break-word;        /* wrap long words / tags */
+      word-break:break-word;           /* extra safety */
     }
     .player-row.bye span.name{
       color:var(--muted);
