@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>CODM — Map Veto (Teams)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<style>
+  :root{
+    --bg:#05060a; --panel:#151826; --panel2:#1e2233;
+    --ink:#f6f7fb; --muted:#9ca3c7;
+    --brand:#ffe93b; --accent:#7fd2ff;
+    --ban:#ff6b6b; --pick:#62e887;
+    --line:#272b3f;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{
+    background:radial-gradient(circle at top,#171c30 0,#05060a 55%);
+    color:var(--ink);
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;
+  }
+  body{padding:16px}
+
+  .shell{
+    max-width:980px;
+    margin:0 auto;
+    background:linear-gradient(145deg,#171b2a,#0c0f18);
+    border:1px solid #252a3d;
+    border-radius:16px;
+    padding:18px 18px 20px;
+    box-shadow:0 24px 60px rgba(0,0,0,.65);
+  }
+  h1{
+    font-size:1.4rem;
+    margin-bottom:4px;
+  }
+  .sub{
+    font-size:.85rem;
+    color:var(--muted);
+    margin-bottom:14px;
+  }
+
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start}
+  .panel{
+    background:var(--panel);
+    border-radius:12px;
+    padding:12px 14px;
+    border:1px solid var(--line);
+    flex:1 1 260px;
+    min-width:0;
+  }
+  .panel h2{
+    font-size:.95rem;
+    margin-bottom:8px;
+    letter-spacing:.03em;
+    text-transform:uppercase;
+    color:#d5dbff;
+  }
+  label{
+    font-size:.85rem;
+    color:var(--muted);
+    display:block;
+    margin-bottom:4px;
+  }
+  input[type="text"]{
+    width:100%;
+    background:var(--panel2);
+    border-radius:8px;
+    border:1px solid var(--line);
+    padding:6px 8px;
+    color:var(--ink);
+    font-size:.9rem;
+  }
+  input[type="text"]::placeholder{color:#535b78}
+
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    padding:6px 12px;
+    border-radius:999px;
+    border:1px solid transparent;
+    font-size:.85rem;
+    font-weight:600;
+    cursor:pointer;
+    background:var(--brand);
+    color:#111;
+    margin-top:8px;
+  }
+  .btn.secondary{
+    background:transparent;
+    color:var(--muted);
+    border-color:var(--line);
+  }
+  .btn.danger{
+    background:transparent;
+    color:#ff8080;
+    border-color:#ff6b6b55;
+  }
+  .btn:disabled{
+    opacity:.4;
+    cursor:default;
+  }
+
+  .pill{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    border-radius:999px;
+    padding:3px 9px;
+    font-size:.75rem;
+    border:1px solid var(--line);
+    color:var(--muted);
+  }
+  .pill strong{color:var(--ink);font-weight:600}
+
+  .coin-options{
+    margin-top:6px;
+    display:flex;
+    gap:12px;
+    font-size:.85rem;
+  }
+  .coin-options label{
+    display:flex;
+    align-items:center;
+    gap:5px;
+    cursor:pointer;
+  }
+  .small{
+    font-size:.8rem;
+    color:var(--muted);
+    margin-top:4px;
+  }
+
+  .status-line{
+    font-size:.85rem;
+    margin-top:8px;
+    color:var(--muted);
+  }
+  .status-line strong{color:var(--ink)}
+
+  .phase{
+    margin-top:8px;
+    padding:6px 10px;
+    border-radius:8px;
+    background:linear-gradient(90deg,#20263a,#171b2b);
+    border:1px solid #323853;
+    font-size:.85rem;
+  }
+  .phase span.label{
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    font-size:.7rem;
+    color:var(--muted);
+  }
+  .phase span.value{
+    display:block;
+    margin-top:2px;
+    font-weight:600;
+  }
+
+  .map-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(120px,1fr));
+    gap:10px;
+    margin-top:10px;
+  }
+  .map-card{
+    background:var(--panel2);
+    border-radius:10px;
+    padding:8px 8px 6px;
+    border:1px solid var(--line);
+    cursor:pointer;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    min-height:64px;
+  }
+  .map-name{
+    font-size:.85rem;
+    font-weight:600;
+    margin-bottom:4px;
+  }
+  .map-status{
+    font-size:.75rem;
+    color:var(--muted);
+  }
+  .map-card.banned{
+    border-color:rgba(255,107,107,.8);
+    background:linear-gradient(145deg,#35171f,#1c1014);
+  }
+  .map-card.picked{
+    border-color:rgba(98,232,135,.9);
+    background:linear-gradient(145deg,#143326,#0e1c16);
+  }
+  .map-card.disabled{
+    opacity:.45;
+    cursor:default;
+  }
+
+  .side-choices{
+    display:flex;
+    gap:10px;
+    margin-top:10px;
+    flex-wrap:wrap;
+  }
+  .side-btn{
+    flex:1 1 140px;
+    padding:8px 10px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:#171b2a;
+    color:var(--ink);
+    font-size:.85rem;
+    font-weight:600;
+    cursor:pointer;
+    text-align:center;
+  }
+  .side-btn.red{border-color:#ff6b6b88}
+  .side-btn.blue{border-color:#7fd2ff88}
+  .side-btn:disabled{opacity:.4;cursor:default}
+
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    margin-bottom:10px;
+    flex-wrap:wrap;
+  }
+  .topbar-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+  @media (max-width:640px){
+    .shell{padding:12px}
+    h1{font-size:1.1rem}
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="topbar">
+    <div>
+      <h1>CODM Map Veto — Teams</h1>
+      <div class="sub">Use this page with both teams present to run coin flip, bans, map pick, and side selection.</div>
+    </div>
+    <div class="topbar-right">
+      <button class="btn secondary" id="resetBtn">Reset Session</button>
+    </div>
+  </div>
+
+  <div class="row">
+    <!-- SETUP + COIN FLIP -->
+    <div class="panel">
+      <h2>1. Setup & Coin Flip</h2>
+      <label>Team 1 Name</label>
+      <input type="text" id="team1Input" placeholder="e.g. Team Alpha" />
+
+      <label style="margin-top:6px;">Team 2 Name</label>
+      <input type="text" id="team2Input" placeholder="e.g. Team Bravo" />
+
+      <button class="btn" id="startSessionBtn">Start / Update Session</button>
+
+      <div class="status-line" id="namesStatus"></div>
+
+      <div style="margin-top:10px;border-top:1px solid var(--line);padding-top:8px;">
+        <div class="pill">
+          <span>Coin flip call by&nbsp;<strong id="coinCallerLabel">Team 1</strong></span>
+        </div>
+
+        <div class="coin-options">
+          <label><input type="radio" name="coinCall" value="Heads" /> Heads</label>
+          <label><input type="radio" name="coinCall" value="Tails" /> Tails</label>
+        </div>
+        <button class="btn secondary" id="flipBtn" style="margin-top:6px;">Flip Coin</button>
+
+        <div class="small" id="coinResultText">Result: —</div>
+        <div class="small" id="coinWinnerText">Winner: —</div>
+      </div>
+
+      <div style="margin-top:10px;border-top:1px solid var(--line);padding-top:8px;">
+        <label style="margin-bottom:4px;">Coin winner chooses:</label>
+        <button class="btn secondary" id="chooseStartBtn">We START bans</button>
+        <button class="btn secondary" id="chooseWaitBtn">We WAIT & pick side</button>
+        <div class="small" id="roleStatus">Start / Wait not chosen yet.</div>
+      </div>
+    </div>
+
+    <!-- PHASE + MAPS -->
+    <div class="panel">
+      <h2>2. Bans, Pick & Side</h2>
+      <div class="phase">
+        <span class="label">Current Phase</span>
+        <span class="value" id="phaseLabel">Setup</span>
+      </div>
+      <div class="status-line" id="turnStatus">Waiting for session setup.</div>
+
+      <div class="map-grid" id="mapGrid"></div>
+
+      <div id="sideWrapper" style="display:none;">
+        <div class="status-line" style="margin-top:10px;">
+          Wait team chooses side:
+        </div>
+        <div class="side-choices">
+          <button class="side-btn red" id="sideRedBtn">Pick RED side</button>
+          <button class="side-btn blue" id="sideBlueBtn">Pick BLUE side</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUMMARY -->
+  <div class="panel" style="margin-top:12px;">
+    <h2>3. Summary</h2>
+    <div class="small" id="summaryLines">
+      No actions yet.
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const STORAGE_KEY = 'codm_veto_state_v1';
+
+  const MAPS = [
+    'Firing Range','Standoff','Summit','Raid','Slums',
+    'Takeoff','Crossfire','Hackney Yard','Meltdown','Apocalypse'
+  ];
+
+  function defaultState(){
+    return {
+      seriesId: Date.now(),
+      team1Name: '',
+      team2Name: '',
+      coinCaller: 'team1',       // fixed: Team 1 calls
+      coinCall: null,            // 'Heads' | 'Tails'
+      coinResult: null,          // 'Heads' | 'Tails'
+      coinWinner: null,          // 'team1' | 'team2'
+      startTeam: null,           // 'team1' | 'team2'
+      waitTeam: null,            // 'team1' | 'team2'
+      phase: 'setup',            // 'setup','coin','choose_role','ban1','ban2','pick','side','done'
+      turnTeam: null,            // whose action is next for this phase
+      bans: [],                  // [{team:'team1'|'team2',map}]
+      pick: null,                // {team:'team1'|'team2',map}
+      side: null                 // {team:'team1'|'team2',choice:'Red'|'Blue'}
+    };
+  }
+
+  function loadState(){
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return defaultState();
+    try{
+      const s = JSON.parse(raw);
+      return Object.assign(defaultState(), s);
+    }catch(e){
+      return defaultState();
+    }
+  }
+
+  let state = loadState();
+
+  function saveState(){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  const team1Input = document.getElementById('team1Input');
+  const team2Input = document.getElementById('team2Input');
+  const namesStatus = document.getElementById('namesStatus');
+  const coinCallerLabel = document.getElementById('coinCallerLabel');
+  const coinResultText = document.getElementById('coinResultText');
+  const coinWinnerText = document.getElementById('coinWinnerText');
+  const roleStatus = document.getElementById('roleStatus');
+  const phaseLabel = document.getElementById('phaseLabel');
+  const turnStatus = document.getElementById('turnStatus');
+  const mapGrid = document.getElementById('mapGrid');
+  const sideWrapper = document.getElementById('sideWrapper');
+  const sideRedBtn = document.getElementById('sideRedBtn');
+  const sideBlueBtn = document.getElementById('sideBlueBtn');
+  const summaryLines = document.getElementById('summaryLines');
+
+  function teamName(key){
+    if(key === 'team1') return state.team1Name || 'Team 1';
+    if(key === 'team2') return state.team2Name || 'Team 2';
+    return '';
+  }
+
+  function otherTeam(key){
+    return key === 'team1' ? 'team2' : 'team1';
+  }
+
+  function mapStatus(map){
+    const b = state.bans.find(x => x.map === map);
+    if(b) return {type:'ban', by:b.team};
+    if(state.pick && state.pick.map === map) return {type:'pick', by:state.pick.team};
+    return {type:'free', by:null};
+  }
+
+  function renderMaps(){
+    mapGrid.innerHTML = '';
+    MAPS.forEach(map => {
+      const st = mapStatus(map);
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'map-card';
+      card.dataset.map = map;
+
+      const nameEl = document.createElement('div');
+      nameEl.className = 'map-name';
+      nameEl.textContent = map;
+      card.appendChild(nameEl);
+
+      const statusEl = document.createElement('div');
+      statusEl.className = 'map-status';
+
+      if(st.type === 'ban'){
+        card.classList.add('banned');
+        statusEl.textContent = 'Banned by ' + teamName(st.by);
+      }else if(st.type === 'pick'){
+        card.classList.add('picked');
+        statusEl.textContent = 'Picked by ' + teamName(st.by);
+      }else{
+        statusEl.textContent = 'Available';
+      }
+
+      // disabled if already used or phase not using maps
+      const phaseUsesMap = ['ban1','ban2','pick'].includes(state.phase);
+      if(st.type !== 'free' || !phaseUsesMap){
+        card.classList.add('disabled');
+        card.disabled = true;
+      }
+
+      card.appendChild(statusEl);
+      card.addEventListener('click', onMapClick);
+      mapGrid.appendChild(card);
+    });
+  }
+
+  function onMapClick(e){
+    const map = e.currentTarget.dataset.map;
+    if(!['ban1','ban2','pick'].includes(state.phase)) return;
+
+    const st = mapStatus(map);
+    if(st.type !== 'free') return;
+
+    if(state.phase === 'ban1'){
+      state.bans.push({team: state.startTeam, map});
+      state.phase = 'ban2';
+      state.turnTeam = state.waitTeam;
+    }else if(state.phase === 'ban2'){
+      state.bans.push({team: state.waitTeam, map});
+      state.phase = 'pick';
+      state.turnTeam = state.startTeam;
+    }else if(state.phase === 'pick'){
+      state.pick = {team: state.startTeam, map};
+      state.phase = 'side';
+      state.turnTeam = state.waitTeam;
+    }
+    saveState();
+    renderAll();
+  }
+
+  function renderPhase(){
+    let label = '';
+    let turnInfo = '';
+
+    switch(state.phase){
+      case 'setup':
+        label = 'Setup';
+        turnInfo = 'Enter team names, then run the coin flip.';
+        break;
+      case 'coin':
+        label = 'Coin Flip';
+        turnInfo = teamName('team1') + ' chooses Heads or Tails, then press Flip.';
+        break;
+      case 'choose_role':
+        label = 'Coin Winner Chooses Start / Wait';
+        if(state.coinWinner){
+          turnInfo = teamName(state.coinWinner) + ' decides to START bans or WAIT & pick side.';
+        }else{
+          turnInfo = 'Waiting for coin flip result.';
+        }
+        break;
+      case 'ban1':
+        label = 'Ban #1';
+        turnInfo = teamName(state.startTeam) + ' bans one map.';
+        break;
+      case 'ban2':
+        label = 'Ban #2';
+        turnInfo = teamName(state.waitTeam) + ' bans one map.';
+        break;
+      case 'pick':
+        label = 'Map Pick';
+        turnInfo = teamName(state.startTeam) + ' picks the map from the remaining pool.';
+        break;
+      case 'side':
+        label = 'Side Selection';
+        turnInfo = teamName(state.waitTeam) + ' chooses RED or BLUE side.';
+        break;
+      case 'done':
+        label = 'Completed';
+        turnInfo = 'Veto finished. You can read the summary below.';
+        break;
+      default:
+        label = '—';
+        turnInfo = '';
+    }
+
+    phaseLabel.textContent = label;
+    turnStatus.textContent = turnInfo;
+
+    // side buttons visibility
+    sideWrapper.style.display = state.phase === 'side' ? 'block' : 'none';
+  }
+
+  function renderForm(){
+    team1Input.value = state.team1Name;
+    team2Input.value = state.team2Name;
+
+    if(state.team1Name || state.team2Name){
+      namesStatus.textContent = 'Current matchup: ' +
+        (state.team1Name || 'Team 1') + ' vs ' + (state.team2Name || 'Team 2');
+    }else{
+      namesStatus.textContent = 'Set team names then start the session.';
+    }
+
+    coinCallerLabel.textContent = teamName(state.coinCaller);
+
+    // coin radios
+    const radios = document.querySelectorAll('input[name="coinCall"]');
+    radios.forEach(r => {
+      r.checked = (r.value === state.coinCall);
+    });
+
+    coinResultText.textContent = 'Result: ' + (state.coinResult || '—');
+    coinWinnerText.textContent = 'Winner: ' + (state.coinWinner ? teamName(state.coinWinner) : '—');
+
+    // role status
+    if(state.startTeam && state.waitTeam){
+      roleStatus.textContent = 'Start: ' + teamName(state.startTeam) +
+        ' | Wait: ' + teamName(state.waitTeam);
+    }else{
+      roleStatus.textContent = 'Start / Wait not chosen yet.';
+    }
+
+    // enable / disable coin actions based on phase
+    document.getElementById('flipBtn').disabled = (state.phase !== 'coin');
+    document.getElementById('chooseStartBtn').disabled = (state.phase !== 'choose_role');
+    document.getElementById('chooseWaitBtn').disabled = (state.phase !== 'choose_role');
+
+    // side buttons enabled only in "side" phase
+    const sideDisabled = state.phase !== 'side';
+    sideRedBtn.disabled = sideDisabled;
+    sideBlueBtn.disabled = sideDisabled;
+  }
+
+  function renderSummary(){
+    const lines = [];
+
+    lines.push('Matchup: ' + teamName('team1') + ' vs ' + teamName('team2'));
+
+    if(state.coinCall){
+      lines.push('Coin call: ' + teamName('team1') + ' called ' + state.coinCall +
+        ' → Result: ' + (state.coinResult || '—'));
+    }
+    if(state.coinWinner){
+      lines.push('Coin winner: ' + teamName(state.coinWinner));
+    }
+    if(state.startTeam && state.waitTeam){
+      lines.push('Roles — Start: ' + teamName(state.startTeam) +
+        ', Wait: ' + teamName(state.waitTeam));
+    }
+
+    if(state.bans.length){
+      state.bans.forEach((b, i) => {
+        lines.push('Ban ' + (i+1) + ': ' + teamName(b.team) + ' banned ' + b.map);
+      });
+    }
+
+    if(state.pick){
+      lines.push('Picked Map: ' + teamName(state.pick.team) + ' picked ' + state.pick.map);
+    }
+
+    if(state.side){
+      lines.push('Side Choice: ' + teamName(state.side.team) + ' chose ' + state.side.choice + ' side.');
+    }
+
+    if(state.phase === 'done'){
+      lines.push('Status: Veto complete.');
+    }else{
+      lines.push('Status: Veto in progress (' + state.phase + ').');
+    }
+
+    summaryLines.innerHTML = lines.map(l => '<div>'+l+'</div>').join('');
+  }
+
+  function renderAll(){
+    renderForm();
+    renderPhase();
+    renderMaps();
+    renderSummary();
+  }
+
+  // --- EVENTS ---
+  document.getElementById('startSessionBtn').addEventListener('click', () => {
+    state.team1Name = team1Input.value.trim();
+    state.team2Name = team2Input.value.trim();
+
+    if(!state.team1Name) state.team1Name = 'Team 1';
+    if(!state.team2Name) state.team2Name = 'Team 2';
+
+    if(state.phase === 'setup'){
+      state.phase = 'coin';
+    }
+    saveState();
+    renderAll();
+  });
+
+  document.getElementById('flipBtn').addEventListener('click', () => {
+    if(state.phase !== 'coin') return;
+
+    const radios = document.querySelectorAll('input[name="coinCall"]');
+    let call = null;
+    radios.forEach(r => { if(r.checked) call = r.value; });
+
+    if(!call){
+      alert('Team 1 must choose Heads or Tails before flipping.');
+      return;
+    }
+
+    state.coinCall = call;
+    const result = Math.random() < 0.5 ? 'Heads' : 'Tails';
+    state.coinResult = result;
+
+    if(result === call){
+      state.coinWinner = 'team1';
+    }else{
+      state.coinWinner = 'team2';
+    }
+
+    state.phase = 'choose_role';
+    saveState();
+    renderAll();
+  });
+
+  document.getElementById('chooseStartBtn').addEventListener('click', () => {
+    if(state.phase !== 'choose_role' || !state.coinWinner) return;
+
+    state.startTeam = state.coinWinner;
+    state.waitTeam = otherTeam(state.coinWinner);
+    state.phase = 'ban1';
+    state.turnTeam = state.startTeam;
+    saveState();
+    renderAll();
+  });
+
+  document.getElementById('chooseWaitBtn').addEventListener('click', () => {
+    if(state.phase !== 'choose_role' || !state.coinWinner) return;
+
+    state.waitTeam = state.coinWinner;
+    state.startTeam = otherTeam(state.coinWinner);
+    state.phase = 'ban1';
+    state.turnTeam = state.startTeam;
+    saveState();
+    renderAll();
+  });
+
+  sideRedBtn.addEventListener('click', () => {
+    if(state.phase !== 'side') return;
+    state.side = {team: state.waitTeam, choice:'Red'};
+    state.phase = 'done';
+    state.turnTeam = null;
+    saveState();
+    renderAll();
+  });
+
+  sideBlueBtn.addEventListener('click', () => {
+    if(state.phase !== 'side') return;
+    state.side = {team: state.waitTeam, choice:'Blue'};
+    state.phase = 'done';
+    state.turnTeam = null;
+    saveState();
+    renderAll();
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    if(!confirm('Reset veto session? This will clear all bans, picks, and side.')) return;
+    state = defaultState();
+    saveState();
+    renderAll();
+  });
+
+  // initial render
+  renderAll();
+})();
+</script>
+</body>
+</html>
