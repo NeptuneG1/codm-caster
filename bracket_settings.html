@@ -279,6 +279,10 @@
     }
 
     /* Participants */
+    #participants-section{
+      max-height:260px;
+      overflow-y:auto;
+    }
     .participants-table{
       width:100%;
       border-collapse:collapse;
@@ -402,6 +406,7 @@
       white-space:normal;              /* allow wrapping */
       overflow-wrap:break-word;        /* break long words if needed */
       word-break:break-word;           /* extra safety for long tags */
+      /* text-overflow removed so we don’t force ellipsis on one line */
     }
     .player-row.bye span.name{
       color:var(--muted);
@@ -470,51 +475,44 @@
       z-index:1;
     }
 
-    /* SCORE SUMMARY */
-    .score-summary{
-      margin-top:10px;
-      padding:8px 10px;
-      border-radius:var(--radius-sm);
-      background:rgba(0,0,0,.18);
-      border:1px solid rgba(255,255,255,.06);
-      font-size:.8rem;
+    /* Score summary */
+    .score-summary-panel{
+      margin-top:8px;
+      border-radius:var(--radius-lg);
+      background:var(--panel);
+      border:1px solid var(--line);
+      padding:8px;
+      font-size:.78rem;
+      max-height:220px;
+      overflow-y:auto;
     }
-    .score-summary h3{
+    .score-summary-panel h3{
       font-size:.8rem;
       text-transform:uppercase;
       letter-spacing:.08em;
       color:var(--muted);
       margin-bottom:4px;
     }
-    .summary-table{
-      width:100%;
-      border-collapse:collapse;
-      margin-top:4px;
-      font-size:.78rem;
+    .score-summary-row{
+      display:flex;
+      justify-content:space-between;
+      gap:4px;
+      padding:2px 0;
+      border-bottom:1px dashed rgba(255,255,255,.06);
     }
-    .summary-table th,
-    .summary-table td{
-      padding:4px 6px;
-      border-bottom:1px solid var(--line);
+    .score-summary-row:last-child{
+      border-bottom:none;
     }
-    .summary-table th{
-      text-align:left;
-      color:var(--muted);
-      font-weight:500;
+    .score-summary-name{
+      flex:1 1 auto;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
-    .summary-table tbody tr:nth-child(even){
-      background:rgba(0,0,0,.12);
-    }
-    .summary-table td:nth-child(1){
-      width:40px;
-    }
-    .summary-table td:nth-child(3),
-    .summary-table td:nth-child(4),
-    .summary-table td:nth-child(5){
-      text-align:center;
-    }
-    .summary-table td:nth-child(6){
-      text-align:right;
+    .score-summary-value{
+      flex:0 0 auto;
+      font-variant-numeric:tabular-nums;
+      color:var(--brand);
     }
 
     @media(max-width:1040px){
@@ -689,12 +687,9 @@
             </div>
           </div>
         </div>
-
-        <!-- SCORE SUMMARY PANEL -->
-        <div id="score-summary" class="score-summary">
-          <p class="helper-text">
-            Score summary will appear here after you generate a bracket and start reporting scores.
-          </p>
+        <div id="score-summary-panel" class="score-summary-panel">
+          <h3>Score Summary</h3>
+          <div id="score-summary-body"></div>
         </div>
       </section>
     </main>
@@ -711,7 +706,6 @@
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // ------- STATE -------
-
     const state = {
       participants: [],        // [{id, name}]
       bracketParticipants: [], // includes real players only for single elim
@@ -757,12 +751,12 @@
     const bracketMath        = document.getElementById('bracket-math');
     const stagesList         = document.getElementById('stages-list');
     const addStageBtn        = document.getElementById('add-stage-btn');
-    const scoreSummary       = document.getElementById('score-summary');
+    const scoreSummaryPanel  = document.getElementById('score-summary-panel');
+    const scoreSummaryBody   = document.getElementById('score-summary-body');
 
     let nextParticipantId = 1;
 
     // ------- UTILITIES -------
-
     function createParticipant(name){
       return {
         id: 'p' + (nextParticipantId++),
@@ -1160,6 +1154,66 @@
         `${n} participants • up to ${rounds} rounds • bracket size ${bracketSize} • byes ${byes}${stageInfo}`;
     }
 
+    // ----- SCORE SUMMARY (PER PLAYER / TEAM) -----
+    function updateScoreSummary(){
+      if(!scoreSummaryBody) return;
+
+      scoreSummaryBody.innerHTML = '';
+
+      const totals = new Map();
+
+      state.rounds.forEach(round => {
+        round.forEach(m => {
+          if(m.p1){
+            const val1 = Number(m.s1);
+            if(Number.isFinite(val1)){
+              const key = m.p1.id;
+              const existing = totals.get(key) || { name:m.p1.name, total:0 };
+              existing.total += val1;
+              totals.set(key, existing);
+            }
+          }
+          if(m.p2){
+            const val2 = Number(m.s2);
+            if(Number.isFinite(val2)){
+              const key = m.p2.id;
+              const existing = totals.get(key) || { name:m.p2.name, total:0 };
+              existing.total += val2;
+              totals.set(key, existing);
+            }
+          }
+        });
+      });
+
+      const entries = Array.from(totals.values())
+        .sort((a,b) => b.total - a.total || a.name.localeCompare(b.name));
+
+      if(!entries.length){
+        const empty = document.createElement('div');
+        empty.className = 'helper-text';
+        empty.textContent = 'No reported scores yet. Use “Report score” on matches to populate this table.';
+        scoreSummaryBody.appendChild(empty);
+        return;
+      }
+
+      entries.forEach(row => {
+        const div = document.createElement('div');
+        div.className = 'score-summary-row';
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'score-summary-name';
+        nameSpan.textContent = row.name;
+
+        const valSpan = document.createElement('span');
+        valSpan.className = 'score-summary-value';
+        valSpan.textContent = row.total;
+
+        div.appendChild(nameSpan);
+        div.appendChild(valSpan);
+        scoreSummaryBody.appendChild(div);
+      });
+    }
+
     function recomputeBracketStructureIfExists(){
       if(state.participants.length >= 2 && state.rounds.length){
         generateBracket();
@@ -1169,7 +1223,6 @@
     }
 
     // ------- PARTICIPANTS UI -------
-
     function renderParticipants(){
       participantsBody.innerHTML = '';
       state.participants.forEach((p, idx) => {
@@ -1239,6 +1292,7 @@
       renderEmptyBracket();
       state.lastSavedId = null;
       renderSaveStatus(true);
+      updateScoreSummary();
     });
 
     formatSelect.addEventListener('change', () => {
@@ -1247,7 +1301,6 @@
     });
 
     // ------- UPLOAD PARTICIPANTS (CSV/TXT) -------
-
     function parseParticipantNamesFromText(text){
       const lines = text.split(/\r?\n/);
       const names = [];
@@ -1316,7 +1369,6 @@
     }
 
     // ------- STAGES UI -------
-
     function renderStages(){
       ensureStagesDefault();
       stagesList.innerHTML = '';
@@ -1386,7 +1438,6 @@
     }
 
     // ------- MATCH / BRACKET CORE -------
-
     function createMatch(roundNumber, indexInRound, p1, p2){
       const id = 'm' + (++state.matchCounter);
       const match = {
@@ -1481,11 +1532,11 @@
       }
 
       renderBracket();
+      updateScoreSummary();
       renderSaveStatus(true);
     }
 
     // ------- SINGLE ELIMINATION (SEQUENTIAL, 0–1 BYE PER ROUND, STAGE-AWARE) -------
-
     function generateSingleElimBracketSequential(seeded, maxRoundsOpt){
       const n = seeded.length;
 
@@ -1572,7 +1623,6 @@
     }
 
     // ------- GENERATION FOR EACH FORMAT -------
-
     function generateElimBracket(format, seeded){
       if(format === 'single'){
         // Stage-aware sequential single elim
@@ -1752,10 +1802,10 @@
       renderBracket();
       renderSaveStatus(true);
       updateBracketMath();
+      updateScoreSummary();
     }
 
     // ------- BRACKET RENDER -------
-
     function renderEmptyBracket(){
       bracketTitle.textContent = 'No bracket generated yet.';
       bracketMeta.textContent = '';
@@ -1767,10 +1817,6 @@
 
       const existing = bracketContainer.querySelector('#bracket-lines');
       if(existing) existing.remove();
-
-      if(scoreSummary){
-        scoreSummary.innerHTML = '<p class="helper-text">Score summary will appear here after you generate a bracket and start reporting scores.</p>';
-      }
     }
 
     function getStageForRound(roundNumber){
@@ -1893,101 +1939,6 @@
       row.appendChild(scoreInput);
 
       return row;
-    }
-
-    // ------- SCORE SUMMARY -------
-
-    function renderScoreSummary(){
-      if(!scoreSummary) return;
-
-      const participants = state.participants || [];
-      if(!participants.length){
-        scoreSummary.innerHTML = '<p class="helper-text">Add participants to see score summary.</p>';
-        return;
-      }
-      if(!state.rounds.length){
-        scoreSummary.innerHTML = '<p class="helper-text">Score summary will appear here after you generate a bracket and start reporting scores.</p>';
-        return;
-      }
-
-      const statsMap = new Map();
-
-      participants.forEach((p, idx) => {
-        statsMap.set(p.id, {
-          id: p.id,
-          name: p.name || ('Player ' + (idx+1)),
-          matches: 0,
-          wins: 0,
-          losses: 0,
-          totalScore: 0
-        });
-      });
-
-      state.rounds.forEach(roundMatches => {
-        roundMatches.forEach(m => {
-          const hasResult = !!m.winnerId;
-          const p1 = m.p1;
-          const p2 = m.p2;
-
-          if(p1 && !p1.isBye && statsMap.has(p1.id)){
-            const st = statsMap.get(p1.id);
-            if(hasResult) st.matches += 1;
-            const s1 = Number.isFinite(m.s1) ? m.s1 : 0;
-            st.totalScore += s1;
-            if(m.winnerId){
-              if(m.winnerId === p1.id) st.wins += 1;
-              else st.losses += 1;
-            }
-          }
-
-          if(p2 && !p2.isBye && statsMap.has(p2.id)){
-            const st = statsMap.get(p2.id);
-            if(hasResult) st.matches += 1;
-            const s2 = Number.isFinite(m.s2) ? m.s2 : 0;
-            st.totalScore += s2;
-            if(m.winnerId){
-              if(m.winnerId === p2.id) st.wins += 1;
-              else st.losses += 1;
-            }
-          }
-        });
-      });
-
-      const stats = Array.from(statsMap.values());
-      const allZero = stats.every(s => s.matches === 0 && s.totalScore === 0);
-
-      if(allZero){
-        scoreSummary.innerHTML = '<p class="helper-text">No scores reported yet. Once you report scores, total scores per team will show here.</p>';
-        return;
-      }
-
-      // Sort by totalScore desc, then wins desc, then name
-      stats.sort((a,b) => {
-        if(b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
-        if(b.wins !== a.wins) return b.wins - a.wins;
-        return a.name.localeCompare(b.name);
-      });
-
-      let html = '<h3>Score Summary</h3>';
-      html += '<table class="summary-table"><thead><tr><th>Seed</th><th>Player / Team</th><th>M</th><th>W</th><th>L</th><th>Total Score</th></tr></thead><tbody>';
-
-      stats.forEach(s => {
-        const seedIndex = participants.findIndex(p => p.id === s.id);
-        const seed = seedIndex >= 0 ? seedIndex + 1 : '—';
-        html += `
-          <tr>
-            <td>${seed}</td>
-            <td>${s.name}</td>
-            <td>${s.matches}</td>
-            <td>${s.wins}</td>
-            <td>${s.losses}</td>
-            <td>${s.totalScore}</td>
-          </tr>
-        `;
-      });
-
-      html += '</tbody></table>';
-      scoreSummary.innerHTML = html;
     }
 
     function renderBracket(){
@@ -2159,7 +2110,6 @@
       });
 
       drawBracketLines();
-      renderScoreSummary();
     }
 
     window.addEventListener('resize', () => {
@@ -2169,7 +2119,6 @@
     });
 
     // ------- TOURNAMENT LOADING / SWITCHING -------
-
     function resetStateForNewTournament(){
       nextParticipantId = 1;
       state.participants = [];
@@ -2205,6 +2154,7 @@
       renderStages();
       renderSaveStatus(false);
       updateBracketMath();
+      updateScoreSummary();
     }
 
     async function loadTournamentList(){
@@ -2333,6 +2283,7 @@
         }
         renderSaveStatus(false);
         updateBracketMath();
+        updateScoreSummary();
       }catch(err){
         console.error('Unexpected error loading bracket:', err);
         alert('Unexpected error loading bracket.');
@@ -2354,7 +2305,6 @@
     }
 
     // ------- SAVE TO DATABASE -------
-
     function renderSaveStatus(dirty){
       if(dirty){
         saveStatus.textContent = 'Changes not yet saved to database.';
@@ -2432,7 +2382,6 @@
     saveBtn.addEventListener('click', saveBracketToSupabase);
 
     // ------- INIT -------
-
     function init(){
       renderEmptyBracket();
       renderSaveStatus(false);
@@ -2440,6 +2389,7 @@
       loadTournamentList();
       renderStages();
       updateBracketMath();
+      updateScoreSummary();
     }
 
     document.addEventListener('DOMContentLoaded', init);
