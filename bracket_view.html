@@ -134,14 +134,15 @@
       display:flex;
       align-items:flex-start;
       gap:12px;
-      overflow-x:auto;
+      width:100%;
+      overflow-x:hidden;       /* no horizontal scroll */
       padding-bottom:4px;
     }
 
     .round-col{
-      flex:0 0 200px;
-      width:200px;
-      max-width:200px;
+      flex:1 1 0;              /* all rounds share width */
+      min-width:0;
+      max-width:none;
       display:flex;
       flex-direction:column;
       gap:8px;
@@ -253,7 +254,7 @@
 
     /* SCORE SUMMARY */
     .score-summary-section{
-      margin-top:4px;
+      margin-bottom:4px;
     }
     .score-summary-section h2{
       font-size:.8rem;
@@ -341,6 +342,16 @@
     </header>
 
     <main>
+      <!-- SCORE SUMMARY ON TOP -->
+      <div id="score-summary-section" class="score-summary-section">
+        <h2>Score Summary</h2>
+        <div id="score-summary-panel" class="score-summary-panel">
+          <div class="score-summary-empty">
+            Score summary will appear here once a bracket with results is loaded.
+          </div>
+        </div>
+      </div>
+
       <div class="bracket-header">
         <div class="bracket-title" id="bracket-title">—</div>
         <div id="bracket-meta"></div>
@@ -349,16 +360,6 @@
       <div id="bracket-container" class="bracket-container">
         <div class="empty-state">
           Waiting for a bracket to be saved from the settings page…
-        </div>
-      </div>
-
-      <!-- SCORE SUMMARY (viewer) -->
-      <div id="score-summary-section" class="score-summary-section">
-        <h2>Score Summary</h2>
-        <div id="score-summary-panel" class="score-summary-panel">
-          <div class="score-summary-empty">
-            Score summary will appear here once a bracket with results is loaded.
-          </div>
         </div>
       </div>
     </main>
@@ -374,12 +375,12 @@
 
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    const headerMeta       = document.getElementById('header-meta');
-    const refreshBtn       = document.getElementById('refresh-btn');
-    const bracketTitleEl   = document.getElementById('bracket-title');
-    const bracketMetaEl    = document.getElementById('bracket-meta');
-    const bracketContainer = document.getElementById('bracket-container');
-    const tournamentSelect = document.getElementById('tournament-select');
+    const headerMeta        = document.getElementById('header-meta');
+    const refreshBtn        = document.getElementById('refresh-btn');
+    const bracketTitleEl    = document.getElementById('bracket-title');
+    const bracketMetaEl     = document.getElementById('bracket-meta');
+    const bracketContainer  = document.getElementById('bracket-container');
+    const tournamentSelect  = document.getElementById('tournament-select');
     const scoreSummaryPanel = document.getElementById('score-summary-panel');
 
     const state = {
