@@ -139,9 +139,9 @@
     }
 
     .round-col{
-      flex:0 0 200px;          /* fixed flex-basis */
-      width:200px;             /* explicit width */
-      max-width:200px;         /* prevent stretching */
+      flex:0 0 200px;
+      width:200px;
+      max-width:200px;
       display:flex;
       flex-direction:column;
       gap:8px;
@@ -152,9 +152,9 @@
       letter-spacing:.08em;
       color:var(--muted);
       margin-bottom:4px;
-      white-space:normal;              /* allow wrapping */
-      overflow-wrap:break-word;        /* wrap long titles */
-      word-break:break-word;           /* extra safety */
+      white-space:normal;
+      overflow-wrap:break-word;
+      word-break:break-word;
     }
 
     .match-card{
@@ -167,7 +167,7 @@
       gap:4px;
       box-shadow:0 8px 12px rgba(0,0,0,.35);
       position:relative;
-      width:100%;              /* NEW: fill round column */
+      width:100%;
     }
     .match-meta{
       display:flex;
@@ -190,7 +190,7 @@
     .player-row{
       display:grid;
       grid-template-columns:22px minmax(0,1fr) 40px;
-      align-items:flex-start;          /* better for multi-line names */
+      align-items:flex-start;
       gap:4px;
       font-size:.8rem;
     }
@@ -200,9 +200,9 @@
       text-align:right;
     }
     .player-row span.name{
-      white-space:normal;              /* allow wrapping */
-      overflow-wrap:break-word;        /* wrap long words / tags */
-      word-break:break-word;           /* extra safety */
+      white-space:normal;
+      overflow-wrap:break-word;
+      word-break:break-word;
     }
     .player-row.bye span.name{
       color:var(--muted);
@@ -251,6 +251,64 @@
       width:100%;
     }
 
+    /* SCORE SUMMARY */
+    .score-summary-section{
+      margin-top:4px;
+    }
+    .score-summary-section h2{
+      font-size:.8rem;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      color:var(--muted);
+      margin-bottom:4px;
+    }
+    .score-summary-panel{
+      border-radius:var(--radius-sm);
+      background:var(--panel2);
+      border:1px solid var(--line);
+      max-height:260px;
+      overflow-y:auto;
+      font-size:.78rem;
+    }
+    .score-summary-empty{
+      font-size:.75rem;
+      color:var(--muted);
+      padding:6px 8px;
+    }
+    .score-summary-table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:.78rem;
+    }
+    .score-summary-table th,
+    .score-summary-table td{
+      padding:4px 6px;
+      border-bottom:1px solid var(--line);
+    }
+    .score-summary-table th{
+      text-align:left;
+      color:var(--muted);
+      font-weight:500;
+    }
+    .score-summary-table td.score-seed{
+      width:44px;
+      color:var(--muted);
+    }
+    .score-summary-table td.score-name{
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .score-summary-table td.score-total{
+      width:40px;
+      text-align:right;
+      font-variant-numeric:tabular-nums;
+      color:var(--brand);
+    }
+    .score-summary-table tbody tr:nth-child(even){
+      background:rgba(0,0,0,.06);
+    }
+
     @media(max-width:768px){
       header{
         flex-direction:column;
@@ -287,9 +345,20 @@
         <div class="bracket-title" id="bracket-title">—</div>
         <div id="bracket-meta"></div>
       </div>
+
       <div id="bracket-container" class="bracket-container">
         <div class="empty-state">
           Waiting for a bracket to be saved from the settings page…
+        </div>
+      </div>
+
+      <!-- SCORE SUMMARY (viewer) -->
+      <div id="score-summary-section" class="score-summary-section">
+        <h2>Score Summary</h2>
+        <div id="score-summary-panel" class="score-summary-panel">
+          <div class="score-summary-empty">
+            Score summary will appear here once a bracket with results is loaded.
+          </div>
         </div>
       </div>
     </main>
@@ -311,6 +380,7 @@
     const bracketMetaEl    = document.getElementById('bracket-meta');
     const bracketContainer = document.getElementById('bracket-container');
     const tournamentSelect = document.getElementById('tournament-select');
+    const scoreSummaryPanel = document.getElementById('score-summary-panel');
 
     const state = {
       settings: null,
@@ -517,6 +587,9 @@
           bracketContainer.innerHTML = '<div class="empty-state">Error loading bracket. Check console.</div>';
           bracketTitleEl.textContent = 'Error';
           bracketMetaEl.textContent = '';
+          state.participants = [];
+          state.rounds = [];
+          renderScoreSummary();
           return;
         }
 
@@ -525,6 +598,9 @@
           bracketContainer.innerHTML = '<div class="empty-state">No brackets found. Ask admin to save one from settings page.</div>';
           bracketTitleEl.textContent = 'No bracket';
           bracketMetaEl.textContent = '';
+          state.participants = [];
+          state.rounds = [];
+          renderScoreSummary();
           return;
         }
 
@@ -556,6 +632,9 @@
         bracketContainer.innerHTML = '<div class="empty-state">Unexpected error loading bracket.</div>';
         bracketTitleEl.textContent = 'Error';
         bracketMetaEl.textContent = '';
+        state.participants = [];
+        state.rounds = [];
+        renderScoreSummary();
       }
     }
 
@@ -575,6 +654,107 @@
       return map[fmt] || 'Bracket';
     }
 
+    // ===== SCORE SUMMARY LOGIC =====
+    function computeScoreSummaryTotals(){
+      const totals = {};
+      (state.participants || []).forEach(p => {
+        totals[p.id] = 0;
+      });
+
+      (state.rounds || []).forEach(round => {
+        round.forEach(m => {
+          let s1 = parseInt(m.s1 ?? 0, 10);
+          let s2 = parseInt(m.s2 ?? 0, 10);
+          if(Number.isNaN(s1)) s1 = 0;
+          if(Number.isNaN(s2)) s2 = 0;
+
+          if(m.p1 && !m.p1.isBye && Object.prototype.hasOwnProperty.call(totals, m.p1.id)){
+            totals[m.p1.id] += s1;
+          }
+          if(m.p2 && !m.p2.isBye && Object.prototype.hasOwnProperty.call(totals, m.p2.id)){
+            totals[m.p2.id] += s2;
+          }
+        });
+      });
+
+      return totals;
+    }
+
+    function renderScoreSummary(){
+      if(!scoreSummaryPanel) return;
+
+      scoreSummaryPanel.innerHTML = '';
+
+      if(!state.participants.length){
+        const empty = document.createElement('div');
+        empty.className = 'score-summary-empty';
+        empty.textContent = 'No participants loaded.';
+        scoreSummaryPanel.appendChild(empty);
+        return;
+      }
+
+      const totals = computeScoreSummaryTotals();
+
+      const ordered = state.participants.slice().sort((a,b) => {
+        const ta = totals[a.id] || 0;
+        const tb = totals[b.id] || 0;
+        if(tb !== ta) return tb - ta;
+        return (a.name || '').localeCompare(b.name || '');
+      });
+
+      const table = document.createElement('table');
+      table.className = 'score-summary-table';
+
+      const thead = document.createElement('thead');
+      const headRow = document.createElement('tr');
+
+      const thSeed = document.createElement('th');
+      thSeed.textContent = 'Seed';
+      headRow.appendChild(thSeed);
+
+      const thName = document.createElement('th');
+      thName.textContent = 'Name';
+      headRow.appendChild(thName);
+
+      const thTotal = document.createElement('th');
+      thTotal.textContent = 'Total';
+      thTotal.style.textAlign = 'right';
+      headRow.appendChild(thTotal);
+
+      thead.appendChild(headRow);
+      table.appendChild(thead);
+
+      const tbody = document.createElement('tbody');
+
+      ordered.forEach(p => {
+        const tr = document.createElement('tr');
+
+        let seed = '—';
+        const idx = state.participants.findIndex(pp => pp.id === p.id);
+        if(idx !== -1) seed = idx + 1;
+
+        const tdSeed = document.createElement('td');
+        tdSeed.className = 'score-seed';
+        tdSeed.textContent = seed;
+        tr.appendChild(tdSeed);
+
+        const tdName = document.createElement('td');
+        tdName.className = 'score-name';
+        tdName.textContent = p.name || '—';
+        tr.appendChild(tdName);
+
+        const tdTotal = document.createElement('td');
+        tdTotal.className = 'score-total';
+        tdTotal.textContent = totals[p.id] || 0;
+        tr.appendChild(tdTotal);
+
+        tbody.appendChild(tr);
+      });
+
+      table.appendChild(tbody);
+      scoreSummaryPanel.appendChild(table);
+    }
+
     // ===== Render Bracket =====
     function renderBracket(){
       const settings = state.settings || {};
@@ -585,6 +765,7 @@
         bracketTitleEl.textContent = settings.name || 'No bracket';
         bracketMetaEl.textContent  = '';
         bracketContainer.innerHTML = '<div class="empty-state">Bracket has no rounds yet.</div>';
+        renderScoreSummary();
         return;
       }
 
@@ -608,7 +789,6 @@
 
       bracketTitleEl.textContent = settings.name || 'Tournament Bracket';
 
-      // Meta line
       let metaPieces = [
         `Format: ${formatLabel}`,
         `Best of ${bestOf}`,
@@ -620,7 +800,6 @@
       }
       bracketMetaEl.textContent = metaPieces.join(' • ');
 
-      // Render rounds
       bracketContainer.innerHTML = '';
 
       rounds.forEach((roundMatches, idx) => {
@@ -696,6 +875,8 @@
 
         bracketContainer.appendChild(col);
       });
+
+      renderScoreSummary();
     }
 
     function createPlayerRow(match, slot){
