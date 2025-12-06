@@ -393,7 +393,7 @@
     .player-row{
       display:grid;
       grid-template-columns:22px minmax(0,1fr) 40px;
-      align-items:flex-start;          /* so multi-line names align nicely */
+      align-items:flex-start;
       gap:4px;
       font-size:.8rem;
     }
@@ -403,10 +403,9 @@
       text-align:right;
     }
     .player-row span.name{
-      white-space:normal;              /* allow wrapping */
-      overflow-wrap:break-word;        /* break long words if needed */
-      word-break:break-word;           /* extra safety for long tags */
-      /* text-overflow removed so we don’t force ellipsis on one line */
+      white-space:normal;
+      overflow-wrap:break-word;
+      word-break:break-word;
     }
     .player-row.bye span.name{
       color:var(--muted);
@@ -475,18 +474,17 @@
       z-index:1;
     }
 
-    /* Score summary */
+    /* Score summary (now in left column) */
     .score-summary-panel{
-      margin-top:8px;
       border-radius:var(--radius-lg);
       background:var(--panel);
       border:1px solid var(--line);
       padding:8px;
       font-size:.78rem;
-      max-height:220px;
+      max-height:280px; /* slightly taller */
       overflow-y:auto;
     }
-    .score-summary-panel h3{
+    .score-summary-panel h2{
       font-size:.8rem;
       text-transform:uppercase;
       letter-spacing:.08em;
@@ -671,6 +669,12 @@
             Seeding is based on row order. You can shuffle the list or manually edit names.
           </p>
         </section>
+
+        <!-- SCORE SUMMARY (moved here) -->
+        <section id="score-summary-panel" class="score-summary-panel">
+          <h2>Score Summary</h2>
+          <div id="score-summary-body"></div>
+        </section>
       </div>
 
       <!-- BRACKET PREVIEW -->
@@ -686,10 +690,6 @@
               Add at least 2 participants and click <strong>Generate bracket</strong> to build your first tree or schedule.
             </div>
           </div>
-        </div>
-        <div id="score-summary-panel" class="score-summary-panel">
-          <h3>Score Summary</h3>
-          <div id="score-summary-body"></div>
         </div>
       </section>
     </main>
