@@ -52,6 +52,7 @@
       justify-content:space-between;
       align-items:center;
       gap:8px;
+      flex-wrap:wrap;
     }
     header h1{
       font-size:1.05rem;
@@ -68,6 +69,8 @@
       align-items:center;
       gap:6px;
       flex-wrap:wrap;
+      justify-content:flex-end;
+      flex:1 1 auto;
     }
 
     header button{
@@ -82,6 +85,7 @@
       align-items:center;
       gap:4px;
       transition:background .15s,transform .05s,box-shadow .15s;
+      white-space:nowrap;
     }
     header button:hover{
       background:#20263a;
@@ -108,6 +112,27 @@
       box-shadow:0 0 0 1px rgba(127,210,255,.3);
     }
 
+    /* Search input */
+    #search-input{
+      background:var(--panel2);
+      border-radius:999px;
+      border:1px solid var(--line);
+      color:var(--ink);
+      padding:5px 10px;
+      font-size:.78rem;
+      min-width:150px;
+      max-width:220px;
+    }
+    #search-input::placeholder{
+      color:var(--muted);
+      opacity:.8;
+    }
+    #search-input:focus{
+      outline:none;
+      border-color:var(--accent);
+      box-shadow:0 0 0 1px rgba(127,210,255,.3);
+    }
+
     main{
       border-radius:var(--radius-lg);
       background:var(--panel);
@@ -125,6 +150,8 @@
       align-items:center;
       font-size:.78rem;
       color:var(--muted);
+      gap:4px;
+      flex-wrap:wrap;
     }
 
     .bracket-title{
@@ -229,6 +256,15 @@
       border-color:var(--brand);
     }
 
+    /* Highlight when searching */
+    .player-row.highlight span.name{
+      background:rgba(255,233,59,.18);
+      border-radius:6px;
+      padding:0 2px;
+      color:var(--brand);
+      font-weight:600;
+    }
+
     .match-status{
       font-size:.7rem;
       color:var(--muted);
@@ -320,6 +356,9 @@
     .score-summary-table tbody tr:nth-child(even){
       background:rgba(0,0,0,.06);
     }
+    .score-summary-table tr.highlight{
+      background:rgba(255,233,59,.16);
+    }
 
     /* MOBILE TWEAKS */
     @media(max-width:768px){
@@ -333,6 +372,18 @@
       header .meta{
         font-size:.7rem;
       }
+      .header-right{
+        width:100%;
+        justify-content:flex-start;
+      }
+      #tournament-select{
+        max-width:none;
+      }
+      #search-input{
+        flex:1 1 100%;
+        max-width:none;
+      }
+
       .bracket-header{
         flex-direction:column;
         align-items:flex-start;
@@ -354,13 +405,14 @@
         font-size:.74rem;
       }
 
-      /* IMPORTANT: on mobile, give rounds more width and allow horizontal scroll */
+      /* On mobile, bracket can scroll horizontally inside its own container, 
+         and each round gets more width so cards aren't cramped */
       .bracket-container{
-        overflow-x:auto;                 /* enable sideways scroll only inside bracket */
+        overflow-x:auto;
         -webkit-overflow-scrolling:touch;
       }
       .round-col{
-        flex:0 0 220px;                  /* each round ~220px wide */
+        flex:0 0 220px;
         max-width:220px;
       }
     }
@@ -377,6 +429,7 @@
         <select id="tournament-select">
           <option>Loading…</option>
         </select>
+        <input id="search-input" type="text" placeholder="Search player / team…"/>
         <button id="refresh-btn">
           <span>⟳</span>
           <span>Refresh</span>
@@ -417,13 +470,14 @@
 
     const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    const headerMeta       = document.getElementById('header-meta');
-    const refreshBtn       = document.getElementById('refresh-btn');
-    const bracketTitleEl   = document.getElementById('bracket-title');
-    const bracketMetaEl    = document.getElementById('bracket-meta');
-    const bracketContainer = document.getElementById('bracket-container');
-    const tournamentSelect = document.getElementById('tournament-select');
+    const headerMeta        = document.getElementById('header-meta');
+    const refreshBtn        = document.getElementById('refresh-btn');
+    const bracketTitleEl    = document.getElementById('bracket-title');
+    const bracketMetaEl     = document.getElementById('bracket-meta');
+    const bracketContainer  = document.getElementById('bracket-container');
+    const tournamentSelect  = document.getElementById('tournament-select');
     const scoreSummaryPanel = document.getElementById('score-summary-panel');
+    const searchInput       = document.getElementById('search-input');
 
     const state = {
       settings: null,
@@ -434,6 +488,8 @@
       tournaments: [],
       stageRanges: []
     };
+
+    let lastSummaryRows = [];
 
     // ===== URL Helpers =====
     function getBracketIdFromURL(){
@@ -601,6 +657,7 @@
 
       headerMeta.textContent = 'Loading bracket from database…';
       bracketContainer.innerHTML = '<div class="empty-state">Loading bracket…</div>';
+      renderScoreSummary([]); // clear summary while loading
 
       try{
         let data, error;
@@ -630,7 +687,6 @@
           bracketContainer.innerHTML = '<div class="empty-state">Error loading bracket. Check console.</div>';
           bracketTitleEl.textContent = 'Error';
           bracketMetaEl.textContent = '';
-          renderScoreSummary([]); // clear summary
           return;
         }
 
@@ -639,7 +695,6 @@
           bracketContainer.innerHTML = '<div class="empty-state">No brackets found. Ask admin to save one from settings page.</div>';
           bracketTitleEl.textContent = 'No bracket';
           bracketMetaEl.textContent = '';
-          renderScoreSummary([]); // clear summary
           return;
         }
 
@@ -665,6 +720,13 @@
         }
 
         renderBracket();
+
+        // Re-apply search filter after loading (if user typed something)
+        if(searchInput && searchInput.value.trim()){
+          const q = searchInput.value.trim().toLowerCase();
+          applyScoreSummaryFilter(q);
+          applyBracketSearchHighlight(q);
+        }
       }catch(err){
         console.error('Unexpected error loading bracket:', err);
         headerMeta.textContent = 'Unexpected error loading bracket.';
@@ -761,6 +823,8 @@
     function renderScoreSummary(rows){
       if(!scoreSummaryPanel) return;
 
+      lastSummaryRows = rows || [];
+
       if(!rows || !rows.length){
         scoreSummaryPanel.innerHTML = '<div class="score-summary-empty">Scores will appear here when results are reported.</div>';
         return;
@@ -775,9 +839,9 @@
           <th style="width:32px;text-align:right;">#</th>
           <th>Name</th>
           <th style="width:38px;text-align:right;">MP</th>
-          <th style="width:40px;text-align:right;">W</th>
-          <th style="width:40px;text-align:right;">L</th>
-          <th style="width:46px;text-align:right;">Pts</th>
+          <th style="width:40px;text-align:right;">For</th>
+          <th style="width:40px;text-align:right;">Ag</th>
+          <th style="width:46px;text-align:right;">±</th>
         </tr>
       `;
       table.appendChild(thead);
@@ -825,6 +889,72 @@
       scoreSummaryPanel.appendChild(table);
     }
 
+    // Apply search to summary
+    function applyScoreSummaryFilter(query){
+      if(!lastSummaryRows || !lastSummaryRows.length){
+        renderScoreSummary(lastSummaryRows);
+        return;
+      }
+      if(!query){
+        renderScoreSummary(lastSummaryRows);
+        return;
+      }
+      const q = query.toLowerCase();
+      const filtered = lastSummaryRows.filter(r =>
+        (r.name || '').toLowerCase().includes(q)
+      );
+      renderScoreSummary(filtered);
+
+      // Highlight matched rows in table
+      const table = scoreSummaryPanel.querySelector('.score-summary-table tbody');
+      if(!table) return;
+      Array.from(table.rows).forEach(row => {
+        const nameCell = row.querySelector('.score-name');
+        if(!nameCell){
+          row.classList.remove('highlight');
+          return;
+        }
+        const name = (nameCell.textContent || '').toLowerCase();
+        if(q && name.includes(q)){
+          row.classList.add('highlight');
+        }else{
+          row.classList.remove('highlight');
+        }
+      });
+    }
+
+    // Highlight & scroll in bracket
+    function applyBracketSearchHighlight(query){
+      const rows = bracketContainer.querySelectorAll('.player-row');
+      rows.forEach(row => row.classList.remove('highlight'));
+
+      if(!query){
+        return;
+      }
+      const q = query.toLowerCase();
+      let firstMatchCard = null;
+
+      rows.forEach(row => {
+        const nameEl = row.querySelector('.name');
+        if(!nameEl) return;
+        const name = (nameEl.textContent || '').toLowerCase();
+        if(name.includes(q)){
+          row.classList.add('highlight');
+          if(!firstMatchCard){
+            firstMatchCard = row.closest('.match-card');
+          }
+        }
+      });
+
+      if(firstMatchCard){
+        firstMatchCard.scrollIntoView({
+          behavior:'smooth',
+          block:'center',
+          inline:'center'
+        });
+      }
+    }
+
     // ===== Render Bracket =====
     function renderBracket(){
       const settings = state.settings || {};
@@ -835,7 +965,7 @@
         bracketTitleEl.textContent = settings.name || 'No bracket';
         bracketMetaEl.textContent  = '';
         bracketContainer.innerHTML = '<div class="empty-state">Bracket has no rounds yet.</div>';
-        renderScoreSummary([]); // clear summary
+        renderScoreSummary([]);
         return;
       }
 
@@ -951,6 +1081,13 @@
       // After bracket render, update score summary
       const summaryRows = computeScoreSummary();
       renderScoreSummary(summaryRows);
+
+      // Re-apply search highlight if query exists
+      if(searchInput && searchInput.value.trim()){
+        const q = searchInput.value.trim().toLowerCase();
+        applyScoreSummaryFilter(q);
+        applyBracketSearchHighlight(q);
+      }
     }
 
     function createPlayerRow(match, slot){
@@ -999,6 +1136,14 @@
       updateUrlFromSelection();
       loadBracket();
     });
+
+    if(searchInput){
+      searchInput.addEventListener('input', () => {
+        const q = searchInput.value.trim().toLowerCase();
+        applyScoreSummaryFilter(q);
+        applyBracketSearchHighlight(q);
+      });
+    }
 
     document.addEventListener('DOMContentLoaded', () => {
       loadTournamentList();
