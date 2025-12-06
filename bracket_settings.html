@@ -1475,6 +1475,27 @@
       }
     }
 
+    // NEW: reset match to 0–0 & clear winner
+    function resetMatch(matchId){
+      const m = state.matchById[matchId];
+      if(!m) return;
+
+      const format = state.settings.format || 'single';
+      const isElim = (format === 'single' || format === 'double');
+
+      if(isElim && m.winnerId){
+        clearAdvancement(m);
+      }
+
+      m.s1 = 0;
+      m.s2 = 0;
+      m.winnerId = null;
+
+      renderBracket();
+      renderSaveStatus(true);
+    }
+
+    // UPDATED: allow ties + 0–0 reset
     function setMatchResult(matchId, score1, score2){
       const m = state.matchById[matchId];
       if(!m) return;
@@ -1490,13 +1511,37 @@
         alert('Please enter numeric scores for both players.');
         return;
       }
-      if(s1 === s2){
-        alert('Ties are not allowed in this view. Adjust the scores.');
+
+      const format = state.settings.format || 'single';
+      const isElim = (format === 'single' || format === 'double');
+
+      // 0–0 → treat as reset/clear
+      if(s1 === 0 && s2 === 0){
+        if(isElim && m.winnerId){
+          clearAdvancement(m);
+        }
+        m.s1 = 0;
+        m.s2 = 0;
+        m.winnerId = null;
+        renderBracket();
+        renderSaveStatus(true);
         return;
       }
 
-      const isElim = (state.settings.format === 'single' || state.settings.format === 'double');
+      // Equal non-zero scores → tie (no winner, no advancement)
+      if(s1 === s2){
+        if(isElim && m.winnerId){
+          clearAdvancement(m);
+        }
+        m.s1 = s1;
+        m.s2 = s2;
+        m.winnerId = null;
+        renderBracket();
+        renderSaveStatus(true);
+        return;
+      }
 
+      // Normal win/lose result
       if(isElim){
         clearAdvancement(m);
       }
@@ -2149,27 +2194,27 @@
           const status = document.createElement('div');
           status.className = 'match-status';
 
+          const s1Val = parseInt(m.s1 ?? 0,10);
+          const s2Val = parseInt(m.s2 ?? 0,10);
+          const isPureBye =
+            (m.p1 && m.p1.isBye) &&
+            (m.p2 && m.p2.isBye);
+
           if(m.winnerId){
             const winner = findParticipantById(m.winnerId);
             status.innerHTML = `<span class="winner-tag">Winner:</span> ${winner ? winner.name : '—'}`;
+          }else if(!Number.isNaN(s1Val) && !Number.isNaN(s2Val) && s1Val === s2Val && s1Val > 0){
+            status.innerHTML = `<span class="pending">Result: Tie (${s1Val} – ${s2Val})</span>`;
+          }else if(isPureBye){
+            status.innerHTML = `<span class="pending">Unused BYE slot</span>`;
           }else{
-            const isPureBye =
-              (m.p1 && m.p1.isBye) &&
-              (m.p2 && m.p2.isBye);
-            if(isPureBye){
-              status.innerHTML = `<span class="pending">Unused BYE slot</span>`;
-            }else{
-              status.innerHTML = `<span class="pending">Awaiting result…</span>`;
-            }
+            status.innerHTML = `<span class="pending">Awaiting result…</span>`;
           }
 
           const reportBtn = document.createElement('button');
           reportBtn.className = 'primary';
           reportBtn.textContent = 'Report score';
 
-          const isPureBye =
-            (m.p1 && m.p1.isBye) &&
-            (m.p2 && m.p2.isBye);
           if(isPureBye){
             reportBtn.disabled = true;
           }
@@ -2181,8 +2226,13 @@
             setMatchResult(m.id, s1, s2);
           });
 
+          const resetBtn = document.createElement('button');
+          resetBtn.textContent = 'Reset';
+          resetBtn.addEventListener('click', () => resetMatch(m.id));
+
           actions.appendChild(status);
           actions.appendChild(reportBtn);
+          actions.appendChild(resetBtn);
           card.appendChild(actions);
 
           col.appendChild(card);
