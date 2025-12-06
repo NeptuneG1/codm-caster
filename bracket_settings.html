@@ -278,24 +278,29 @@
       font-size:.75rem;
     }
 
-    /* Participants */
-    .participants-wrapper{
-      margin-top:4px;
-      max-height:260px;          /* slightly taller scroll area */
-      overflow-y:auto;
-      border-radius:var(--radius-sm);
-      border:1px solid var(--line);
+    /* PARTICIPANTS */
+    #participants-section{
+      display:flex;
+      flex-direction:column;
+      max-height:280px;
+      overflow:hidden;
     }
+    .participants-scroll{
+      flex:1;
+      overflow-y:auto;
+      margin-top:4px;
+      padding-right:4px;
+    }
+
     .participants-table{
       width:100%;
       border-collapse:collapse;
       font-size:.8rem;
+      border-radius:var(--radius-sm);
+      overflow:hidden;
     }
     .participants-table thead{
       background:var(--panel2);
-      position:sticky;
-      top:0;
-      z-index:1;
     }
     .participants-table th,
     .participants-table td{
@@ -328,56 +333,68 @@
       background:rgba(0,0,0,.06);
     }
 
-    /* SCORE SUMMARY PANEL */
+    /* SCORE SUMMARY */
     #score-summary-section{
-      padding-top:10px;
-      padding-bottom:10px;
+      display:flex;
+      flex-direction:column;
+      max-height:260px;
+      overflow:hidden;
     }
+
     .score-summary-panel{
       border-radius:var(--radius-sm);
       background:var(--panel2);
       border:1px solid var(--line);
-      padding:6px 8px;
+      padding:0;
       font-size:.75rem;
-      max-height:260px;          /* scrollable area */
+      flex:1;
       overflow-y:auto;
     }
-    .score-summary-panel h3{
-      font-size:.78rem;
-      text-transform:uppercase;
-      letter-spacing:.08em;
-      color:var(--muted);
-      margin-bottom:4px;
-    }
+
     .score-summary-empty{
       font-size:.75rem;
       color:var(--muted);
-      padding:4px 2px;
+      padding:6px 8px;
     }
-    .score-summary-row{
-      display:flex;
-      align-items:center;
-      gap:6px;
-      padding:1px 0;
-      border-bottom:1px dashed rgba(255,255,255,.06);
+
+    .score-summary-table{
+      width:100%;
+      border-collapse:collapse;
+      font-size:.78rem;
     }
-    .score-summary-row:last-child{
-      border-bottom:none;
+    .score-summary-table thead{
+      position:sticky;
+      top:0;
+      background:var(--panel2);
+      z-index:1;
     }
-    .score-summary-name{
-      flex:1 1 0;
-      min-width:0;
+    .score-summary-table th,
+    .score-summary-table td{
+      padding:4px 6px;
+      border-bottom:1px solid var(--line);
+    }
+    .score-summary-table th{
+      color:var(--muted);
+      font-weight:500;
+      text-align:left;
+    }
+    .score-summary-table td.score-seed{
+      width:44px;
+      color:var(--muted);
+    }
+    .score-summary-table td.score-name{
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
-      font-size:.75rem;
     }
-    .score-summary-value{
-      flex:0 0 32px;
+    .score-summary-table td.score-total{
+      width:40px;
       text-align:right;
       font-variant-numeric:tabular-nums;
       color:var(--brand);
-      font-size:.75rem;
+    }
+    .score-summary-table tbody tr:nth-child(even){
+      background:rgba(0,0,0,.06);
     }
 
     /* Bracket */
@@ -668,8 +685,7 @@
         <!-- PARTICIPANTS -->
         <section id="participants-section">
           <h2>Participants</h2>
-
-          <div class="participants-wrapper">
+          <div class="participants-scroll">
             <table class="participants-table">
               <thead>
                 <tr>
@@ -681,19 +697,19 @@
               <tbody id="participants-body">
               </tbody>
             </table>
-          </div>
 
-          <p class="helper-text">
-            Seeding is based on row order. You can shuffle the list or manually edit names.
-          </p>
+            <p class="helper-text">
+              Seeding is based on row order. You can shuffle the list or manually edit names.
+            </p>
+          </div>
         </section>
 
         <!-- SCORE SUMMARY -->
         <section id="score-summary-section">
           <h2>Score Summary</h2>
-          <div class="score-summary-panel" id="score-summary-panel">
+          <div id="score-summary-panel" class="score-summary-panel">
             <div class="score-summary-empty">
-              No scores recorded yet. After you report match scores, totals per participant will appear here.
+              Add participants and generate a bracket to see total scores per player.
             </div>
           </div>
         </section>
@@ -948,7 +964,7 @@
         };
       }
 
-      // With stages: chain them; each stage uses minimum rounds to reach its topX
+      // With stages: chain them; each stage uses minimum rounds to reach its topX (or fewer if math can't hit exactly).
       for(let i=0; i<stages.length && remaining>1 && totalRounds<32; i++){
         const st = stages[i];
         if(!st.topX || st.topX <= 0) continue;
@@ -1049,7 +1065,7 @@
       return schedule;
     }
 
-    // ----- SWISS -----
+    // ----- SWISS (rotation-based, 1 bye max per round, no repeat BYE) -----
     function buildSwissSchedule(players){
       const arr = players.slice();
 
@@ -1183,81 +1199,6 @@
       }
     }
 
-    // ------- SCORE SUMMARY LOGIC -------
-    function computeScoreSummaryTotals(){
-      const totals = {};
-      // initialize everyone at 0
-      state.participants.forEach(p => {
-        totals[p.id] = 0;
-      });
-
-      if(!state.rounds || !state.rounds.length) return totals;
-
-      state.rounds.forEach(round => {
-        round.forEach(m => {
-          if(!m) return;
-          if(m.p1 && !m.p1.isBye){
-            const v1 = parseInt(m.s1 ?? 0, 10);
-            if(!Number.isNaN(v1)) totals[m.p1.id] = (totals[m.p1.id] || 0) + v1;
-          }
-          if(m.p2 && !m.p2.isBye){
-            const v2 = parseInt(m.s2 ?? 0, 10);
-            if(!Number.isNaN(v2)) totals[m.p2.id] = (totals[m.p2.id] || 0) + v2;
-          }
-        });
-      });
-
-      return totals;
-    }
-
-    function renderScoreSummary(){
-      if(!scoreSummaryPanel) return;
-
-      scoreSummaryPanel.innerHTML = '';
-
-      if(!state.participants.length){
-        scoreSummaryPanel.innerHTML =
-          '<div class="score-summary-empty">Add participants to see score summary.</div>';
-        return;
-      }
-
-      const totals = computeScoreSummaryTotals();
-
-      const ordered = state.participants.slice().sort((a,b) => {
-        const ta = totals[a.id] || 0;
-        const tb = totals[b.id] || 0;
-        if(tb !== ta) return tb - ta;           // sort by score desc
-        return (a.name || '').localeCompare(b.name || '');
-      });
-
-      let allZero = true;
-      ordered.forEach(p => {
-        if((totals[p.id] || 0) !== 0) allZero = false;
-      });
-
-      if(allZero){
-        // Optional header row explaining zeros – but still list everyone for visibility
-        // (we'll just render rows below; users see all 0s like your screenshot)
-      }
-
-      ordered.forEach(p => {
-        const row = document.createElement('div');
-        row.className = 'score-summary-row';
-
-        const nameDiv = document.createElement('div');
-        nameDiv.className = 'score-summary-name';
-        nameDiv.textContent = p.name || '—';
-
-        const valDiv = document.createElement('div');
-        valDiv.className = 'score-summary-value';
-        valDiv.textContent = totals[p.id] || 0;
-
-        row.appendChild(nameDiv);
-        row.appendChild(valDiv);
-        scoreSummaryPanel.appendChild(row);
-      });
-    }
-
     // ------- PARTICIPANTS UI -------
     function renderParticipants(){
       participantsBody.innerHTML = '';
@@ -1331,7 +1272,6 @@
       renderEmptyBracket();
       state.lastSavedId = null;
       renderSaveStatus(true);
-      renderScoreSummary();
     });
 
     formatSelect.addEventListener('change', () => {
@@ -1572,10 +1512,9 @@
 
       renderBracket();
       renderSaveStatus(true);
-      renderScoreSummary();
     }
 
-    // ------- SINGLE ELIMINATION (SEQUENTIAL) -------
+    // ------- SINGLE ELIMINATION (SEQUENTIAL, 0–1 BYE PER ROUND, STAGE-AWARE) -------
     function generateSingleElimBracketSequential(seeded, maxRoundsOpt){
       const n = seeded.length;
 
@@ -1596,15 +1535,17 @@
       let roundIndex = 1;
       const maxRounds = (typeof maxRoundsOpt === 'number' && maxRoundsOpt > 0)
         ? maxRoundsOpt
-        : 32;
+        : 32; // safety cap if no stages
 
       while(currentTokens.length > 1 && roundIndex <= maxRounds){
         const roundMatches = [];
         const nextTokens = [];
 
+        // If odd count, exactly ONE bye token auto-advances
         if(currentTokens.length % 2 === 1){
           let byeIdx = -1;
 
+          // Prefer a player who hasn’t had a bye yet
           for(let i=0; i<currentTokens.length; i++){
             const t = currentTokens[i];
             if(t.type === 'player' && !byeUsedMap[t.playerId]){
@@ -1612,15 +1553,18 @@
               break;
             }
           }
+          // Fallback: last token
           if(byeIdx === -1) byeIdx = currentTokens.length - 1;
 
           const [byeToken] = currentTokens.splice(byeIdx, 1);
           if(byeToken.type === 'player'){
             byeUsedMap[byeToken.playerId] = true;
           }
+          // This token goes straight to next round
           nextTokens.push(byeToken);
         }
 
+        // Now we have an even number of tokens; pair them
         for(let i=0; i<currentTokens.length; i+=2){
           const t1 = currentTokens[i];
           const t2 = currentTokens[i+1];
@@ -1653,11 +1597,13 @@
 
       state.settings.totalRounds = state.rounds.length;
       state.settings.bracketSize = n;
+      // byes count is computed in meta; we keep it there.
     }
 
     // ------- GENERATION FOR EACH FORMAT -------
     function generateElimBracket(format, seeded){
       if(format === 'single'){
+        // Stage-aware sequential single elim
         const meta = computeSequentialStageMeta(seeded.length, state.settings.stages);
         state.stageRanges          = meta.stageRanges || [];
         state.settings.totalRounds = meta.totalRounds;
@@ -1667,7 +1613,8 @@
         return;
       }
 
-      // DOUBLE ELIM: power-of-two style bracket
+      // For DOUBLE ELIM (or other elim variants you might add later),
+      // we keep the power-of-two style bracket + byes.
       const n = seeded.length;
       const maxRounds  = Math.ceil(Math.log2(n));
       const bracketSize = 1 << maxRounds;
@@ -1833,7 +1780,6 @@
       renderBracket();
       renderSaveStatus(true);
       updateBracketMath();
-      renderScoreSummary();
     }
 
     // ------- BRACKET RENDER -------
@@ -1848,6 +1794,8 @@
 
       const existing = bracketContainer.querySelector('#bracket-lines');
       if(existing) existing.remove();
+
+      renderScoreSummary();
     }
 
     function getStageForRound(roundNumber){
@@ -1935,6 +1883,109 @@
       }
     }
 
+    // ------- SCORE SUMMARY HELPERS -------
+    function computeScoreSummaryTotals(){
+      const totals = {};
+      state.participants.forEach(p => {
+        totals[p.id] = 0;
+      });
+
+      state.rounds.forEach(round => {
+        round.forEach(m => {
+          let s1 = parseInt(m.s1 ?? 0, 10);
+          let s2 = parseInt(m.s2 ?? 0, 10);
+          if(Number.isNaN(s1)) s1 = 0;
+          if(Number.isNaN(s2)) s2 = 0;
+
+          if(m.p1 && !m.p1.isBye && totals.hasOwnProperty(m.p1.id)){
+            totals[m.p1.id] += s1;
+          }
+          if(m.p2 && !m.p2.isBye && totals.hasOwnProperty(m.p2.id)){
+            totals[m.p2.id] += s2;
+          }
+        });
+      });
+
+      return totals;
+    }
+
+    function renderScoreSummary(){
+      if(!scoreSummaryPanel) return;
+
+      scoreSummaryPanel.innerHTML = '';
+
+      if(!state.participants.length){
+        const empty = document.createElement('div');
+        empty.className = 'score-summary-empty';
+        empty.textContent = 'Add participants to see score summary.';
+        scoreSummaryPanel.appendChild(empty);
+        return;
+      }
+
+      const totals = computeScoreSummaryTotals();
+
+      // Order by total desc, then name asc
+      const ordered = state.participants.slice().sort((a,b) => {
+        const ta = totals[a.id] || 0;
+        const tb = totals[b.id] || 0;
+        if(tb !== ta) return tb - ta;
+        return (a.name || '').localeCompare(b.name || '');
+      });
+
+      const table = document.createElement('table');
+      table.className = 'score-summary-table';
+
+      const thead = document.createElement('thead');
+      const headRow = document.createElement('tr');
+
+      const thSeed = document.createElement('th');
+      thSeed.textContent = 'Seed';
+      headRow.appendChild(thSeed);
+
+      const thName = document.createElement('th');
+      thName.textContent = 'Name';
+      headRow.appendChild(thName);
+
+      const thTotal = document.createElement('th');
+      thTotal.textContent = 'Total';
+      thTotal.style.textAlign = 'right';
+      headRow.appendChild(thTotal);
+
+      thead.appendChild(headRow);
+      table.appendChild(thead);
+
+      const tbody = document.createElement('tbody');
+
+      ordered.forEach(p => {
+        const tr = document.createElement('tr');
+
+        // Seed based on original participants order
+        let seed = '—';
+        const idx = state.participants.findIndex(pp => pp.id === p.id);
+        if(idx !== -1) seed = idx + 1;
+
+        const tdSeed = document.createElement('td');
+        tdSeed.className = 'score-seed';
+        tdSeed.textContent = seed;
+        tr.appendChild(tdSeed);
+
+        const tdName = document.createElement('td');
+        tdName.className = 'score-name';
+        tdName.textContent = p.name || '—';
+        tr.appendChild(tdName);
+
+        const tdTotal = document.createElement('td');
+        tdTotal.className = 'score-total';
+        tdTotal.textContent = totals[p.id] || 0;
+        tr.appendChild(tdTotal);
+
+        tbody.appendChild(tr);
+      });
+
+      table.appendChild(tbody);
+      scoreSummaryPanel.appendChild(table);
+    }
+
     function createPlayerRow(match, slot){
       const row = document.createElement('div');
       row.className = 'player-row';
@@ -1975,7 +2026,6 @@
     function renderBracket(){
       if(!state.rounds.length){
         renderEmptyBracket();
-        renderScoreSummary();
         return;
       }
 
@@ -1990,6 +2040,7 @@
         roundsCount = state.settings.totalRounds || state.rounds.length;
         bracketSize = state.settings.bracketSize || n;
         byes        = state.settings.byes || 0;
+        // stageRanges already computed by computeSequentialStageMeta
       }else if(format === 'double'){
         const rounds = Math.ceil(Math.log2(Math.max(n,2)));
         roundsCount = state.settings.totalRounds || rounds;
@@ -2186,7 +2237,6 @@
       renderStages();
       renderSaveStatus(false);
       updateBracketMath();
-      renderScoreSummary();
     }
 
     async function loadTournamentList(){
@@ -2315,7 +2365,6 @@
         }
         renderSaveStatus(false);
         updateBracketMath();
-        renderScoreSummary();
       }catch(err){
         console.error('Unexpected error loading bracket:', err);
         alert('Unexpected error loading bracket.');
@@ -2421,7 +2470,6 @@
       loadTournamentList();
       renderStages();
       updateBracketMath();
-      renderScoreSummary();
     }
 
     document.addEventListener('DOMContentLoaded', init);
