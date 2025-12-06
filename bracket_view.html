@@ -32,7 +32,7 @@
       display:flex;
       justify-content:center;
       padding:12px;
-      overflow-x:hidden; /* prevent horizontal scroll from bracket */
+      overflow-x:hidden; /* prevent full-page horizontal scroll */
     }
 
     .app{
@@ -136,12 +136,12 @@
       align-items:flex-start;
       gap:12px;
       width:100%;
-      overflow-x:visible; /* bracket not scrollable */
+      overflow-x:hidden;     /* default: no scroll on larger screens */
       padding-bottom:4px;
     }
 
     .round-col{
-      flex:1 1 0;              /* all rounds share width */
+      flex:1 1 0;            /* rounds share available width */
       min-width:0;
       max-width:none;
       display:flex;
@@ -281,7 +281,7 @@
       width:100%;
       border-collapse:collapse;
       font-size:.78rem;
-      table-layout:fixed;      /* helps keep columns consistent */
+      table-layout:fixed;
     }
     .score-summary-table th,
     .score-summary-table td{
@@ -300,9 +300,6 @@
       width:32px;
       text-align:right;
       color:var(--muted);
-    }
-    .score-summary-table td.score-name{
-      /* name will flex but ellipsis instead of wrapping */
     }
     .score-summary-table td.score-mp{
       width:38px;
@@ -324,6 +321,7 @@
       background:rgba(0,0,0,.06);
     }
 
+    /* MOBILE TWEAKS */
     @media(max-width:768px){
       header{
         flex-direction:column;
@@ -350,10 +348,20 @@
         font-size:.75rem;
       }
       .score-summary-panel{
-        max-height:140px; /* slightly smaller on mobile */
+        max-height:140px;
       }
       .score-summary-table{
         font-size:.74rem;
+      }
+
+      /* IMPORTANT: on mobile, give rounds more width and allow horizontal scroll */
+      .bracket-container{
+        overflow-x:auto;                 /* enable sideways scroll only inside bracket */
+        -webkit-overflow-scrolling:touch;
+      }
+      .round-col{
+        flex:0 0 220px;                  /* each round ~220px wide */
+        max-width:220px;
       }
     }
   </style>
