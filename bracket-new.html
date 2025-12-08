@@ -226,16 +226,6 @@
       transform:none;
     }
 
-    /* NEW: danger button for DQ */
-    button.danger{
-      background:var(--danger);
-      color:#05060a;
-      font-weight:600;
-    }
-    button.danger:hover{
-      background:#ff8787;
-    }
-
     .pill{
       display:inline-flex;
       align-items:center;
@@ -401,7 +391,6 @@
       text-overflow:ellipsis;
     }
     
-    /* MP, BYE, Total Match, W, L, ± */
     .score-summary-table td.score-mp,
     .score-summary-table td.score-bye,
     .score-summary-table td.score-total-m,
@@ -413,7 +402,6 @@
       font-variant-numeric:tabular-nums;
     }
     
-    /* Highlight the diff column like in the screenshot */
     .score-summary-table td.score-diff{
       color:var(--brand);
     }
@@ -443,7 +431,7 @@
       gap:12px;
       overflow-x:auto;
       padding-bottom:4px;
-      position:relative;        /* for SVG overlay */
+      position:relative;
     }
     .round-col{
       min-width:180px;
@@ -467,7 +455,7 @@
       flex-direction:column;
       gap:4px;
       box-shadow:0 8px 12px rgba(0,0,0,.35);
-      position:relative;        /* above SVG */
+      position:relative;
       z-index:2;
     }
     .match-meta{
@@ -490,7 +478,7 @@
     .player-row{
       display:grid;
       grid-template-columns:22px minmax(0,1fr) 40px;
-      align-items:flex-start;          /* so multi-line names align nicely */
+      align-items:flex-start;
       gap:4px;
       font-size:.8rem;
     }
@@ -500,9 +488,9 @@
       text-align:right;
     }
     .player-row span.name{
-      white-space:normal;              /* allow wrapping */
-      overflow-wrap:break-word;        /* break long words if needed */
-      word-break:break-word;           /* extra safety for long tags */
+      white-space:normal;
+      overflow-wrap:break-word;
+      word-break:break-word;
     }
     .player-row.bye span.name{
       color:var(--muted);
@@ -532,9 +520,14 @@
       gap:4px;
       flex-wrap:wrap;
     }
+    .match-actions button{
+      padding:4px 8px;
+      font-size:.72rem;
+    }
     .match-status{
       font-size:.7rem;
       color:var(--muted);
+      flex:1 1 auto;
     }
     .match-status .winner-tag{
       color:var(--brand);
@@ -559,7 +552,6 @@
       margin-top:4px;
     }
 
-    /* SVG connector layer */
     .bracket-lines{
       position:absolute;
       top:0;
@@ -668,7 +660,7 @@
                 Add participant
               </button>
 
-              <!-- NEW: Upload CSV/TXT -->
+              <!-- Upload CSV/TXT -->
               <button id="upload-participants-btn">
                 <span class="icon">📂</span>
                 Upload list (.csv / .txt)
@@ -697,7 +689,6 @@
               1) Select tournament (or create new) • 2) Add participants • 3) Generate bracket • 4) Report scores • 5) Save/update.  
               Public can view on <code>bracket_view.html</code>.
             </p>
-            <!-- live bracket math helper -->
             <p id="bracket-math" class="helper-text"></p>
 
             <p id="save-status"></p>
@@ -767,14 +758,14 @@
 
     // ------- STATE -------
     const state = {
-      participants: [],        // [{id, name}]
-      bracketParticipants: [], // includes real players only for single elim
-      rounds: [],              // [ [matches...] ]
-      matchById: {},           // id -> match
+      participants: [],
+      bracketParticipants: [],
+      rounds: [],
+      matchById: {},
       matchCounter: 0,
       settings: {
         name: 'My Tournament',
-        format: 'single',      // 'single' | 'double' | 'roundrobin' | 'swiss'
+        format: 'single',
         bestOf: 1,
         seedingMode: 'seeded',
         thirdPlace: false,
@@ -782,10 +773,10 @@
         bracketSize: null,
         byes: null,
         stages: [
-          { name: 'Qualifier', topX: 0 }   // 0 = ignore until user sets Top X
+          { name: 'Qualifier', topX: 0 }
         ]
       },
-      stageRanges: [],         // computed round ranges for each stage (elim only)
+      stageRanges: [],
       lastSavedId: null
     };
 
@@ -835,7 +826,6 @@
       state.settings.bestOf      = parseInt(bestOfSelect.value,10) || 1;
       state.settings.seedingMode = seedingSelect.value;
       state.settings.thirdPlace  = thirdPlaceToggle.checked;
-      // stages are kept live from inputs
     }
 
     function shuffleArray(arr){
@@ -851,7 +841,7 @@
       return id ? parseInt(id,10) : null;
     }
 
-    // ----- Power-of-two stage meta (used for DOUBLE ELIM and legacy) -----
+    // ----- Power-of-two stage meta (DOUBLE ELIM) -----
     function computeStageRoundMeta(bracketSize, stagesRaw){
       const stageRanges = [];
       if(!bracketSize || bracketSize < 2 || !Array.isArray(stagesRaw) || !stagesRaw.length){
@@ -863,7 +853,6 @@
         topX: (typeof s.topX === 'number' ? s.topX : 0)
       }));
 
-      // Ensure last stage finishes the bracket (champion) if left blank
       const lastIdx = stages.length - 1;
       if(!stages[lastIdx].topX || stages[lastIdx].topX <= 0){
         stages[lastIdx].topX = 1;
@@ -902,7 +891,7 @@
           roundsForStage++;
           roundCursor++;
           totalRoundsFromStages++;
-          if(totalRoundsFromStages > 32) break; // safety
+          if(totalRoundsFromStages > 32) break;
         }
 
         const endRound = roundCursor - 1;
@@ -923,7 +912,7 @@
       };
     }
 
-    // ----- NEW: Sequential single-elim stage meta (1 bye max per round) -----
+    // ----- Sequential single-elim meta -----
     function computeSequentialStageMeta(totalPlayers, stagesRaw){
       const stageRanges = [];
 
@@ -959,7 +948,6 @@
 
       const hasValidStages = stages.length && stages.some(st => st.topX && st.topX > 0);
 
-      // If no valid stages specified, treat as "play to champion".
       if(!hasValidStages){
         while(remaining > 1 && totalRounds < 32){
           const matches = Math.floor(remaining / 2);
@@ -986,7 +974,6 @@
         };
       }
 
-      // With stages: chain them; each stage uses minimum rounds to reach its topX (or fewer if math can't hit exactly).
       for(let i=0; i<stages.length && remaining>1 && totalRounds<32; i++){
         const st = stages[i];
         if(!st.topX || st.topX <= 0) continue;
@@ -1021,7 +1008,6 @@
         remaining = localRemaining;
       }
 
-      // If for some reason nothing got recorded, fall back to champion.
       if(!stageRanges.length){
         remaining    = totalPlayers;
         roundCursor  = 1;
@@ -1087,7 +1073,7 @@
       return schedule;
     }
 
-    // ----- SWISS (rotation-based, 1 bye max per round, no repeat BYE) -----
+    // ----- SWISS -----
     function buildSwissSchedule(players){
       const arr = players.slice();
 
@@ -1184,7 +1170,6 @@
         return;
       }
 
-      // DOUBLE ELIM or any remaining elim mode still using power-of-two meta
       const rounds = Math.ceil(Math.log2(n));
       const bracketSize = 1 << rounds;
       const byes = bracketSize - n;
@@ -1311,11 +1296,9 @@
         const line = raw.trim();
         if(!line) continue;
 
-        // Take first column if CSV
         const firstCell = line.split(',')[0].trim();
         if(!firstCell) continue;
 
-        // Skip very simple header-looking rows like "Seed" or "Name"
         const lc = firstCell.toLowerCase();
         if((lc.includes('seed') || lc.includes('name')) && !/\d/.test(firstCell)){
           continue;
@@ -1347,7 +1330,6 @@
             return;
           }
 
-          // Replace current participants with imported list
           state.participants = [];
           nextParticipantId = 1;
           names.forEach(n => state.participants.push(createParticipant(n)));
@@ -1451,7 +1433,9 @@
         s2: 0,
         winnerId: null,
         nextMatchId: null,
-        nextMatchSlot: null
+        nextMatchSlot: null,
+        // 'dq1' => P1 DQ’d, 'dq2' => P2 DQ’d, null => normal
+        resultType: null
       };
       state.matchById[id] = match;
       return match;
@@ -1497,7 +1481,7 @@
       }
     }
 
-    // NEW: reset match to 0–0 & clear winner
+    // Reset match fully (scores + DQ + propagation)
     function resetMatch(matchId){
       const m = state.matchById[matchId];
       if(!m) return;
@@ -1512,38 +1496,13 @@
       m.s1 = 0;
       m.s2 = 0;
       m.winnerId = null;
+      m.resultType = null;
 
       renderBracket();
       renderSaveStatus(true);
     }
 
-    // NEW: DQ both sides → set -1 / -1 and clear advancement
-    function disqualifyBoth(matchId){
-      const m = state.matchById[matchId];
-      if(!m) return;
-
-      if(!confirm('Mark BOTH sides as disqualified for this match? This will clear their advancement.')){
-        return;
-      }
-
-      const format = state.settings.format || 'single';
-      const isElim = (format === 'single' || format === 'double');
-
-      if(isElim && m.winnerId){
-        clearAdvancement(m);
-      }
-
-      // Sentinel scores for DQ
-      m.s1 = -1;
-      m.s2 = -1;
-      m.winnerId = null;
-
-      // Note: we keep p1/p2 so context is visible, but they no longer advance.
-      renderBracket();
-      renderSaveStatus(true);
-    }
-
-    // UPDATED: allow ties + 0–0 reset
+    // Set match result by scores (tie + 0–0 reset supported)
     function setMatchResult(matchId, score1, score2){
       const m = state.matchById[matchId];
       if(!m) return;
@@ -1571,6 +1530,7 @@
         m.s1 = 0;
         m.s2 = 0;
         m.winnerId = null;
+        m.resultType = null;
         renderBracket();
         renderSaveStatus(true);
         return;
@@ -1584,6 +1544,7 @@
         m.s1 = s1;
         m.s2 = s2;
         m.winnerId = null;
+        m.resultType = null;
         renderBracket();
         renderSaveStatus(true);
         return;
@@ -1598,6 +1559,7 @@
       m.s2 = s2;
       const winner = s1 > s2 ? m.p1 : m.p2;
       m.winnerId = winner.id;
+      m.resultType = null;
 
       if(isElim){
         propagateWinner(m);
@@ -1607,7 +1569,53 @@
       renderSaveStatus(true);
     }
 
-    // ------- SINGLE ELIMINATION (SEQUENTIAL, 0–1 BYE PER ROUND, STAGE-AWARE) -------
+    // ----- DQ FUNCTION -----
+    // slot = 1 (P1 DQ) or 2 (P2 DQ)
+    function dq(matchId, slot){
+      const m = state.matchById[matchId];
+      if(!m) return;
+
+      const format = state.settings.format || 'single';
+      const isElim = (format === 'single' || format === 'double');
+
+      const p1 = m.p1;
+      const p2 = m.p2;
+
+      if(!p1 || !p2 || p1.isBye || p2.isBye){
+        alert('DQ only applies when both players are real participants.');
+        return;
+      }
+
+      if(isElim && m.winnerId){
+        clearAdvancement(m);
+      }
+
+      const winScore = Math.max(1, parseInt(state.settings.bestOf,10) || 1);
+      const loseScore = 0;
+
+      if(slot === 1){
+        // P1 DQ → P2 wins
+        m.s1 = loseScore;
+        m.s2 = winScore;
+        m.winnerId = p2.id;
+        m.resultType = 'dq1';
+      }else{
+        // P2 DQ → P1 wins
+        m.s1 = winScore;
+        m.s2 = loseScore;
+        m.winnerId = p1.id;
+        m.resultType = 'dq2';
+      }
+
+      if(isElim){
+        propagateWinner(m);
+      }
+
+      renderBracket();
+      renderSaveStatus(true);
+    }
+
+    // ------- SINGLE ELIM (SEQUENTIAL, 0–1 BYE PER ROUND) -------
     function generateSingleElimBracketSequential(seeded, maxRoundsOpt){
       const n = seeded.length;
 
@@ -1628,17 +1636,15 @@
       let roundIndex = 1;
       const maxRounds = (typeof maxRoundsOpt === 'number' && maxRoundsOpt > 0)
         ? maxRoundsOpt
-        : 32; // safety cap if no stages
+        : 32;
 
       while(currentTokens.length > 1 && roundIndex <= maxRounds){
         const roundMatches = [];
         const nextTokens = [];
 
-        // If odd count, exactly ONE bye token auto-advances
         if(currentTokens.length % 2 === 1){
           let byeIdx = -1;
 
-          // Prefer a player who hasn’t had a bye yet
           for(let i=0; i<currentTokens.length; i++){
             const t = currentTokens[i];
             if(t.type === 'player' && !byeUsedMap[t.playerId]){
@@ -1646,18 +1652,15 @@
               break;
             }
           }
-          // Fallback: last token
           if(byeIdx === -1) byeIdx = currentTokens.length - 1;
 
           const [byeToken] = currentTokens.splice(byeIdx, 1);
           if(byeToken.type === 'player'){
             byeUsedMap[byeToken.playerId] = true;
           }
-          // This token goes straight to next round
           nextTokens.push(byeToken);
         }
 
-        // Now we have an even number of tokens; pair them
         for(let i=0; i<currentTokens.length; i+=2){
           const t1 = currentTokens[i];
           const t2 = currentTokens[i+1];
@@ -1690,13 +1693,11 @@
 
       state.settings.totalRounds = state.rounds.length;
       state.settings.bracketSize = n;
-      // byes count is computed in meta; we keep it there.
     }
 
     // ------- GENERATION FOR EACH FORMAT -------
     function generateElimBracket(format, seeded){
       if(format === 'single'){
-        // Stage-aware sequential single elim
         const meta = computeSequentialStageMeta(seeded.length, state.settings.stages);
         state.stageRanges          = meta.stageRanges || [];
         state.settings.totalRounds = meta.totalRounds;
@@ -1706,8 +1707,6 @@
         return;
       }
 
-      // For DOUBLE ELIM (or other elim variants you might add later),
-      // we keep the power-of-two style bracket + byes.
       const n = seeded.length;
       const maxRounds  = Math.ceil(Math.log2(n));
       const bracketSize = 1 << maxRounds;
@@ -1775,7 +1774,6 @@
         prevRoundMatches = curRound;
       }
 
-      // Auto-advance BYE matches in round 1
       for(const m of state.rounds[0]){
         if(m.p1 && m.p1.isBye && m.p2 && !m.p2.isBye){
           m.winnerId = m.p2.id;
@@ -1855,7 +1853,6 @@
       if(state.settings.seedingMode === 'random'){
         shuffleArray(seeded);
       }
-      // 'seeded' & 'list' use current order
 
       const format = state.settings.format || 'single';
 
@@ -1976,40 +1973,36 @@
       }
     }
 
-    // ------- SCORE SUMMARY HELPERS -------
-    // ---- detailed score summary (MP / BYE / Total / W / L / ±) ----
+    // ------- SCORE SUMMARY -------
     function computeScoreSummaryRows(){
       const participants = state.participants || [];
       const rounds       = state.rounds || [];
     
       if(!participants.length) return [];
     
-      // Base rows with seed
       const map = new Map();
       participants.forEach((p, idx) => {
         map.set(p.id, {
           id: p.id,
           name: p.name || ('Player ' + (idx+1)),
           seed: idx + 1,
-          played: 0,      // MP (matches with scores, non-BYE)
+          played: 0,
           wins: 0,
           losses: 0,
-          byes: 0,        // rounds where opponent is BYE
+          byes: 0,
           scored: 0,
           conceded: 0,
           diff: 0,
-          totalMatch: 0,  // MP + BYE
+          totalMatch: 0,
           rank: 0
         });
       });
     
-      // Walk through all matches
       rounds.forEach(round => {
         round.forEach(m => {
           const p1 = m.p1;
           const p2 = m.p2;
     
-          // --- BYE detection (schedule-based, no scores needed) ---
           if(p1 && p2){
             const row1 = (!p1.isBye && map.get(p1.id)) || null;
             const row2 = (!p2.isBye && map.get(p2.id)) || null;
@@ -2021,7 +2014,6 @@
             }
           }
     
-          // --- Now handle played matches (with scores, non-BYE vs non-BYE) ---
           const hasScores =
             (m.s1 !== undefined && m.s1 !== null) ||
             (m.s2 !== undefined && m.s2 !== null);
@@ -2032,27 +2024,19 @@
           const s2raw = parseInt(m.s2 ?? 0, 10);
           const s1 = Number.isNaN(s1raw) ? 0 : s1raw;
           const s2 = Number.isNaN(s2raw) ? 0 : s2raw;
-
-          // NEW: treat negative scores as DQ sentinel → ignore from stats
-          if(s1 < 0 || s2 < 0){
-            return;
-          }
     
           const row1 = p1 && !p1.isBye ? map.get(p1.id) : null;
           const row2 = p2 && !p2.isBye ? map.get(p2.id) : null;
           if(!row1 || !row2) return;
     
-          // Matches played
           row1.played++;
           row2.played++;
     
-          // Scores for / against
           row1.scored   += s1;
           row1.conceded += s2;
           row2.scored   += s2;
           row2.conceded += s1;
     
-          // Wins / losses (ties allowed: no W/L on equal scores)
           if(s1 !== s2){
             if(s1 > s2){
               row1.wins++;
@@ -2065,21 +2049,16 @@
         });
       });
     
-      // Final derived fields + sorting
       const rows = Array.from(map.values()).map(r => {
         r.diff        = r.scored - r.conceded;
-        r.totalMatch  = r.played + r.byes; // MP + BYE
+        r.totalMatch  = r.played + r.byes;
         return r;
       });
     
       rows.sort((a,b) => {
-        // 1) Total Match (MP + BYE)
         if(b.totalMatch !== a.totalMatch) return b.totalMatch - a.totalMatch;
-        // 2) Match Wins
         if(b.wins !== a.wins) return b.wins - a.wins;
-        // 3) Score difference (±)
         if(b.diff !== a.diff) return b.diff - a.diff;
-        // 4) Seed as final tiebreak
         return a.seed - b.seed;
       });
     
@@ -2123,7 +2102,6 @@
       const table = document.createElement('table');
       table.className = 'score-summary-table';
     
-      // Header: #, Name, MP, BYE, TM, W, L, ±
       const thead = document.createElement('thead');
       const headRow = document.createElement('tr');
       const headers = ['#','Name','MP','BYE','TM','W','L','±'];
@@ -2131,7 +2109,6 @@
       headers.forEach((label, idx) => {
         const th = document.createElement('th');
         th.textContent = label;
-        // Right-align all numeric columns
         if(idx === 0 || idx > 1){
           th.style.textAlign = 'right';
         }
@@ -2182,7 +2159,6 @@
       scoreSummaryPanel.appendChild(table);
     }
 
-
     function createPlayerRow(match, slot){
       const row = document.createElement('div');
       row.className = 'player-row';
@@ -2209,7 +2185,7 @@
 
       const scoreInput = document.createElement('input');
       scoreInput.type = 'number';
-      scoreInput.min = '-1';
+      scoreInput.min = '0';
       scoreInput.className = 'score-input';
       scoreInput.value = slot === 1 ? (match.s1 ?? 0) : (match.s2 ?? 0);
 
@@ -2237,7 +2213,6 @@
         roundsCount = state.settings.totalRounds || state.rounds.length;
         bracketSize = state.settings.bracketSize || n;
         byes        = state.settings.byes || 0;
-        // stageRanges already computed by computeSequentialStageMeta
       }else if(format === 'double'){
         const rounds = Math.ceil(Math.log2(Math.max(n,2)));
         roundsCount = state.settings.totalRounds || rounds;
@@ -2351,13 +2326,22 @@
           const isPureBye =
             (m.p1 && m.p1.isBye) &&
             (m.p2 && m.p2.isBye);
-          const isDQ = (s1Val < 0 && s2Val < 0);
 
-          if(isDQ){
-            status.innerHTML = `<span class="pending" style="color:${getComputedStyle(document.documentElement).getPropertyValue('--danger') || '#ff6b6b'}">Both teams disqualified (–1 / –1)</span>`;
-          }else if(m.winnerId){
+          const isDQ1 = m.resultType === 'dq1';
+          const isDQ2 = m.resultType === 'dq2';
+
+          if(m.winnerId){
             const winner = findParticipantById(m.winnerId);
-            status.innerHTML = `<span class="winner-tag">Winner:</span> ${winner ? winner.name : '—'}`;
+
+            if(isDQ1 || isDQ2){
+              const dqSlot = isDQ1 ? 1 : 2;
+              const loser = dqSlot === 1 ? m.p1 : m.p2;
+              status.innerHTML =
+                `<span class="winner-tag">Winner (DQ):</span> ${winner ? winner.name : '—'} ` +
+                `<span class="pending">(${loser ? loser.name : 'opponent'} forfeited)</span>`;
+            }else{
+              status.innerHTML = `<span class="winner-tag">Winner:</span> ${winner ? winner.name : '—'}`;
+            }
           }else if(!Number.isNaN(s1Val) && !Number.isNaN(s2Val) && s1Val === s2Val && s1Val > 0){
             status.innerHTML = `<span class="pending">Result: Tie (${s1Val} – ${s2Val})</span>`;
           }else if(isPureBye){
@@ -2366,16 +2350,11 @@
             status.innerHTML = `<span class="pending">Awaiting result…</span>`;
           }
 
-          const controlsWrap = document.createElement('div');
-          controlsWrap.style.display = 'flex';
-          controlsWrap.style.gap = '4px';
-          controlsWrap.style.flexWrap = 'wrap';
-
           const reportBtn = document.createElement('button');
           reportBtn.className = 'primary';
           reportBtn.textContent = 'Report score';
 
-          if(isPureBye || isDQ){
+          if(isPureBye){
             reportBtn.disabled = true;
           }
 
@@ -2390,17 +2369,26 @@
           resetBtn.textContent = 'Reset';
           resetBtn.addEventListener('click', () => resetMatch(m.id));
 
-          const dqBtn = document.createElement('button');
-          dqBtn.textContent = 'DQ both';
-          dqBtn.className = 'danger';
-          dqBtn.addEventListener('click', () => disqualifyBoth(m.id));
+          const canDQ = m.p1 && m.p2 && !m.p1.isBye && !m.p2.isBye;
+          let dqP1Btn, dqP2Btn;
 
-          controlsWrap.appendChild(reportBtn);
-          controlsWrap.appendChild(resetBtn);
-          controlsWrap.appendChild(dqBtn);
+          if(canDQ){
+            dqP1Btn = document.createElement('button');
+            dqP1Btn.textContent = 'DQ P1';
+            dqP1Btn.addEventListener('click', () => dq(m.id, 1));
+
+            dqP2Btn = document.createElement('button');
+            dqP2Btn.textContent = 'DQ P2';
+            dqP2Btn.addEventListener('click', () => dq(m.id, 2));
+          }
 
           actions.appendChild(status);
-          actions.appendChild(controlsWrap);
+          actions.appendChild(reportBtn);
+          if(canDQ){
+            actions.appendChild(dqP1Btn);
+            actions.appendChild(dqP2Btn);
+          }
+          actions.appendChild(resetBtn);
           card.appendChild(actions);
 
           col.appendChild(card);
@@ -2562,6 +2550,10 @@
             const num = parseInt(String(m.id).replace('m',''),10);
             if(!Number.isNaN(num) && num > state.matchCounter){
               state.matchCounter = num;
+            }
+            // Backfill resultType for older saved brackets
+            if(typeof m.resultType === 'undefined'){
+              m.resultType = null;
             }
           });
         });
