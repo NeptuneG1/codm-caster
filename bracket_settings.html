@@ -378,21 +378,36 @@
       font-weight:500;
       text-align:left;
     }
-    .score-summary-table td.score-seed{
-      width:44px;
+
+    .score-summary-table td.score-rank{
+      width:32px;
+      text-align:right;
       color:var(--muted);
     }
+    
     .score-summary-table td.score-name{
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
     }
-    .score-summary-table td.score-total{
+    
+    /* MP, BYE, Total Match, W, L, ± */
+    .score-summary-table td.score-mp,
+    .score-summary-table td.score-bye,
+    .score-summary-table td.score-total-m,
+    .score-summary-table td.score-w,
+    .score-summary-table td.score-l,
+    .score-summary-table td.score-diff{
       width:40px;
       text-align:right;
       font-variant-numeric:tabular-nums;
+    }
+    
+    /* Highlight the diff column like in the screenshot */
+    .score-summary-table td.score-diff{
       color:var(--brand);
     }
+
     .score-summary-table tbody tr:nth-child(even){
       background:rgba(0,0,0,.06);
     }
@@ -1929,107 +1944,206 @@
     }
 
     // ------- SCORE SUMMARY HELPERS -------
-    function computeScoreSummaryTotals(){
-      const totals = {};
-      state.participants.forEach(p => {
-        totals[p.id] = 0;
+    // ---- NEW: detailed score summary (MP / BYE / Total / W / L / ±) ----
+    function computeScoreSummaryRows(){
+      const participants = state.participants || [];
+      const rounds       = state.rounds || [];
+    
+      if(!participants.length) return [];
+    
+      // Base rows with seed
+      const map = new Map();
+      participants.forEach((p, idx) => {
+        map.set(p.id, {
+          id: p.id,
+          name: p.name || ('Player ' + (idx+1)),
+          seed: idx + 1,
+          played: 0,      // MP (matches with scores, non-BYE)
+          wins: 0,
+          losses: 0,
+          byes: 0,        // rounds where opponent is BYE
+          scored: 0,
+          conceded: 0,
+          diff: 0,
+          totalMatch: 0,  // MP + BYE
+          rank: 0
+        });
       });
-
-      state.rounds.forEach(round => {
+    
+      // Walk through all matches
+      rounds.forEach(round => {
         round.forEach(m => {
-          let s1 = parseInt(m.s1 ?? 0, 10);
-          let s2 = parseInt(m.s2 ?? 0, 10);
-          if(Number.isNaN(s1)) s1 = 0;
-          if(Number.isNaN(s2)) s2 = 0;
-
-          if(m.p1 && !m.p1.isBye && totals.hasOwnProperty(m.p1.id)){
-            totals[m.p1.id] += s1;
+          const p1 = m.p1;
+          const p2 = m.p2;
+    
+          // --- BYE detection (schedule-based, no scores needed) ---
+          if(p1 && p2){
+            const row1 = (!p1.isBye && map.get(p1.id)) || null;
+            const row2 = (!p2.isBye && map.get(p2.id)) || null;
+    
+            if(p1.isBye && row2){
+              row2.byes++;
+            }else if(p2.isBye && row1){
+              row1.byes++;
+            }
           }
-          if(m.p2 && !m.p2.isBye && totals.hasOwnProperty(m.p2.id)){
-            totals[m.p2.id] += s2;
+    
+          // --- Now handle played matches (with scores, non-BYE vs non-BYE) ---
+          const hasScores =
+            (m.s1 !== undefined && m.s1 !== null) ||
+            (m.s2 !== undefined && m.s2 !== null);
+    
+          if(!hasScores) return;
+    
+          const s1raw = parseInt(m.s1 ?? 0, 10);
+          const s2raw = parseInt(m.s2 ?? 0, 10);
+          const s1 = Number.isNaN(s1raw) ? 0 : s1raw;
+          const s2 = Number.isNaN(s2raw) ? 0 : s2raw;
+    
+          const row1 = p1 && !p1.isBye ? map.get(p1.id) : null;
+          const row2 = p2 && !p2.isBye ? map.get(p2.id) : null;
+          if(!row1 || !row2) return;
+    
+          // Matches played
+          row1.played++;
+          row2.played++;
+    
+          // Scores for / against
+          row1.scored   += s1;
+          row1.conceded += s2;
+          row2.scored   += s2;
+          row2.conceded += s1;
+    
+          // Wins / losses (ties allowed: no W/L on equal scores)
+          if(s1 !== s2){
+            if(s1 > s2){
+              row1.wins++;
+              row2.losses++;
+            }else{
+              row2.wins++;
+              row1.losses++;
+            }
           }
         });
       });
-
-      return totals;
+    
+      // Final derived fields + sorting
+      const rows = Array.from(map.values()).map(r => {
+        r.diff        = r.scored - r.conceded;
+        r.totalMatch  = r.played + r.byes; // MP + BYE
+        return r;
+      });
+    
+      rows.sort((a,b) => {
+        // 1) Total Match (MP + BYE)
+        if(b.totalMatch !== a.totalMatch) return b.totalMatch - a.totalMatch;
+        // 2) Match Wins
+        if(b.wins !== a.wins) return b.wins - a.wins;
+        // 3) Score difference (±)
+        if(b.diff !== a.diff) return b.diff - a.diff;
+        // 4) Seed as final tiebreak
+        return a.seed - b.seed;
+      });
+    
+      rows.forEach((r, idx) => {
+        r.rank = idx + 1;
+      });
+    
+      return rows;
     }
-
+    
     function renderScoreSummary(){
       if(!scoreSummaryPanel) return;
-
+    
       scoreSummaryPanel.innerHTML = '';
-
+    
       if(!state.participants.length){
         const empty = document.createElement('div');
         empty.className = 'score-summary-empty';
-        empty.textContent = 'Add participants to see score summary.';
+        empty.textContent = 'Add participants and generate a bracket to see standings.';
         scoreSummaryPanel.appendChild(empty);
         return;
       }
-
-      const totals = computeScoreSummaryTotals();
-
-      // Order by total desc, then name asc
-      const ordered = state.participants.slice().sort((a,b) => {
-        const ta = totals[a.id] || 0;
-        const tb = totals[b.id] || 0;
-        if(tb !== ta) return tb - ta;
-        return (a.name || '').localeCompare(b.name || '');
-      });
-
+    
+      if(!state.rounds.length){
+        const empty = document.createElement('div');
+        empty.className = 'score-summary-empty';
+        empty.textContent = 'Generate a bracket and report results to see standings.';
+        scoreSummaryPanel.appendChild(empty);
+        return;
+      }
+    
+      const rows = computeScoreSummaryRows();
+      if(!rows.length){
+        const empty = document.createElement('div');
+        empty.className = 'score-summary-empty';
+        empty.textContent = 'Report at least one result to see standings.';
+        scoreSummaryPanel.appendChild(empty);
+        return;
+      }
+    
       const table = document.createElement('table');
       table.className = 'score-summary-table';
-
+    
+      // Header: #, Name, MP, BYE, TM, W, L, ±
       const thead = document.createElement('thead');
       const headRow = document.createElement('tr');
-
-      const thSeed = document.createElement('th');
-      thSeed.textContent = 'Seed';
-      headRow.appendChild(thSeed);
-
-      const thName = document.createElement('th');
-      thName.textContent = 'Name';
-      headRow.appendChild(thName);
-
-      const thTotal = document.createElement('th');
-      thTotal.textContent = 'Total';
-      thTotal.style.textAlign = 'right';
-      headRow.appendChild(thTotal);
-
+      const headers = ['#','Name','MP','BYE','TM','W','L','±'];
+    
+      headers.forEach((label, idx) => {
+        const th = document.createElement('th');
+        th.textContent = label;
+        // Right-align all numeric columns
+        if(idx === 0 || idx > 1){
+          th.style.textAlign = 'right';
+        }
+        headRow.appendChild(th);
+      });
+    
       thead.appendChild(headRow);
       table.appendChild(thead);
-
+    
       const tbody = document.createElement('tbody');
-
-      ordered.forEach(p => {
+    
+      rows.forEach(r => {
         const tr = document.createElement('tr');
-
-        // Seed based on original participants order
-        let seed = '—';
-        const idx = state.participants.findIndex(pp => pp.id === p.id);
-        if(idx !== -1) seed = idx + 1;
-
-        const tdSeed = document.createElement('td');
-        tdSeed.className = 'score-seed';
-        tdSeed.textContent = seed;
-        tr.appendChild(tdSeed);
-
+    
+        const tdRank = document.createElement('td');
+        tdRank.className = 'score-rank';
+        tdRank.textContent = r.rank ?? '';
+        tr.appendChild(tdRank);
+    
         const tdName = document.createElement('td');
         tdName.className = 'score-name';
-        tdName.textContent = p.name || '—';
+        tdName.textContent = r.name || '';
         tr.appendChild(tdName);
-
-        const tdTotal = document.createElement('td');
-        tdTotal.className = 'score-total';
-        tdTotal.textContent = totals[p.id] || 0;
-        tr.appendChild(tdTotal);
-
+    
+        const addNumCell = (className, value) => {
+          const td = document.createElement('td');
+          td.className = className;
+          td.textContent = value ?? 0;
+          tr.appendChild(td);
+        };
+    
+        addNumCell('score-mp',       r.played);
+        addNumCell('score-bye',      r.byes);
+        addNumCell('score-total-m',  r.totalMatch);
+        addNumCell('score-w',        r.wins);
+        addNumCell('score-l',        r.losses);
+    
+        const tdDiff = document.createElement('td');
+        tdDiff.className = 'score-diff';
+        const diffVal = r.diff ?? 0;
+        tdDiff.textContent = diffVal > 0 ? `+${diffVal}` : String(diffVal);
+        tr.appendChild(tdDiff);
+    
         tbody.appendChild(tr);
       });
-
+    
       table.appendChild(tbody);
       scoreSummaryPanel.appendChild(table);
     }
+
 
     function createPlayerRow(match, slot){
       const row = document.createElement('div');
