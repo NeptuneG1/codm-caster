@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>COD:M — BR Caster Reference</title>
+<title>COD:M — BR Caster Reference | Season 6 2026</title>
 <meta name="theme-color" content="#0d1014"/>
 
 <style>
@@ -144,6 +144,32 @@
   .yes-icon{width:18px;height:18px;object-fit:contain;display:inline-block;vertical-align:middle}
   .attach-scroll{overflow:auto;max-height:70vh;border:1px solid var(--line);border-radius:10px}
   
+  /* ===== Current patch page ===== */
+  .season-inline{
+    display:inline-block;margin-left:8px;padding:3px 8px;border-radius:999px;
+    background:var(--brand);color:var(--brandText);font-size:.68rem;
+    font-weight:900;vertical-align:middle;letter-spacing:.2px
+  }
+  .patch-hero{
+    background:
+      radial-gradient(circle at 88% 18%,rgba(255,233,59,.18),transparent 28%),
+      linear-gradient(135deg,#151b26 0%,#242a3b 100%);
+    border:1px solid var(--line);border-left:5px solid var(--brand);
+    border-radius:14px;padding:18px;margin-bottom:14px
+  }
+  .patch-kicker{color:var(--brand);font-weight:900;letter-spacing:.08em;text-transform:uppercase;font-size:.78rem}
+  .patch-title{margin:4px 0 6px;font-size:clamp(1.45rem,3vw,2.25rem);line-height:1.05}
+  .patch-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .patch-grid{display:grid;grid-template-columns:1fr;gap:12px}
+  @media(min-width:780px){.patch-grid{grid-template-columns:repeat(2,1fr)}}
+  .patch-card{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px}
+  .patch-card h3{margin:0 0 7px;color:#fff}
+  .patch-card ul{margin:0;padding-left:18px;line-height:1.5}
+  .scope-note{border-left:4px solid var(--warn);background:#171d28;padding:10px 12px;border-radius:8px;margin-top:12px}
+  .source-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  .source-row a{display:inline-block;border:1px solid var(--line);border-radius:9px;padding:7px 10px;background:#141b27}
+  .verify{display:inline-block;padding:2px 6px;border-radius:999px;border:1px solid var(--warn);color:var(--warn);font-size:.66rem;font-weight:900}
+
   footer{border-top:1px solid var(--line);margin-top:18px;padding:14px 0 28px}
   footer small{color:var(--muted)}
 </style>
@@ -152,7 +178,7 @@
 <header>
   <div class="head">
     <img src="https://i.imgur.com/K0TTjUC.png" alt="Logo" class="logo">
-    <h1>COD:M — BR Caster Reference</h1>
+    <h1>COD:M — BR Caster Reference <span class="season-inline">Season 6 2026</span></h1>
     <a href="index.html" class="btn secondary push" title="Back to Home">← Home</a>
     <div class="bar">
       <nav id="tabs" class="tabs"></nav>
@@ -162,8 +188,70 @@
 
 <div class="shell">
 
-  <!-- ===================== PAGE: MAPS (first) ===================== -->
-  <section class="block page" data-title="Map">
+
+  <!-- ===================== PAGE: CURRENT PATCH ===================== -->
+  <section class="block page" data-title="Patch">
+    <div class="patch-hero">
+      <div class="patch-kicker">Current Garena Patch</div>
+      <h2 class="patch-title">Season 6 2026: Take Your Heart</h2>
+      <div class="muted">BR caster notes updated for the June 24–25, 2026 release (Garena version 1.6.56).</div>
+      <div class="patch-meta">
+        <span class="pill">Updated: 24–25 Jun 2026</span>
+        <span class="pill">Version 1.6.56</span>
+        <span class="pill">BR Focus</span>
+      </div>
+    </div>
+
+    <div class="patch-grid">
+      <article class="patch-card">
+        <h3>New BR Mode — Plunder: Treasure Heist</h3>
+        <ul>
+          <li>Enter the <b>Anomalous Space</b>.</li>
+          <li>Break through layers of <b>Cognitive Reinforcements</b>.</li>
+          <li>Secure the Treasure while managing rotations, respawns, and objective pressure.</li>
+        </ul>
+      </article>
+
+      <article class="patch-card">
+        <h3>New Weapon — FSS Hurricane</h3>
+        <ul>
+          <li>New <b>SMG</b> for Season 6 2026.</li>
+          <li>Designed around a larger magazine and stable handling.</li>
+          <li>Its trade-off is reduced range and raw stopping power.</li>
+        </ul>
+      </article>
+
+      <article class="patch-card">
+        <h3>Recent BR Systems Still Relevant</h3>
+        <ul>
+          <li><b>Rebirth Island</b> was added in the previous major build.</li>
+          <li>Rebirth supports redeploys, contracts, Cash, Airdrops, and Buy Station Scorestreaks.</li>
+          <li><b>BR Killcam</b> remains a testing feature and may vary by mode or region.</li>
+        </ul>
+      </article>
+
+      <article class="patch-card">
+        <h3>Caster Priority Checklist</h3>
+        <ul>
+          <li>Confirm the active mode before calling Gulag, redeploy, Cash, or Buy Station rules.</li>
+          <li>Track objective progress separately from eliminations in Treasure Heist.</li>
+          <li>Flag FSS Hurricane users as close-range pressure players rather than long-range anchors.</li>
+        </ul>
+      </article>
+    </div>
+
+    <div class="scope-note">
+      <b>Mode-scope warning:</b> Buy Stations, Gulag, infinite redeploys, Killcam, and Treasure Heist rules are not universal across every Classic BR lobby. Confirm the selected playlist and map before broadcast.
+    </div>
+
+    <div class="source-row">
+      <a href="https://play.google.com/store/apps/details?id=com.garena.game.codm" target="_blank" rel="noopener">Google Play patch listing</a>
+      <a href="https://apps.apple.com/sg/app/call-of-duty-mobile-garena/id1465688043" target="_blank" rel="noopener">App Store version history</a>
+    </div>
+  </section>
+
+  <!-- ===================== PAGE: MAPS ===================== -->
+  <section class="block page hidden" data-title="Map">
     <h2>Maps & Areas</h2>
 
     <div class="layout">
@@ -206,10 +294,10 @@
     <!-- ===================== PAGE: WEAPON (ground loot table) ===================== -->
   <section class="block page hidden" data-title="Weapon">
     
-  <h2>Ground Loot & Attachments (Sep 2025)</h2>
+  <h2>Ground Loot & Attachments (Season 6 2026)</h2>
   <div class="attach-wrap">
     <div class="muted" style="margin-bottom:8px">
-      CODM logo = recommended/available on best floor blueprints; blank = low priority / not applicable.
+      CODM logo = recommended/available on reviewed floor blueprints; blank = low priority / not applicable. VERIFY = newly added weapon whose current BR floor-blueprint attachment pool should be confirmed in-game.
     </div>
     <div class="attach-scroll">
       <table class="attach-table" id="weaponAttachTable"><!-- filled by JS --></table>
@@ -243,7 +331,7 @@
 
   <!-- ===================== PAGE: BR SYSTEMS ===================== -->
   <section class="block page hidden" data-title="BR Systems">
-    <h2>BR Systems — Buy Station & Gulag</h2>
+    <h2>BR Systems — Mode-Specific Reference</h2>
 
     <div class="layout">
       <!-- Left: compact reference -->
@@ -257,7 +345,7 @@
           <img class="mini-thumb" src="https://i.imgur.com/w3xxuAT.jpeg" alt="Isolated">
           <div class="mini-txt">
             <div class="mini-name">Buy Stations</div>
-            <span class="mini-pill">Event LT — Isolated</span>
+            <span class="mini-pill">Playlist dependent</span>
           </div>
         </div>
         <ul class="mini-meta" style="line-height:1.5;margin:0 0 8px 0;padding-left:16px">
@@ -271,7 +359,7 @@
           <img class="mini-thumb" src="https://i.imgur.com/8S1A7ml.jpeg" alt="Isolated">
           <div class="mini-txt">
             <div class="mini-name">Gulag</div>
-            <span class="mini-pill">Event LT — Isolated</span>
+            <span class="mini-pill">Limited / playlist dependent</span>
           </div>
         </div>
         <ul class="mini-meta" style="line-height:1.5;margin:0 0 8px 0;padding-left:16px">
@@ -287,6 +375,8 @@
           <div class="tabs">
             <button class="tab" aria-current="page" onclick="setBRPanel('buy')">Buy Station</button>
             <button class="tab" onclick="setBRPanel('gulag')">Gulag</button>
+            <button class="tab" onclick="setBRPanel('rebirth')">Rebirth Island</button>
+            <button class="tab" onclick="setBRPanel('treasure')">Treasure Heist</button>
           </div>
         </div>
 
@@ -320,6 +410,15 @@
         </ul>
       </div>
 
+
+      <div class="panel-list">
+        <h3>Current Patch Mode Reminders</h3>
+        <ul>
+          <li><b>Treasure Heist:</b> objective-first Plunder variant introduced in Season 6 2026.</li>
+          <li><b>Rebirth Island:</b> redeploy, contracts, Cash, Airdrops, Buy Stations, and possible Killcam testing.</li>
+          <li><b>Classic Isolated / Blackout:</b> do not assume event-only Gulag or Buy Station rules are active.</li>
+        </ul>
+      </div>
       <div class="panel-list">
         <h3>Vehicles</h3>
         <ul>
@@ -336,7 +435,7 @@
   </section>
 
   <footer class="shell">
-    <small>Created by Neptune Garcia</small>
+    <small>Created by Neptune Garcia • Updated for CODM Garena Season 6 2026 (version 1.6.56)</small>
   </footer>
 </div>
 
@@ -345,8 +444,8 @@
   document.addEventListener('keydown', (e) => {
     const tag = (e.target.tagName || '').toLowerCase();
     if (tag === 'input' || tag === 'textarea') return;
-   // 1=Map, 2=Weapon, 3=BR Systems, 4=Classes, 5=Other Details
-    if (['1','2','3','4','5'].includes(e.key)) { go(parseInt(e.key,10)-1); }
+   // 1=Patch, 2=Map, 3=Weapon, 4=BR Systems, 5=Classes, 6=Other Details
+    if (['1','2','3','4','5','6'].includes(e.key)) { go(parseInt(e.key,10)-1); }
     else if (e.key === '/') {
       e.preventDefault();
       const active = pagesOrdered.find(p => !p.classList.contains('hidden'));
@@ -356,7 +455,7 @@
   });
 
   /* ---------- Page order: MAPS first (tabs in header) ---------- */
-  const PAGE_ORDER = ['Map', 'Weapon', 'BR Systems', 'Classes', 'Other Details'];
+  const PAGE_ORDER = ['Patch', 'Map', 'Weapon', 'BR Systems', 'Classes', 'Other Details'];
 
   const pagesByTitle = {};
   document.querySelectorAll('.page').forEach(p => pagesByTitle[p.dataset.title] = p);
@@ -394,7 +493,7 @@
   }
 
   const savedTitle = sessionStorage.getItem('codm_ref_title');
-go(savedTitle && pagesByTitle[savedTitle] ? savedTitle : 'Map');
+go(savedTitle && pagesByTitle[savedTitle] ? savedTitle : 'Patch');
 
   /* ---------- Class data ---------- */
   const CLASSES = [
@@ -694,6 +793,7 @@ const ATTACH_COLS = [
 // Same dataset you reviewed
 const WEAPONS = [
   // AR
+  {weapon:'Lachmann-556', class:'AR', patch:'S2 2026', Suppressor:null, LongBarrel:null, Laser:null, Grip:null, ExtMag:null, Stock:null, Optic:null, Rear:null, Perk:null},
   {weapon:'DR-H',      class:'AR',  Suppressor:1, LongBarrel:1, Laser:0, Grip:0, ExtMag:0, Stock:1, Optic:0, Rear:1, Perk:0},
   {weapon:'ODEN',      class:'AR',  Suppressor:1, LongBarrel:1, Laser:0, Grip:0, ExtMag:1, Stock:0, Optic:0, Rear:1, Perk:1},
   {weapon:'RAM-7',     class:'AR',  Suppressor:1, LongBarrel:1, Laser:0, Grip:1, ExtMag:0, Stock:1, Optic:0, Rear:1, Perk:0},
@@ -708,6 +808,7 @@ const WEAPONS = [
   {weapon:'Type 19',   class:'AR',  Suppressor:1, LongBarrel:1, Laser:0, Grip:1, ExtMag:1, Stock:0, Optic:0, Rear:1, Perk:0},
 
   // SMG
+  {weapon:'FSS Hurricane', class:'SMG', patch:'S6 2026', Suppressor:null, LongBarrel:null, Laser:null, Grip:null, ExtMag:null, Stock:null, Optic:null, Rear:null, Perk:null},
   {weapon:'USS 9',     class:'SMG', Suppressor:1, LongBarrel:1, Laser:0, Grip:0, ExtMag:1, Stock:0, Optic:0, Rear:1, Perk:0},
   {weapon:'VMP',       class:'SMG', Suppressor:1, LongBarrel:1, Laser:0, Grip:0, ExtMag:1, Stock:0, Optic:0, Rear:1, Perk:0},
   {weapon:'CX-9',      class:'SMG', Suppressor:1, LongBarrel:0, Laser:0, Grip:1, ExtMag:1, Stock:1, Optic:0, Rear:1, Perk:0},
@@ -724,6 +825,7 @@ const WEAPONS = [
   {weapon:'Holger 26', class:'LMG', Suppressor:0, LongBarrel:1, Laser:0, Grip:1, ExtMag:1, Stock:0, Optic:0, Rear:1, Perk:0},
 
   // Marksman
+  {weapon:'SO-14',     class:'Marksman', patch:'S11 2025', Suppressor:null, LongBarrel:null, Laser:null, Grip:null, ExtMag:null, Stock:null, Optic:null, Rear:null, Perk:null},
   {weapon:'Type 63',   class:'Marksman', Suppressor:1, LongBarrel:1, Laser:0, Grip:0, ExtMag:1, Stock:1, Optic:0, Rear:1, Perk:1},
   {weapon:'SKS',       class:'Marksman', Suppressor:1, LongBarrel:1, Laser:0, Grip:0, ExtMag:0, Stock:1, Optic:0, Rear:1, Perk:1},
   {weapon:'SP-R 208',  class:'Marksman', Suppressor:1, LongBarrel:1, Laser:1, Grip:0, ExtMag:1, Stock:1, Optic:0, Rear:1, Perk:0},
@@ -756,6 +858,7 @@ function renderWeapons(){
     </tr>`;
   // Rows
   const yes = `<img class="yes-icon" src="${YES_ICON_URL}" alt="Yes" aria-label="Yes">`;
+  const mark = v => v === 1 ? yes : (v === null ? '<span class="verify">VERIFY</span>' : '');
 
   // Order by class then weapon name
   const classOrder = ['AR','SMG','LMG','Marksman','Sniper','Shotgun','Unknown'];
@@ -767,17 +870,17 @@ function renderWeapons(){
 
   const bodyRows = rowsSorted.map(w=>{
     const cells = [
-      `<td><b>${w.weapon}</b></td>`,
+      `<td><b>${w.weapon}</b>${w.patch ? ` <span class="mini-pill">${w.patch}</span>` : ''}</td>`,
       `<td>${w.class}</td>`,
-      `<td>${w.Suppressor?yes:''}</td>`,
-      `<td>${w.LongBarrel?yes:''}</td>`,
-      `<td>${w.Laser?yes:''}</td>`,
-      `<td>${w.Grip?yes:''}</td>`,
-      `<td>${w.ExtMag?yes:''}</td>`,
-      `<td>${w.Stock?yes:''}</td>`,
-      `<td>${w.Optic?yes:''}</td>`,
-      `<td>${w.Rear?yes:''}</td>`,
-      `<td>${w.Perk?yes:''}</td>`
+      `<td>${mark(w.Suppressor)}</td>`,
+      `<td>${mark(w.LongBarrel)}</td>`,
+      `<td>${mark(w.Laser)}</td>`,
+      `<td>${mark(w.Grip)}</td>`,
+      `<td>${mark(w.ExtMag)}</td>`,
+      `<td>${mark(w.Stock)}</td>`,
+      `<td>${mark(w.Optic)}</td>`,
+      `<td>${mark(w.Rear)}</td>`,
+      `<td>${mark(w.Perk)}</td>`
     ];
     return `<tr>${cells.join('')}</tr>`;
   }).join('');
@@ -836,7 +939,7 @@ function renderWeapons(){
           </table>
         </div>
         <div class="price-note">
-          Fire Sale reduces all prices by 30%. “Ammunition (per type)” covers Heavy, Sniper, Light, Shotgun, and Rockets.
+          Legacy reference table: Fire Sale values are shown at 30% off. Live inventory and prices may differ by playlist, region, or event—confirm in-game before broadcast.
         </div>
       </details>
     `;
@@ -844,31 +947,62 @@ function renderWeapons(){
 
   const BR_INFO = {
     buy: {
-      title: "Buy Station — How It Works",
+      title: "Buy Station — Mode-Specific Economy",
       points: [
-        "<b>Where:</b> Spawns on <i>Isolated</i> during event LT.",
-        "<b>Cash:</b> Looted on ground and from eliminations; dropped on death.",
-        "<b>What to buy:</b> Weapons, <i>Perks</i>, <i>Scorestreaks</i>, armor/ammo refills, special items.",
-        "<b>Timing:</b> Shop fast—exposure invites third parties."
+        "<b>Availability:</b> Depends on the active BR playlist and map.",
+        "<b>Cash:</b> Looted from the environment, contracts, objectives, or eliminations depending on the mode.",
+        "<b>Purchases:</b> Can include weapons, armor/ammo, special items, redeploy support, and Scorestreaks.",
+        "<b>Broadcast check:</b> Confirm the live shop inventory before quoting a price or available item."
       ],
       tips: [
-        "Ping Cash and share before committing to a push.",
-        "Announce team economy (\"two streaks online, refills secured\").",
-        "If a teammate is down, prioritize Cash for potential buyback flow."
+        "Call team economy before a shop rotation or late-zone reset.",
+        "Highlight exposed shopping windows and third-party risk.",
+        "Separate economy spent on survival from economy spent on aggression."
       ]
     },
+
     gulag: {
-      title: "Gulag — Flow",
+      title: "Gulag — Limited / Playlist-Dependent Flow",
       points: [
-        "<b>Trigger:</b> First elimination sends you to a <b>1v1</b> Gulag.",
-        "<b>Win:</b> Immediate redeploy.",
-        "<b>Lose:</b> Teammates can <b>buy your tag</b> at a Buy Station.",
-        "<b>Attempts:</b> 1 free; extras via <b>Gulag Ticket</b>."
+        "<b>Scope:</b> Gulag rules are not active in every Classic BR match.",
+        "<b>Trigger:</b> In supported playlists, an eligible elimination can send a player to a 1v1.",
+        "<b>Win:</b> Redeploy according to the active event rules.",
+        "<b>Lose:</b> Further recovery may require a teammate purchase, tag, ticket, or may be unavailable."
       ],
       tips: [
-        "Track who still has a free attempt vs. who needs a Ticket.",
-        "If two teammates queue for Gulag, call potential staggered redeploys.",
-        "Flag when a squad spends for buyback—economy pressure affects late zones."
+        "Confirm player eligibility before saying they are headed to Gulag.",
+        "Track free attempts, tickets, buyback status, and squad Cash separately.",
+        "Avoid applying Gulag rules to Rebirth-style infinite redeploy playlists."
+      ]
+    },
+
+    rebirth: {
+      title: "Rebirth Island — Current BR Map Rules",
+      points: [
+        "<b>Added:</b> Previous major update (April 2026 build).",
+        "<b>Core loop:</b> Fast fights supported by redeploy mechanics.",
+        "<b>Economy:</b> Contracts and Cash feed Airdrops and Buy Station purchases.",
+        "<b>Tools:</b> Scorestreak access and BR Killcam testing may be enabled depending on the playlist."
+      ],
+      tips: [
+        "Track the surviving anchor who keeps squad redeploys alive.",
+        "Call contract value and Cash conversion, not just eliminations.",
+        "Expect repeated contests around Buy Stations and redeploy timing."
+      ]
+    },
+
+    treasure: {
+      title: "Plunder: Treasure Heist — Season 6 2026",
+      points: [
+        "<b>Setting:</b> Enter the Anomalous Space.",
+        "<b>Objective:</b> Break through Cognitive Reinforcements and seize the Treasure.",
+        "<b>Win condition:</b> Treat objective control and treasure progress as primary information.",
+        "<b>Patch:</b> Introduced with Season 6 2026: Take Your Heart."
+      ],
+      tips: [
+        "State which squad controls the objective path and who is delaying.",
+        "Use eliminations to explain tempo swings, not as the only measure of advantage.",
+        "Call regroup windows, reinforcement layers, and final treasure pressure."
       ]
     }
   };
